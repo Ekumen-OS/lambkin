@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+CMD_MODE=$1
+PACKAGE=$2
+shift 2
+
+LAMBKIN_BASE=$(dirname -- "$(readlink -fn -- "$0")")/..
+
+LAMBKIN_SEARCH_PATHS=(
+    ${PACKAGE}
+    ${LAMBKIN_BASE}/src/benchmarks/${PACKAGE}
+)
+
+for package_dir in ${LAMBKIN_SEARCH_PATHS[@]}; do
+    if [ -d "$package_dir/docker" ]; then
+        case "$CMD_MODE" in
+            'make')
+                exec make -C $package_dir/docker $@
+                ;;
+            'run')
+                exec $package_dir/docker/run $@
+                ;;
+            *)
+                echo "Command mode not supported: $CMD_MODE" >&2
+                exit 1
+                ;;
+        esac
+    fi
+done
+
+echo "Docker folder does not exist in any of the following paths:" >&2
+for package_dir in ${LAMBKIN_SEARCH_PATHS[@]}; do
+    echo "    $(readlink -mn -- "$package_dir")" >&2
+done
+exit 1
