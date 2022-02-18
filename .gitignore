@@ -1,0 +1,8 @@
+# catkin
+build
+install
+devel
+logs
+
+# python
+**/__pycache__
