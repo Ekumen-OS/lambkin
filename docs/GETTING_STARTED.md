@@ -57,7 +57,7 @@ In order to make the development process easier and skip the image rebuilding st
 For instance, if you are changing the `lambkin` package itself, you could use the following command to run the previous benchmark with your changes:
 
 ```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot --rebuild --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/lambkin
+<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot --rebuild --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
 ```
 
 The `--rebuild` option will rebuild the `catkin` workspace for the changes to take effect before execution.
@@ -71,7 +71,7 @@ There is a shortcut to bind mount the same benchmark package you are running:
 And you can mount more than one package at your convenience:
 
 ```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot ---rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/lambkin
+<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot ---rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
 ```
 
 ## Using interactive mode
