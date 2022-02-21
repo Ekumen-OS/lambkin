@@ -1,4 +1,4 @@
-#!/usr/bin/env -S lambkin robot -f
+#!/usr/bin/env -S lambkin robot -d tum_benchmark -f
 # Copyright 2022 Ekumen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 Resource          lambkin.resource
 
 Test Template     Benchmark Cartographer ROS 2D SLAM
+Suite Setup       Lambkin Setup
 Suite Teardown    Run Keyword If All Tests Passed
 ...               Generate report using tum_report.rst in cartographer_ros_benchmark package
 
