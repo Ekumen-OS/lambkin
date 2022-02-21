@@ -1,0 +1,425 @@
+#! /usr/bin/env python3
+
+import argparse
+import bz2
+import csv
+import collections
+import itertools
+import glob
+import math
+import pathlib
+import heapq
+import os
+
+import rospy
+import rosbag
+
+import numpy as np
+from tf.transformations import identity_matrix
+from tf.transformations import inverse_matrix
+from tf.transformations import compose_matrix
+from tf.transformations import quaternion_about_axis
+from tf.transformations import quaternion_from_matrix
+from tf.transformations import translation_from_matrix
+
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Vector3
+from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Imu
+from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatStatus
+from tf2_msgs.msg import TFMessage
+
+
+def quaternion_as_msg(q):
+    msg = Quaternion()
+    msg.x = q[0]
+    msg.y = q[1]
+    msg.z = q[2]
+    msg.w = q[3]
+    return msg
+
+
+def translation_as_msg(t):
+    msg = Vector3()
+    msg.x = t[0]
+    msg.y = t[1]
+    msg.z = t[2]
+    return msg
+
+
+def time_from_timestamp(timestamp):
+    sec, _, usec = timestamp.partition('.')
+    return rospy.Time(int(sec), int(usec) * 1000)
+
+
+def read_compressed_csv_file(path, fieldnames, fieldtypes):
+    num_fields = len(fieldnames)
+    assert len(fieldtypes) == num_fields
+    rowtype = collections.namedtuple('Row', fieldnames, rename=True)
+    with bz2.open(path, 'rt') as file_:
+        for row in csv.reader(file_):
+            if len(row) == 0:
+                # Ignore empty lines
+                continue
+            assert len(row) >= num_fields
+            if len(row) > num_fields:
+                values = [type_(value) for value, type_ in zip(
+                    row[:num_fields - 1], fieldtypes[:-1])]
+                values.append([fieldtypes[-1](value) for value in row[num_fields - 1:]])
+            else:  # len(row) == num_fields
+                values = [type_(value) for value, type_ in zip(row, fieldtypes)]
+            yield rowtype(*values)
+
+
+def read_odometry_from_file(path, *, name, odom_frame, base_frame):
+    fieldnames = ['timestamp', '_', '_', '_', 'x', 'y', 'theta']
+    fieldxforms = [time_from_timestamp] + [str] * 3 + [float] * 3
+    for row in read_compressed_csv_file(path, fieldnames, fieldxforms):
+        msg = Odometry()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = odom_frame
+        msg.child_frame_id = base_frame
+        msg.pose.pose.position.x = row.x
+        msg.pose.pose.position.y = row.y
+        msg.pose.pose.orientation = quaternion_as_msg(
+            quaternion_about_axis(row.theta, (0, 0, 1)))
+        yield row.timestamp, name, msg
+
+        msg = TransformStamped()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = odom_frame
+        msg.child_frame_id = base_frame
+        msg.transform.translation.x = row.x
+        msg.transform.translation.y = row.y
+        msg.transform.rotation = quaternion_as_msg(
+            quaternion_about_axis(row.theta, (0, 0, 1)))
+        yield row.timestamp, '/tf', TFMessage([msg])
+
+
+def read_laserscan_from_file(
+    path, *, name, base_frame, laser_frame, pose,
+    aperture_angle, angular_resolution, max_range
+):
+    fieldnames = ['timestamp', 'num_ranges', 'angle_offset', 'ranges']
+    fieldtypes = [time_from_timestamp, int, int, float]
+    for row in read_compressed_csv_file(path, fieldnames, fieldtypes):
+        msg = LaserScan()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = laser_frame
+        angular_offset = \
+            row.angle_offset * math.radians(0.25)
+        msg.angle_max = aperture_angle / 2. + angular_offset
+        msg.angle_min = -aperture_angle / 2. + angular_offset
+        msg.angle_increment = angular_resolution
+        msg.range_min = 0.
+        msg.range_max = max_range
+        msg.ranges = row.ranges
+        yield row.timestamp, name, msg
+
+        msg = TransformStamped()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = base_frame
+        msg.child_frame_id = laser_frame
+        msg.transform.translation = \
+            translation_as_msg(translation_from_matrix(pose))
+        msg.transform.rotation = \
+            quaternion_as_msg(quaternion_from_matrix(pose))
+        yield row.timestamp, '/tf', TFMessage([msg])
+
+
+def read_imu_from_file(path, *, name, base_frame, imu_frame, pose):
+    fieldnames = [
+        'timestamp', '_',
+        'ax', 'ay', 'az',
+        'wx', 'wy', 'wz',
+        '_', '_',   '_',
+        'orientation'
+    ]
+    fieldtypes = [time_from_timestamp, str] + [float] * 10
+    for row in read_compressed_csv_file(path, fieldnames, fieldtypes):
+        msg = Imu()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = imu_frame
+        M = identity_matrix()
+        M[:3, :3] = np.reshape(row.orientation, (3, 3))
+        msg.orientation = \
+            quaternion_as_msg(quaternion_from_matrix(M))
+        msg.orientation_covariance[0] = -1
+        msg.angular_velocity.x = row.wx
+        msg.angular_velocity.y = row.wy
+        msg.angular_velocity.z = row.wz
+        msg.angular_velocity_covariance[0] = -1
+        msg.linear_acceleration.x = row.ax
+        msg.linear_acceleration.y = row.ay
+        msg.linear_acceleration.z = row.az
+        msg.linear_acceleration_covariance[0] = -1
+        yield row.timestamp, name, msg
+
+        msg = TransformStamped()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = base_frame
+        msg.child_frame_id = imu_frame
+        msg.transform.translation = \
+            translation_as_msg(translation_from_matrix(pose))
+        msg.transform.rotation = \
+            quaternion_as_msg(quaternion_from_matrix(pose))
+        yield row.timestamp, '/tf', TFMessage([msg])
+
+
+def read_groundtruth_from_file(path, name, source_frame, target_frame):
+    fieldnames = ['timestamp', 'x', 'y', 'theta', 'covariance']
+    fieldtypes = [time_from_timestamp] + [float] * 4
+    for row in read_compressed_csv_file(path, fieldnames, fieldtypes):
+        msg = PoseWithCovarianceStamped()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = source_frame
+        msg.pose.pose.position.x = row.x
+        msg.pose.pose.position.y = row.y
+        msg.pose.pose.orientation = quaternion_as_msg(
+            quaternion_about_axis(row.theta, (0, 0, 1)))
+        covariance_matrix = np.reshape(row.covariance, (3, 3))
+        msg.pose.covariance[0] = covariance_matrix[0, 0]
+        msg.pose.covariance[1] = covariance_matrix[0, 1]
+        msg.pose.covariance[5] = covariance_matrix[0, 2]
+        msg.pose.covariance[6] = covariance_matrix[1, 0]
+        msg.pose.covariance[7] = covariance_matrix[1, 1]
+        msg.pose.covariance[11] = covariance_matrix[1, 2]
+        msg.pose.covariance[30] = covariance_matrix[2, 0]
+        msg.pose.covariance[31] = covariance_matrix[2, 1]
+        msg.pose.covariance[35] = covariance_matrix[2, 2]
+        yield row.timestamp, name, msg
+
+        # Reverse frames to avoid multiple parents in /tf
+        msg = TransformStamped()
+        msg.header.stamp = row.timestamp
+        msg.header.frame_id = target_frame
+        msg.child_frame_id = source_frame
+        matrix = inverse_matrix(compose_matrix(
+            translate=[row.x, row.y, 0.],
+            angles=[0., 0., row.theta]))
+        msg.transform.translation = translation_as_msg(
+            translation_from_matrix(matrix))
+        msg.transform.rotation = quaternion_as_msg(
+            quaternion_from_matrix(matrix))
+        yield row.timestamp, '/tf', TFMessage([msg])
+
+
+GGA = collections.namedtuple('GGA', [
+    'utc', 'latitude', 'longitude', 'height', 'quality'
+])
+
+
+GST = collections.namedtuple('GST', [
+    'utc', 'latitude_sigma', 'longitude_sigma', 'height_sigma'
+])
+
+
+def parse_nmea_message(line):
+    line, _, _ = line.rpartition('*')
+    fields = line.split(',')
+    if fields[0] == '$GPGGA':
+        assert fields[3] == 'N'
+        assert fields[5] == 'E'
+        assert fields[10] == 'M'
+        return GGA(
+            utc=fields[1],
+            latitude=float(fields[2]),
+            longitude=float(fields[4]),
+            height=float(fields[9]),
+            quality=int(fields[6]))
+    if fields[0] == '$GPGST':
+        return GST(
+            utc=fields[1],
+            latitude_sigma=float(fields[6]),
+            longitude_sigma=float(fields[7]),
+            height_sigma=float(fields[8]))
+    raise RuntimeError(f'Unknown NMEA message: {line}')
+
+
+def read_compressed_nmea_logs(path):
+    rowtype = collections.namedtuple(
+        'Row', ['timestamp', 'nmea_message'])
+    with bz2.open(path, 'rt') as file_:
+        for line in file_:
+            line = line.strip()
+            if not line:
+                continue
+            timestamp, _, nmea_message = line.partition(', ')
+            yield rowtype(
+                timestamp=time_from_timestamp(timestamp),
+                nmea_message=parse_nmea_message(nmea_message))
+
+
+def read_gps_from_file(path, *, name, base_frame, gps_frame, pose):
+    for _, pair in itertools.groupby(
+        read_compressed_nmea_logs(path),
+        key=lambda row: row.nmea_message.utc
+    ):
+        pair = list(pair)
+        if len(pair) != 2:
+            continue
+        gga_log, gst_log = pair
+        timestamp = gga_log.timestamp
+        gga = gga_log.nmea_message
+        gst = gst_log.nmea_message
+
+        msg = NavSatFix()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = gps_frame
+        if gga.quality == 1:
+            msg.status.status = NavSatStatus.STATUS_FIX
+        elif gga.quality == 2:
+            msg.status.status = NavSatStatus.STATUS_SBAS_FIX
+        elif gga.quality in (4, 5):
+            msg.status.status = NavSatStatus.STATUS_GBAS_FIX
+        else:
+            msg.status.status = NavSatStatus.STATUS_NO_FIX
+        msg.status.service = NavSatStatus.SERVICE_GPS
+        msg.latitude = gga.latitude
+        msg.longitude = gga.longitude
+        msg.altitude = gga.height
+        msg.position_covariance[0] = gst.longitude_sigma**2
+        msg.position_covariance[4] = gst.latitude_sigma**2
+        msg.position_covariance[8] = gst.height_sigma**2
+        msg.position_covariance_type = \
+            NavSatFix.COVARIANCE_TYPE_DIAGONAL_KNOWN
+        yield timestamp, name, msg
+
+        msg = TransformStamped()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = base_frame
+        msg.child_frame_id = gps_frame
+        msg.transform.translation = \
+            translation_as_msg(translation_from_matrix(pose))
+        msg.transform.rotation = \
+            quaternion_as_msg(quaternion_from_matrix(pose))
+        yield timestamp, '/tf', TFMessage([msg])
+
+
+# Manually collected from Rawseeds plain text files
+SENSOR_ARRANGEMENTS = {
+    '04': {
+        'sick_front': compose_matrix(translate=[0.080, 0., 0.450]),
+        'sick_rear':  compose_matrix(
+            angles=[0., 0., math.pi],
+            translate=[-0.463, 0.001, 0.454]),
+        'imu': compose_matrix(translate=[-0.192, -0.007, 0.537]),
+    },
+    '02': {
+        'sick_front': compose_matrix(translate=[0.048, 0., 0.450]),
+        'sick_rear':  compose_matrix(
+            angles=[0., 0., math.pi],
+            translate=[-0.495, 0.001, 0.454]),
+        'imu': compose_matrix(translate=[-0.224, -0.007, 0.537]),
+        'gps': compose_matrix(translate=[-0.021, 0.164, 1.375]),
+    },
+    '01': {
+        'sick_front': compose_matrix(translate=[0.048, 0., 0.450]),
+        'sick_rear':  compose_matrix(
+            angles=[0., 0., math.pi],
+            translate=[-0.495, 0.001, 0.454]),
+        'imu': compose_matrix(translate=[-0.224, -0.007, 0.537]),
+        'gps': compose_matrix(translate=[-0.021, 0.164, 1.375]),
+    }
+}
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Convert Rawseeds datasets into ROS 1 bagfiles')
+    parser.add_argument(
+        '-r', '--root-path', type=pathlib.Path,
+        default=pathlib.Path.cwd(), help=(
+            'Root directory path of Rawseeds dataset to convert. '
+            'It defaults to the current working directory.'))
+    parser.add_argument(
+        '-b', '--output-bag', default=None, help=(
+            'Full path to output bagfile. '
+            'It defauls to the root directory path basename.'))
+    parser.add_argument(
+        '-p', '--prefix', default=None, help=(
+            'Prefix of Rawseeds dataset. It defaults to '
+            'LOCATION_DATE as deduced from the root directory '
+            'path basename assuming the LOCATION_DATE_TYPE pattern holds.'
+        ))
+    args = parser.parse_args()
+
+    args.root_path = args.root_path.resolve()
+
+    if args.output_bag is None:
+        args.output_bag = f'{args.root_path.name}.bag'
+
+    os.makedirs(os.path.dirname(args.output_bag), exist_ok=True)
+
+    if args.prefix is None:
+        args.prefix = '_'.join(args.root_path.name.split('_')[:2])
+
+    paths = list(args.root_path.glob('SensorPositions_*'))
+    if not paths:
+        parser.error(f'{args.root_path} is not a valid dataset, a SensorPositions* folder is missing')
+    arrangement = str(paths[0])[-2:]
+
+    streams = []
+
+    path_to_sick_front_file = args.root_path / f'{args.prefix}-SICK_FRONT.csv.bz2'
+    if path_to_sick_front_file.exists():
+        streams.append(read_laserscan_from_file(
+            path=path_to_sick_front_file, name='/scan/front',
+            base_frame='base_link', laser_frame='sick_front_link',
+            pose=SENSOR_ARRANGEMENTS[arrangement]['sick_front'],
+            max_range=80., aperture_angle=math.radians(180.),
+            angular_resolution=math.radians(1.),
+        ))
+
+    path_to_sick_rear_file = args.root_path / f'{args.prefix}-SICK_REAR.csv.bz2'
+    if path_to_sick_rear_file.exists():
+        streams.append(read_laserscan_from_file(
+            path=path_to_sick_rear_file, name='/scan/rear',
+            base_frame='base_link', laser_frame='sick_rear_link',
+            pose=SENSOR_ARRANGEMENTS[arrangement]['sick_rear'],
+            max_range=80., aperture_angle=math.radians(180.),
+            angular_resolution=math.radians(1.)
+        ))
+
+    path_to_imu_file = args.root_path / f'{args.prefix}-IMU_STRETCHED.csv.bz2'
+    if path_to_imu_file.exists():
+        streams.append(read_imu_from_file(
+            path=path_to_imu_file, name='/imu',
+            base_frame='base_link', imu_frame='imu_link',
+            pose=SENSOR_ARRANGEMENTS[arrangement]['imu']
+        ))
+
+    path_to_odometry_file = args.root_path / f'{args.prefix}-ODOMETRY_XYT.csv.bz2'
+    if path_to_odometry_file.exists():
+        streams.append(read_odometry_from_file(
+            path=path_to_odometry_file, name='/odom',
+            odom_frame='odom', base_frame='base_link'
+        ))
+
+    path_to_groundtruth_file = args.root_path / f'{args.prefix}-GROUNDTRUTH.csv.bz2'
+    if path_to_groundtruth_file.exists():
+        streams.append(read_groundtruth_from_file(
+            path=path_to_groundtruth_file,
+            name='/gt', source_frame='world', target_frame='base_link'
+        ))
+
+    path_to_gps_file = args.root_path / f'{args.prefix}-GPS.csv.bz2'
+    if path_to_gps_file.exists():
+        streams.append(read_gps_from_file(
+            path=path_to_gps_file, name='/fix',
+            base_frame='base_link', gps_frame='gps',
+            pose=SENSOR_ARRANGEMENTS[arrangement]['gps']
+        ))
+
+    with rosbag.Bag(args.output_bag, mode='w', compression='bz2') as bag:
+        by_timestamp = (lambda data: data[0])
+        for t, source, msg in heapq.merge(*streams, key=by_timestamp):
+            bag.write(source, msg, t)
+
+
+if __name__ == '__main__':
+    main()

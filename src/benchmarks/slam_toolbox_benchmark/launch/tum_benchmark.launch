@@ -1,0 +1,7 @@
+<launch>
+  <arg name="main_node_prefix" default="$(optenv LAMBKIN_MAIN_NODE_PREFIX)"/>
+  <node pkg="slam_toolbox" type="async_slam_toolbox_node" name="slam_toolbox"
+        launch-prefix="$(arg main_node_prefix)" output="screen">
+    <rosparam command="load" file="$(find slam_toolbox_benchmark)/config/tum_benchmark.yaml" />
+  </node>
+</launch>

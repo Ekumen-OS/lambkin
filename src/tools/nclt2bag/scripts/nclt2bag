@@ -1,0 +1,537 @@
+#! /usr/bin/env python3
+
+import argparse
+import glob
+import heapq
+import io
+import pathlib
+import struct
+import tarfile
+import tempfile
+
+import rospy
+import rosbag
+
+import numpy as np
+from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Slerp
+from scipy.interpolate import interp1d
+
+from tf.transformations import compose_matrix
+from tf.transformations import quaternion_from_euler
+from tf.transformations import quaternion_from_matrix
+from tf.transformations import translation_from_matrix
+
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Vector3
+from nav_msgs.msg import Odometry
+from std_msgs.msg import Header
+from std_msgs.msg import Float64
+from std_msgs.msg import UInt16
+from sensor_msgs.point_cloud2 \
+    import create_cloud as create_point_cloud
+from sensor_msgs.msg import PointField
+from sensor_msgs.msg import Imu
+from sensor_msgs.msg import MagneticField
+from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatStatus
+from tf2_msgs.msg import TFMessage
+
+
+def transform_as_msg(stamp, target_frame, source_frame, pose):
+    msg = TransformStamped()
+    msg.header.stamp = stamp
+    msg.header.frame_id = target_frame
+    msg.child_frame_id = source_frame
+    msg.transform.translation = Vector3(
+        *translation_from_matrix(pose))
+    msg.transform.rotation = Quaternion(
+        *quaternion_from_matrix(pose))
+    return msg
+
+
+def ned2enu_transform_as_msg(stamp, target_frame, source_frame):
+    msg = ned2enu_transform_as_msg.prototype
+    msg.header.stamp = stamp
+    msg.header.frame_id = target_frame
+    msg.child_frame_id = source_frame
+    return msg
+
+
+ned2enu_transform_as_msg.prototype = TransformStamped()
+ned2enu_transform_as_msg.prototype.transform.rotation = \
+    Quaternion(*quaternion_from_euler(np.deg2rad(180), 0, 0))
+
+ui = np.triu_indices(6)
+li = np.tril_indices(6)
+
+
+def covariance_matrix(upper_triangle):
+    cov = np.zeros((6, 6))
+    cov[ui] = upper_triangle
+    cov[li] = cov.T[li]
+    return cov
+
+
+def throttle(period):
+    last_time = None
+
+    def _skip(time):
+        nonlocal last_time
+        if last_time is not None and \
+           (time - last_time) < period:
+            return True
+        last_time = time
+        return False
+    return _skip
+
+
+def read_odometry_from_files(mean_file, covariance_file):
+    means = np.loadtxt(mean_file, delimiter=',')
+    covariances = np.loadtxt(covariance_file, delimiter=',')
+    skip = throttle(rospy.Duration(0.2))
+    for mean, covariance in zip(means, covariances):
+        t, x, y, z, roll, pitch, yaw = mean
+        assert t == covariance[0]
+        covariance = covariance[1:]
+
+        timestamp = rospy.Time.from_sec(t / 1e6)
+        topic_data = []
+
+        quat = quaternion_from_euler(roll, pitch, yaw)
+
+        msg = Odometry()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = 'odom_ned'
+        msg.child_frame_id = 'base_link_ned'
+        msg.pose.pose.position = Point(x, y, z)
+        msg.pose.pose.orientation = Quaternion(*quat)
+        msg.pose.covariance = \
+            covariance_matrix(covariance).reshape(-1)
+        topic_data.append(('/odom_ned', msg))
+
+        msg = TransformStamped()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = 'odom_ned'
+        msg.child_frame_id = 'base_link_ned'
+        msg.transform.translation = Vector3(x, y, z)
+        msg.transform.rotation = Quaternion(*quat)
+        topic_data.append(('/tf', TFMessage([msg])))
+
+        if not skip(timestamp):
+            topic_data.append(('/tf', TFMessage([
+                ned2enu_transform_as_msg(timestamp, 'odom_ned', 'odom'),
+                ned2enu_transform_as_msg(timestamp, 'base_link_ned', 'base_link'),
+            ])))
+
+        yield timestamp, topic_data
+
+
+def read_groundtruth_data_from_files(
+    mean_file, covariance_file=None
+):
+    means = np.loadtxt(mean_file, delimiter=',')
+    times = means[:, 0]
+    means = means[:, 1:]
+    if covariance_file is not None:
+        covariances = np.loadtxt(covariance_file, delimiter=',')
+        interp = interp1d(
+            covariances[:, 0], covariances[:, 1:],
+            kind='nearest', fill_value='extrapolate', axis=0)
+        covariances = interp(times)
+    else:
+        covariances = np.full((len(means), 21), -1)
+
+    skip = throttle(rospy.Duration(0.2))
+    for t, mean, covariance in zip(times, means, covariances):
+        x, y, z, roll, pitch, yaw = mean
+        quat = quaternion_from_euler(roll, pitch, yaw)
+
+        timestamp = rospy.Time.from_sec(t / 1e6)
+        topic_data = []
+
+        msg = PoseWithCovarianceStamped()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = 'world_ned'
+        msg.pose.pose.position = Point(x, y, z)
+        msg.pose.pose.orientation = Quaternion(*quat)
+        msg.pose.covariance = \
+            covariance_matrix(covariance).reshape(-1)
+        topic_data.append(('/gt_ned', msg))
+
+        msg = TransformStamped()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = 'world_ned'
+        msg.child_frame_id = 'base_link_ned'
+        msg.transform.translation = Vector3(x, y, z)
+        msg.transform.rotation = Quaternion(*quat)
+        topic_data.append(('/tf', TFMessage([msg])))
+
+        if not skip(timestamp):
+            topic_data.append(('/tf', TFMessage([
+                ned2enu_transform_as_msg(timestamp, 'world_ned', 'world'),
+                ned2enu_transform_as_msg(timestamp, 'base_link_ned', 'base_link')])
+            ))
+
+        yield timestamp, topic_data
+
+
+def verify_magic(s):
+    magic = 44444
+    values = struct.unpack('<HHHH', s)
+    return len(values) == 4 and all(
+        value == magic for value in values
+    )
+
+
+def convert_range(x):
+    offset = -100.0
+    scaling = 0.005  # 5 mm
+    return x * scaling + offset
+
+
+def read_velodyne_scans_from_file(path):
+    tf_msg = transform_as_msg(
+        rospy.Time(),
+        'base_link_ned', 'velodyne_link',
+        pose=compose_matrix(
+            translate=[0.002, -0.004, -0.957],
+            angles=[np.deg2rad(0.807),
+                    np.deg2rad(0.166),
+                    np.deg2rad(-90.703)]
+        )
+    )
+
+    fields = [
+        PointField('x', 0, PointField.FLOAT32, 1),
+        PointField('y', 4, PointField.FLOAT32, 1),
+        PointField('z', 8, PointField.FLOAT32, 1),
+        PointField('intensity', 12, PointField.UINT8, 1),
+        PointField('ring', 13, PointField.UINT8, 1)]
+
+    skip = throttle(rospy.Duration(0.2))
+    with open(path, 'rb') as file_:
+        while True:
+            magic = file_.read(8)
+            if not magic:  # eof
+                break
+
+            assert verify_magic(magic)
+
+            num_hits = struct.unpack('<I', file_.read(4))[0]
+            t = struct.unpack('<Q', file_.read(8))[0]
+            timestamp = rospy.Time.from_sec(t / 1e6)
+            topic_data = []
+
+            file_.read(4)  # padding
+
+            header = Header()
+            header.stamp = timestamp
+            header.frame_id = 'velodyne_link'
+            # Read all hits
+            points = []
+            for _ in range(num_hits):
+                x = convert_range(struct.unpack('<H', file_.read(2))[0])
+                y = convert_range(struct.unpack('<H', file_.read(2))[0])
+                z = convert_range(struct.unpack('<H', file_.read(2))[0])
+                i = struct.unpack('B', file_.read(1))[0]
+                r = struct.unpack('B', file_.read(1))[0]
+                points.append([x, y, z, i, r])
+
+            msg = create_point_cloud(header, fields, points)
+            topic_data.append(('/velodyne/scan', msg))
+
+            if not skip(timestamp):
+                tf_msg.header.stamp = timestamp
+                topic_data.append(('/tf', TFMessage([tf_msg])))
+
+            yield timestamp, topic_data
+
+
+def read_hokuyo_scans_from_file(
+    path, *, topic_name, base_frame, laser_frame,
+    pose, num_hits, angular_offset, angular_resolution
+):
+    tf_msg = transform_as_msg(
+        rospy.Time(), base_frame, laser_frame, pose)
+    skip = throttle(rospy.Duration(0.2))
+    with open(path, 'rb') as file_:
+        while True:
+            data = file_.read(8)
+            if not data:
+                break
+
+            t = struct.unpack('<Q', data)[0]
+
+            timestamp = rospy.Time.from_sec(t / 1e6)
+            topic_data = []
+
+            msg = LaserScan()
+            msg.header.stamp = timestamp
+            msg.header.frame_id = laser_frame
+            msg.angle_max = \
+                angular_resolution * (num_hits - 1) + angular_offset
+            msg.angle_increment = angular_resolution
+            msg.angle_min = angular_offset
+            msg.ranges = np.zeros(num_hits)
+
+            for i in range(num_hits):
+                r = struct.unpack('<H', file_.read(2))[0]
+                msg.ranges[i] = convert_range(r)
+
+            topic_data.append((topic_name, msg))
+
+            if not skip(timestamp):
+                tf_msg.header.stamp = timestamp
+                topic_data.append(('/tf', TFMessage([tf_msg])))
+
+            yield timestamp, topic_data
+
+
+def read_hokuyo_4m_scans_from_file(path):
+    pose = compose_matrix(
+        translate=[0.31, 0, -0.38],
+        angles=[np.deg2rad(180), np.deg2rad(-40.0), 0]
+    )
+    yield from read_hokuyo_scans_from_file(
+        path, topic_name='/hokuyo_4m/scan', pose=pose,
+        base_frame='base_link_ned', laser_frame='hokuyo_4m_link',
+        num_hits=726, angular_offset=np.deg2rad(-119.5312),
+        angular_resolution=np.deg2rad(0.3516)
+    )
+
+
+def read_hokuyo_30m_scans_from_file(path):
+    pose = compose_matrix(
+        translate=[0.28, 0, -0.44],
+        angles=[np.deg2rad(180), 0, 0]
+    )
+    yield from read_hokuyo_scans_from_file(
+        path, topic_name='/hokuyo_30m/scan', pose=pose,
+        base_frame='base_link_ned', laser_frame='hokuyo_30m_link',
+        num_hits=1081, angular_offset=np.deg2rad(-135),
+        angular_resolution=np.deg2rad(0.25)
+    )
+
+
+def read_ms25_imu_data_from_files(measurements_file, estimations_file):
+    tf_msg = transform_as_msg(
+        rospy.Time(), 'base_link_ned', 'imu_link_ned',
+        pose=compose_matrix(translate=[-0.11, -0.18, -0.71])
+    )
+    measurements = np.loadtxt(measurements_file, delimiter=',')
+    estimations = np.loadtxt(estimations_file, delimiter=',')
+    times = estimations[:, 0]
+    rotations = estimations[:, 1:]
+    rotations = Rotation.from_euler('xyz', rotations)
+    trajectory = Slerp(times, rotations)
+    skip = throttle(rospy.Duration(0.2))
+    for t, mx, my, mz, ax, ay, az, wx, wy, wz in measurements:
+        timestamp = rospy.Time.from_sec(t / 1e6)
+        topic_data = []
+
+        msg = Imu()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = 'imu_link_ned'
+        if times[0] <= t and t <= times[-1]:
+            orientation, = trajectory([t])
+            msg.orientation = Quaternion(
+                *orientation.as_quat())
+        else:
+            msg.orientation.w = 1
+        msg.orientation_covariance[0] = -1
+        msg.angular_velocity.x = wx
+        msg.angular_velocity.y = wy
+        msg.angular_velocity.z = wz
+        msg.angular_velocity_covariance[0] = -1
+        msg.linear_acceleration.x = ax
+        msg.linear_acceleration.y = ay
+        msg.linear_acceleration.z = az
+        msg.linear_acceleration_covariance[0] = -1
+        topic_data.append(('/ms25/imu_ned', msg))
+
+        msg = MagneticField()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = 'imu_link_ned'
+        msg.magnetic_field.x = mx
+        msg.magnetic_field.y = my
+        msg.magnetic_field.z = mz
+        msg.magnetic_field_covariance[0] = -1
+        topic_data.append(('/ms25/mag_ned', msg))
+
+        if not skip(timestamp):
+            tf_msg.header.stamp = timestamp
+            topic_data.append(('/tf', TFMessage([tf_msg])))
+
+        yield timestamp, topic_data
+
+
+def read_gps_data_from_file(
+    file_, *, topic_prefix, base_frame, gps_frame, pose
+):
+    tf_msg = transform_as_msg(
+        rospy.Time(), base_frame, gps_frame, pose)
+    skip = throttle(rospy.Duration(0.2))
+    for row in np.loadtxt(file_, delimiter=','):
+        t, mode, num_sats, lat, lon, alt, track, speed = row
+
+        timestamp = rospy.Time.from_sec(t / 1e6)
+        topic_data = []
+
+        status = NavSatStatus()
+        if mode in (0, 1):
+            status.status = NavSatStatus.STATUS_NO_FIX
+        else:
+            status.status = NavSatStatus.STATUS_FIX
+        status.service = NavSatStatus.SERVICE_GPS
+
+        msg = NavSatFix()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = gps_frame
+        msg.status = status
+        msg.latitude = np.rad2deg(lat)
+        msg.longitude = np.rad2deg(lon)
+        msg.altitude = alt
+        msg.position_covariance[0] = -1
+        msg.position_covariance_type = \
+            NavSatFix.COVARIANCE_TYPE_UNKNOWN
+        topic_data.append((topic_prefix + '/fix', msg))
+
+        msg = UInt16()
+        msg.data = int(num_sats)
+        topic_data.append((topic_prefix + '/sats', msg))
+
+        msg = Float64()
+        msg.data = float(track)
+        topic_data.append((topic_prefix + '/track', msg))
+
+        msg = Float64()
+        msg.data = float(speed)
+        topic_data.append((topic_prefix + '/speed', msg))
+
+        if not skip(timestamp):
+            tf_msg.header.stamp = timestamp
+            topic_data.append(('/tf', TFMessage([tf_msg])))
+
+        yield timestamp, topic_data
+
+
+def read_garmin_gps_data_from_file(file_):
+    yield from read_gps_data_from_file(
+        file_, topic_prefix='/garmin',
+        base_frame='base_link_ned',
+        gps_frame='garmin_gps_link',
+        pose=compose_matrix(translate=[0, -0.25, -0.51]))
+
+
+def read_novatel_rtk_gps_data_from_file(file_):
+    yield from read_gps_data_from_file(
+        file_, topic_prefix='/novatel_rtk',
+        base_frame='base_link_ned',
+        gps_frame='novatel_rtk_link',
+        pose=compose_matrix(translate=[-0.24, 0, -1.24]))
+
+
+def merge_by_timestamp(*streams):
+    by_timestamp = (lambda data: data[0])
+    yield from heapq.merge(*streams, key=by_timestamp)
+
+
+def read_sensor_data_from_file(path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(path, mode='r') as tar:
+            tar.extractall(tmpdir)
+        subdir = next(pathlib.Path(tmpdir).glob('*'))
+        yield from merge_by_timestamp(
+            read_garmin_gps_data_from_file(subdir / 'gps.csv'),
+            read_novatel_rtk_gps_data_from_file(subdir / 'gps_rtk.csv'),
+            read_ms25_imu_data_from_files(
+                subdir / 'ms25.csv', subdir / 'ms25_euler.csv'),
+            read_odometry_from_files(subdir / 'odometry_mu_100hz.csv',
+                                     subdir / 'odometry_cov_100hz.csv'))
+
+
+def read_hokuyo_data_from_file(path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(path, mode='r') as tar:
+            tar.extractall(tmpdir)
+        subdir = next(pathlib.Path(tmpdir).glob('*'))
+        yield from merge_by_timestamp(
+            read_hokuyo_4m_scans_from_file(subdir / 'hokuyo_4m.bin'),
+            read_hokuyo_30m_scans_from_file(subdir / 'hokuyo_30m.bin'))
+
+
+def read_velodyne_data_from_file(path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(path, mode='r') as tar:
+            tar.extractall(tmpdir)
+        subdir = next(pathlib.Path(tmpdir).glob('*'))
+        yield from read_velodyne_scans_from_file(
+            subdir / 'velodyne_hits.bin')
+
+
+def nonexisting_path(value):
+    path = pathlib.Path(value)
+    if path.exists():
+        raise ValueError(f"'{path}' exists already")
+    return path
+
+
+def existing_path(value):
+    path = pathlib.Path(value)
+    if not path.exists():
+        raise ValueError(f"'{path}' does not exist")
+    return path
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Convert NCLT datasets into ROS 1 bagfiles')
+    parser.add_argument(
+        '-o', '--output-bag-path', type=nonexisting_path, default='nclt.bag',
+        help='Path to output bagfile. It defaults to nclt.bag.')
+    parser.add_argument(
+        '-s', '--sensor-data-path', type=existing_path,
+        help='Path to NCLT sensor data as a compressed tarfile.')
+    parser.add_argument(
+        '-k', '--hokuyo-data-path', type=existing_path,
+        help='Path to NCLT Hokuyo lidars data as a compressed tarfile.')
+    parser.add_argument(
+        '-l', '--velodyne-data-path', type=existing_path,
+        help='Path to NCLT Velodyne lidar data as a compressed tarfile.')
+    parser.add_argument(
+        '-g', '--ground-truth-path', type=existing_path,
+        help='Path to NCLT ground-truth data as a CSV file.')
+    parser.add_argument(
+        '-c', '--ground-truth-covariance-path', type=existing_path,
+        help='Path to NCLT ground-truth covariance data as a CSV file.')
+    args = parser.parse_args()
+
+    streams = []
+
+    if args.sensor_data_path:
+        streams.append(read_sensor_data_from_file(args.sensor_data_path))
+
+    if args.hokuyo_data_path:
+        streams.append(read_hokuyo_data_from_file(args.hokuyo_data_path))
+
+    if args.velodyne_data_path:
+        streams.append(read_velodyne_data_from_file(args.velodyne_data_path))
+
+    if args.ground_truth_path:
+        streams.append(read_groundtruth_data_from_files(
+            args.ground_truth_path, args.ground_truth_covariance_path
+        ))
+
+    with rosbag.Bag(str(args.output_bag_path), mode='w', compression='bz2') as bag:
+        for t, data in merge_by_timestamp(*streams):
+            for topic, msg in data:
+                bag.write(topic, msg, t)
+
+
+if __name__ == '__main__':
+    main()

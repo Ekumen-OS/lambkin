@@ -1,0 +1,93 @@
+#!/bin/bash
+
+PACKAGE=cartographer_ros_benchmark
+
+IMAGE=$PACKAGE:latest
+CONTAINER=lambkin_cartographer_ros
+
+usage()
+{
+    echo "usage: $0 [-h|--help] [--interactive] [-b|--bind PACKAGE:PATH ...] [--rebind] [--rebuild] [-i|--image DOCKER_IMAGE] EXECUTABLE ARGS"
+}
+
+OPTS=$(getopt -o 'b:,h,i:' -l 'bind:,help,image:,interactive,rebind,rebuild' -n "$0" -- "$@")
+if [ $? -ne 0 ]; then
+    exit $?
+fi
+eval set -- "$OPTS"
+unset OPTS
+
+while true; do
+    case "$1" in
+        '-b'|'--bind')
+            IFS=: read -r package path <<< "$2"
+            PACKAGE_MOUNT_FLAGS="$PACKAGE_MOUNT_FLAGS -v $path:/root/ws/src/$package"
+            unset package path
+            shift 2
+            ;;
+        '-h'|'--help')
+            usage
+            exit 0
+            ;;
+        '-i'|'--image')
+            IMAGE=$2
+            shift 2
+            ;;
+        '--interactive')
+            INTERACTIVE=true
+            shift 1
+            ;;
+        '--rebind')
+            current=$(dirname $(readlink -f -- $0))/..
+            PACKAGE_MOUNT_FLAGS="$PACKAGE_MOUNT_FLAGS -v $current:/root/ws/src/$PACKAGE"
+            unset current
+            shift 1
+            ;;
+        '--rebuild')
+            ENTRYPOINT_FLAGS="$ENTRYPOINT_FLAGS --rebuild"
+            shift 1
+            ;;
+        '--')
+            shift
+            break
+            ;;
+        *)
+            echo 'Internal error!' >&2
+            exit 1
+            ;;
+    esac
+done
+
+docker_run()
+{
+    docker run --rm -it \
+        --gpus all \
+        --volume $(pwd):/root/work \
+        $NAME_FLAGS \
+        $X11_FLAGS \
+        $NVIDIA_FLAGS \
+        $PACKAGE_MOUNT_FLAGS \
+        $IMAGE $ENTRYPOINT_FLAGS $@
+}
+
+if [ "$INTERACTIVE" = true ]; then
+    if [ -z "$*" ]; then
+        set -- "$@" bash
+    fi
+
+    if [ $(docker ps --quiet --filter name=$CONTAINER) ]; then
+        echo "Container $CONTAINER is already running"
+        docker exec -it $CONTAINER /boot/entrypoint.sh bash
+        exit 0
+    fi
+
+    NAME_FLAGS="--name $CONTAINER -h $CONTAINER"
+    X11_FLAGS="-e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix"
+    NVIDIA_FLAGS="-e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=graphics"
+
+    xhost +local:docker
+    docker_run "$@"
+    xhost -local:docker
+else
+    docker_run "$@"
+fi
