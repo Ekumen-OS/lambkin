@@ -33,7 +33,7 @@ ${INPUT_DIR}      %{INPUT_DIR=.}
 
 Create Json File
     [Arguments]  ${path}  &{dict}
-    ${json} =  Json.Dumps  ${dict}
+    ${json} =  Json.Dumps  ${dict}  indent=${2}
     Create File  ${path}  ${json}
 
 Log ROS Parameters
