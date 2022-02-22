@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 
 from evo.core.result import Result
 from evo.tools import file_interface, pandas_bridge
@@ -36,56 +34,66 @@ class EvoAggregator(Aggregator):
         super().__init__(metrics, dirpaths)
 
         results: List[Result] = [
-            file_interface.load_res_file(directory / f'{self.metric}.zip')
-            for directory in dirpaths
+            file_interface.load_res_file(dirpath / f'{self.metric}.zip')
+            for dirpath in dirpaths
         ]
 
         self.df_results = pd.concat([
-            pandas_bridge.result_to_df(result, dirname)
-            for result, dirname in zip(results, dirpaths)
+            pandas_bridge.result_to_df(result, int(dirpath.name))
+            for result, dirpath in zip(results, dirpaths)
         ], axis='columns')
 
-        self.df_metrics = self.df_results.loc['stats', 'rmse'].T.rename(f'{self.metric.upper()} rmse (m)')
+        self.df_metrics = pd.DataFrame(
+            self.df_results.loc['stats', 'rmse'].T.rename(f'{self.metric}_rmse'))
+        self.df_metrics.index.name = 'run_id'
+
+        # Collect all trajectory files in TUM format
+        traj_list: List[pd.DataFrame] = []
+        for dirpath in dirpaths:
+            for path in dirpath.iterdir():
+                if path.is_file() and path.suffix == '.tum':
+                    traj = file_interface.read_tum_trajectory_file(path)
+                    df = pandas_bridge.trajectory_to_df(traj)
+                    df.index.name = 'time'
+                    df = df.reset_index()
+                    df['time'] = df['time'] - df.loc[0, 'time']
+                    df['traj'] = path.stem
+                    df['run_id'] = int(dirpath.name)
+                    traj_list.append(df)
+        df_traj = pd.concat(traj_list).sort_values(by=['time'])
+
+        error_arrays = self.df_results.loc['np_arrays', 'error_array'].tolist()
+        time_arrays = self.df_results.loc['np_arrays', 'seconds_from_start'].tolist()
+
+        self.df_timeseries = pd.DataFrame(error_arrays, self.df_results.columns).T
+        self.df_timeseries.index.name = 'index'
+        # Average timepoints between all runs
+        self.df_timeseries['time'] = pd.DataFrame(time_arrays).T.mean(axis='columns')
+
+        melted_df = pd.melt(
+            frame = self.df_timeseries,
+            id_vars = ['time'],
+            var_name = 'run_id',
+            value_name = self.metric,
+            ignore_index = False
+        ).sort_values(by=['time'])
+
+        # 'pd.melt' changes run_id type to object, convert back to int
+        melted_df["run_id"] = pd.to_numeric(melted_df["run_id"])
+
+        # Match metric values to nearest trajectory timepoint
+        self.df_timeseries = pd.merge_asof(df_traj, melted_df, on='time', by='run_id')
+        self.df_timeseries.set_index('time', inplace=True)
 
     @classmethod
     def get_supported_metrics(cls) -> Set[str]:
         return {cls.metric} if cls.metric else {}
 
-    def get_dataframe(self) -> pd.DataFrame:
+    def get_metrics_by_run(self) -> pd.DataFrame:
         return self.df_metrics
 
-    def generate_figures(self) -> Generator[Tuple[str, plt.Figure], None, None]:
-        yield f'{self.metric.upper()}', self._figure()
-
-    def _get_timeseries(self) -> pd.DataFrame:
-        error_arrays = self.df_results.loc['np_arrays', 'error_array'].tolist()
-        time_arrays = self.df_results.loc['np_arrays', 'seconds_from_start'].tolist()
-
-        df = pd.DataFrame(error_arrays, self.df_results.columns).T
-        df['time'] = pd.DataFrame(time_arrays).T.mean(axis='columns')
-
-        return df.set_index('time')
-
-    def _figure(self) -> plt.Figure:
-        melted_df = pd.melt(
-            frame = self._get_timeseries(),
-            var_name = 'name',
-            value_name = 'value',
-            ignore_index = False
-        ).reset_index()
-
-        title = self.df_results.loc['info', 'title'][0]
-
-        fig, axes = plt.subplots(1, 2, figsize=(10,5))
-        axes[0].set_title(f'{title}\nTime series with 95% confidence intervals')
-        axes[0].set(xlabel='t (s)', ylabel=f'{self.metric.upper()} (m)')
-
-        axes[1].set_title(f'{title}\nHistogram')
-        axes[1].set(xlabel=f'{self.metric.upper()} rmse (m)', ylabel='Percentage of iterations (%)')
-
-        sns.lineplot(data=melted_df, x='time', y='value', n_boot=20, ax=axes[0])
-        sns.histplot(data=self.df_metrics, stat='percent', kde=True, ax=axes[1])
-        return fig
+    def generate_timeseries(self) -> Generator[Tuple[str, pd.DataFrame], None, None]:
+        yield self.metric, self.df_timeseries
 
 
 class ApeAggregator(EvoAggregator):

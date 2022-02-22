@@ -14,7 +14,6 @@
 
 from abc import ABC, abstractmethod
 
-from matplotlib.pyplot import Figure
 from pandas import DataFrame
 from pathlib import Path
 
@@ -57,12 +56,12 @@ class Aggregator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_dataframe(self) -> DataFrame:
-        """Returns a dataframe using directory names as index and one
-        or more metrics as columns."""
+    def get_metrics_by_run(self) -> DataFrame:
+        """Returns a dataframe using directory names as index and the
+        selected metrics as columns."""
         raise NotImplementedError
 
     @abstractmethod
-    def generate_figures(self) -> Generator[Tuple[str, Figure], None, None]:
-        """Generates figures containing plots for these metrics."""
+    def generate_timeseries(self) -> Generator[Tuple[str, DataFrame], None, None]:
+        """Generates time series of the selected metrics."""
         raise NotImplementedError
