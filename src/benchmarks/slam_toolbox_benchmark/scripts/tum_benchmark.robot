@@ -1,4 +1,4 @@
-#!/usr/bin/env -S lambkin robot -d tum_benchmark -f
+#!/usr/bin/env -S lambkin robot -f
 # Copyright 2022 Ekumen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
