@@ -292,11 +292,14 @@ Use ${launch_file} in ${package} package to launch
 Generate report using ${report} in ${package} package
     # TODO(nahuel): have a declarative way of running this on Suite Teardown
     ${package_path} =  Find ROS Package  ${package}
-    Copy Files  ${package_path}/config/${report}  ${SUITE_SOURCE}  ${OUTPUT_DIR}
-    ${result} =  Run Process  rst2pdf  ${report}  -o  report.pdf
+    ${report_project_path} =  Join Path  ${package_path}  ${report}
+    Copy Files  ${report_project_path}/*  ${OUTPUT_DIR}
+    Copy File  ${SUITE_SOURCE}  ${OUTPUT_DIR}
+    ${result} =  Run Process  sphinx-build  -M  latexpdf  .  build
     ...          cwd=${OUTPUT_DIR}
-    ${_}  ${basename} =  Split Path  ${SUITE_SOURCE}
-    Remove Files  ${OUTPUT_DIR}/${report}  ${OUTPUT_DIR}/${basename}
+    Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
+    ${report_result_path} =  Join Path  ${OUTPUT_DIR}  build  latex  report.pdf
+    Copy File  ${report_result_path}  ${OUTPUT_DIR}
 
 Wait for ${system} system
     Sleep  3 seconds
