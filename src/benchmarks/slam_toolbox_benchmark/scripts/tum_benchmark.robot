@@ -18,8 +18,7 @@ Resource          lambkin.resource
 
 Test Template     Benchmark SLAM Toolbox 2D SLAM
 Suite Setup       Lambkin Setup
-Suite Teardown    Run Keyword If All Tests Passed
-...               Generate report using tum_report.rst in slam_toolbox_benchmark package
+Suite Teardown    Benchmark Teardown
 
 *** Test Cases ***         DATASET
 Freiburg2 Pioneer 360      rgbd_dataset_freiburg2_pioneer_360.bag
@@ -30,9 +29,15 @@ Freiburg2 Pioneer SLAM 3   rgbd_dataset_freiburg2_pioneer_slam3.bag
 *** Keywords ***
 Benchmark SLAM Toolbox 2D SLAM
     [Arguments]  ${dataset}
+    Register Parameters  dataset=${dataset}
     Use /tf /scan data in ${dataset} as input
     Track /tf:world.kinect /tf:map.base_link trajectories
     And save the resulting map
     Use tum_benchmark.launch in slam_toolbox_benchmark package to launch
     Use a sampling rate of 20 Hz to track computational performance
     Benchmark SLAM Toolbox for 10 iterations
+
+Benchmark Teardown
+    Lambkin Teardown
+    Run Keyword If All Tests Passed
+    ...  Generate report using docs/tum_report in slam_toolbox_benchmark package
