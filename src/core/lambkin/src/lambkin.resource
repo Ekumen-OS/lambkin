@@ -318,20 +318,6 @@ Before ${system} system shutdown
 After ${system} system shutdown
     Run Registered Keywords  After system shutdown
 
-Register Parameters
-    [Arguments]  &{params}
-    Set Test Variable  ${TEST_PARAMS}  ${params}
-    ${items} =  Get Dictionary Items  ${params}
-    FOR  ${key}  ${value}  IN  @{items}
-        ${name} =  Convert To Upper Case  ${key}
-        ${name} =  Replace String  ${name}  ${SPACE}  _
-        Set Environment Variable  TEST_PARAM_${name}  ${value}
-    END
-
-Get Parameters
-    ${params} =  Get Variable Value  ${TEST_PARAMS}  &{EMPTY}
-    [return]  ${params}
-
 Convert To Directory Name
     [Arguments]  ${name}
     ${filename} =  Convert To Lower Case  ${name}
@@ -346,11 +332,9 @@ Benchmark ${system} for ${iterations} iterations
     Empty Directory  ${prefix}
     Set Test Variable  ${TEST_DIR}  ${prefix}
     ${timestamp} =  Get Current Date
-    ${params} =  Get Parameters
     ${metadata_path} =  Join Path  ${prefix}  metadata.json
     Create Json File  ${metadata_path}
     ...  name=${TEST_NAME}
-    ...  params=${params}
     ...  timestamp=${timestamp}
     ...  iterations=${iterations}
     ...  system=${system}
