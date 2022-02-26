@@ -35,11 +35,14 @@ RUN apt-get update \
     dvipng \
     git \
     gnupg2 \
+    latexmk \
+    librsvg2-bin \
     lsb-release \
     mesa-utils \
     python3 \
     python3-dev \
     python3-pip \
+    python3-sphinx \
     python3-tk \
     rst2pdf \
     sudo \
@@ -86,6 +89,7 @@ RUN pip install \
   numpy==1.18.5 \
   python-dateutil==2.8.1 \
   robotframework==4.1.3 \
+  sphinxcontrib-svg2pdfconverter==1.2.0 \
   svglib==1.1.0
 
 # Setup LAMBKIN environment
