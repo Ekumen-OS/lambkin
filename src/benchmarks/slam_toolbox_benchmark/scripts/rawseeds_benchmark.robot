@@ -17,6 +17,7 @@
 Resource          lambkin.resource
 
 Test Template     Benchmark SLAM Toolbox 2D SLAM
+Suite Setup       Lambkin Setup
 Suite Teardown    Run Keyword If All Tests Passed
 ...               Generate report using rawseeds_report.rst in slam_toolbox_benchmark package
 

@@ -71,7 +71,7 @@ For each metric, its median, mean, and standard deviation are provided.
 
 .. raw:: pdf
 
-   PageBreak   
+   PageBreak
 
 Results
 -------
@@ -86,20 +86,20 @@ Metrics
 *******
 
 .. csv-table:: Table 1. Statistical data for each metric
-   :file: indoors_with_static_illumination/metrics.csv
+   :file: tests/indoors_with_static_illumination/metrics.csv
    :header-rows: 1
 
-.. figure:: indoors_with_static_illumination/plot_APE.svg
+.. figure:: tests/indoors_with_static_illumination/plot_APE.svg
    :scale: 80 %
 
    Figure 1. APE over time and APE RMSE histogram
 
-.. figure:: indoors_with_static_illumination/plot_RPE.svg
+.. figure:: tests/indoors_with_static_illumination/plot_RPE.svg
    :scale: 80 %
 
    Figure 2. RPE over time and RPE RMSE histogram
 
-.. figure:: indoors_with_static_illumination/plot_rss_over_time.svg
+.. figure:: tests/indoors_with_static_illumination/plot_rss_over_time.svg
    :scale: 80 %
 
    Figure 3. RSS over time
@@ -111,12 +111,12 @@ Metrics
 Estimated trajectories
 **********************
 
-.. figure:: indoors_with_static_illumination/runs/1/ape_map.svg
+.. figure:: tests/indoors_with_static_illumination/runs/1/ape_map.svg
    :scale: 60 %
 
    Figure 4. APE mapped onto trajectory in the first run
 
-.. figure:: indoors_with_static_illumination/runs/1/map.pgm
+.. figure:: tests/indoors_with_static_illumination/runs/1/map.pgm
    :scale: 150 %
 
    Figure 5. Map generated in the first run

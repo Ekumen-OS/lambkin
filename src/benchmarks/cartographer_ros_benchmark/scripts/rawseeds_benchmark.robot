@@ -17,6 +17,7 @@
 Resource          lambkin.resource
 
 Test Template     Benchmark Cartographer ROS 2D SLAM
+Suite Setup       Lambkin Setup
 Suite Teardown    Run Keyword If All Tests Passed
 ...               Generate report using rawseeds_report.rst in cartographer_ros_benchmark package
 

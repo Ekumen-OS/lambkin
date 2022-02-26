@@ -36,7 +36,7 @@ Dataset
 ~~~~~~~
 
 Magazino dataset is published as part of the Cartographer Public Data repository and is
-commonly used for testing SLAM systems setup under ROS. 
+commonly used for testing SLAM systems setup under ROS.
 
 https://google-cartographer-ros.readthedocs.io/en/latest/data.html#magazino
 
@@ -63,7 +63,7 @@ For each metric, its median, mean, and standard deviation are provided.
 
 .. raw:: pdf
 
-   PageBreak   
+   PageBreak
 
 Results
 -------
@@ -78,20 +78,20 @@ Metrics
 *******
 
 .. csv-table:: Table 1. Statistical data for each metric
-   :file: hallway_return/metrics.csv
+   :file: tests/hallway_return/metrics.csv
    :header-rows: 1
 
-.. figure:: hallway_return/plot_APE.svg
+.. figure:: tests/hallway_return/plot_APE.svg
    :scale: 80 %
 
    Figure 1. APE over time and APE RMSE histogram
 
-.. figure:: hallway_return/plot_RPE.svg
+.. figure:: tests/hallway_return/plot_RPE.svg
    :scale: 80 %
 
    Figure 2. RPE over time and RPE RMSE histogram
 
-.. figure:: hallway_return/plot_rss_over_time.svg
+.. figure:: tests/hallway_return/plot_rss_over_time.svg
    :scale: 80 %
 
    Figure 3. RSS over time
@@ -103,12 +103,12 @@ Metrics
 Estimated trajectories
 **********************
 
-.. figure:: hallway_return/runs/1/ape_map.svg
+.. figure:: tests/hallway_return/runs/1/ape_map.svg
    :scale: 60 %
 
    Figure 4. APE mapped onto trajectory in the first run
 
-.. figure:: hallway_return/runs/1/map.pgm
+.. figure:: tests/hallway_return/runs/1/map.pgm
    :scale: 150 %
 
    Figure 5. Map generated in the first run
