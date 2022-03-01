@@ -23,7 +23,8 @@ import lambkin.aggregate as aggregate
 def robot(args):
     if '--' in args.remaining_args:
         args.remaining_args.remove('--')
-    if '-d' not in args.remaining_args:
+    if '-d' not in args.remaining_args and \
+       '--outputdir' not in args.remaining_args:
         args.remaining_args.extend(['-d', args.file.stem])
     path_to_executable = shutil.which('robot')
     args = [path_to_executable] + args.remaining_args + [args.file]
