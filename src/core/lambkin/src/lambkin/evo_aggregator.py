@@ -51,16 +51,15 @@ class EvoAggregator(Aggregator):
         # Collect all trajectory files in TUM format
         traj_list: List[pd.DataFrame] = []
         for dirpath in dirpaths:
-            for path in dirpath.iterdir():
-                if path.is_file() and path.suffix == '.tum':
-                    traj = file_interface.read_tum_trajectory_file(path)
-                    df = pandas_bridge.trajectory_to_df(traj)
-                    df.index.name = 'time'
-                    df = df.reset_index()
-                    df['time'] = df['time'] - df.loc[0, 'time']
-                    df['traj'] = path.stem
-                    df['run_id'] = dirpath.name
-                    traj_list.append(df)
+            for path in dirpath.glob('*.tum'):
+                traj = file_interface.read_tum_trajectory_file(path)
+                df = pandas_bridge.trajectory_to_df(traj)
+                df.index.name = 'time'
+                df = df.reset_index()
+                df['time'] = df['time'] - df.loc[0, 'time']
+                df['traj'] = path.stem
+                df['run_id'] = dirpath.name
+                traj_list.append(df)
         df_traj = pd.concat(traj_list).sort_values(by=['time'])
 
         error_arrays = self.df_results.loc['np_arrays', 'error_array'].tolist()

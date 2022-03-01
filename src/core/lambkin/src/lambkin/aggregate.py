@@ -87,27 +87,20 @@ def aggregate_metrics(args) -> None:
 
 def aggregate_results(args) -> None:
     # Collect metadata and dataframes from all the directories
-    metadatas: List[Dict] = []
     results: Dict[str, List[pd.DataFrame]] = dict()
     for dirpath in args.input:
-        for path in dirpath.iterdir():
-            if path.is_file():
-                if path.suffix == '.data':
-                    dataframe = import_from_file(path)
-                    dataframe.reset_index(inplace=True)
-                    results.setdefault(path.name, []).append(dataframe)
-                elif path.name == 'metadata.json':
-                    with open(path, 'r') as file:
-                        metadatas.append(json.load(file))
+        with open(dirpath / 'metadata.json', 'r') as file:
+            metadata = json.load(file)
 
-    for filename, dataframes in results.items():
-        for dataframe, metadata in zip(dataframes, metadatas):
+        for path in dirpath.glob('*.data'):
+            dataframe = import_from_file(path).reset_index()
             dataframe['test'] = metadata['name']
             for key, value in metadata['params'].items():
                 dataframe[key] = value
+            results.setdefault(path.name, []).append(dataframe)
 
-        df_results = pd.concat(dataframes, ignore_index=True)
-        df_results.index.name = 'index'
+    for filename, dataframes in results.items():
+        df_results = pd.concat(dataframes, ignore_index=True).rename_axis('index')
         export_to_file(df_results, args.output_path / filename)
 
 
