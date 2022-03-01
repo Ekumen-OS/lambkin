@@ -15,5 +15,5 @@ install(
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(
-  DIRECTORY config launch docs
+  DIRECTORY config launch reports
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
