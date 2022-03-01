@@ -55,11 +55,11 @@ class AggregatorFactory:
 
 
 def export_to_file(df: pd.DataFrame, path: Path) -> None:
-    df.to_csv(path)
+    df.to_hdf(path, 'df')
 
 
 def import_from_file(path: Path) -> pd.DataFrame:
-    return pd.read_csv(path, index_col=0)
+    return pd.read_hdf(path, 'df')
 
 
 def aggregate_metrics(args) -> None:

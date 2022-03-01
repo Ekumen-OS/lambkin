@@ -39,7 +39,7 @@ class TimemAggregator(Aggregator):
         series: List[pd.DataFrame] = []
         indexes: List[int] = []
         for dirpath in dirpaths:
-            run_id = int(dirpath.name)
+            run_id = dirpath.name
             indexes.append(run_id)
             path = dirpath / 'timem_output.json'
             with path.open('r') as f:
@@ -76,8 +76,7 @@ class TimemAggregator(Aggregator):
             'peak_rss': peak_rss,
             'cpu_usage': cpu_usage,
         }).set_index('run_id')
-        self.df_series = pd.concat(series, ignore_index=True)
-        self.df_series.set_index('time', inplace=True)
+        self.df_series = pd.concat(series, ignore_index=True).set_index('time')
 
     @classmethod
     def get_supported_metrics(cls) -> Set[str]:

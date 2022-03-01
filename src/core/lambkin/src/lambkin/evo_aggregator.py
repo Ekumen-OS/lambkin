@@ -39,13 +39,14 @@ class EvoAggregator(Aggregator):
         ]
 
         self.df_results = pd.concat([
-            pandas_bridge.result_to_df(result, int(dirpath.name))
+            pandas_bridge.result_to_df(result, dirpath.name)
             for result, dirpath in zip(results, dirpaths)
         ], axis='columns')
 
-        self.df_metrics = pd.DataFrame(
-            self.df_results.loc['stats', 'rmse'].T.rename(f'{self.metric}_rmse'))
-        self.df_metrics.index.name = 'run_id'
+        self.df_metrics = pd.DataFrame({
+            f'{self.metric}_rmse': pd.to_numeric(
+                self.df_results.loc['stats', 'rmse'])
+        }).rename_axis('run_id')
 
         # Collect all trajectory files in TUM format
         traj_list: List[pd.DataFrame] = []
@@ -58,7 +59,7 @@ class EvoAggregator(Aggregator):
                     df = df.reset_index()
                     df['time'] = df['time'] - df.loc[0, 'time']
                     df['traj'] = path.stem
-                    df['run_id'] = int(dirpath.name)
+                    df['run_id'] = dirpath.name
                     traj_list.append(df)
         df_traj = pd.concat(traj_list).sort_values(by=['time'])
 
@@ -77,9 +78,6 @@ class EvoAggregator(Aggregator):
             value_name = self.metric,
             ignore_index = False
         ).sort_values(by=['time'])
-
-        # 'pd.melt' changes run_id type to object, convert back to int
-        melted_df["run_id"] = pd.to_numeric(melted_df["run_id"])
 
         # Match metric values to nearest trajectory timepoint
         self.df_timeseries = pd.merge_asof(df_traj, melted_df, on='time', by='run_id')
