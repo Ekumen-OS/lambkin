@@ -20,6 +20,7 @@ Library           OperatingSystem
 Library           Process
 Library           String
 Library           DateTime
+Library           json
 
 Library           lambkin
 Library           lambkin.Hooks
@@ -29,6 +30,18 @@ ${INPUT_DIR}      %{INPUT_DIR=.}
 
 *** Keywords ***
 # TODO(hidmic): spread out content in different files
+
+Create Json File
+    [Arguments]  ${path}  &{dict}
+    ${json} =  Json.Dumps  ${dict}  indent=${2}
+    Create File  ${path}  ${json}
+
+Log ROS Parameters
+    [Arguments]  ${cwd}=.
+    ${result} =  Run Process  rosparam  dump  ros_param_dump.yaml  -v
+    ...          cwd=${cwd}
+    Log  ${result.stdout}
+    Log  ${result.stderr}
 
 Find ROS Package
     [Arguments]  ${package}
@@ -183,9 +196,9 @@ Run Keyword In Run Directory
     [Arguments]  ${keyword}  @{arguments}
     Run Keyword  ${keyword}  @{arguments}  cwd=${RUN_DIR}
 
-Run Keyword In Benchmark Directory
+Run Keyword In Test Directory
     [Arguments]  ${keyword}  @{arguments}
-    Run Keyword  ${keyword}  @{arguments}  cwd=${BENCHMARK_DIR}
+    Run Keyword  ${keyword}  @{arguments}  cwd=${TEST_DIR}
 
 Use ${duration} of ${topics:all|/.*} data in ${bags:.+\.bag$} at ${rate:(\d*\.)?\d+}x as input, but start ${start} in
     Register Keyword  After system bring up
@@ -237,7 +250,7 @@ Track ${trajectories} trajectories
     Register Keyword  After system shutdown
     ...               Run Keyword In Run Directory  Compute RPE  outcome.bag  @{trajectories}
     Register Keyword  After finishing benchmark
-    ...               Run Keyword In Benchmark Directory  Aggregate metrics  ape  rpe
+    ...               Run Keyword In Test Directory  Aggregate metrics  ape  rpe
 
 Save the resulting map
     Register Keyword  Before system shutdown
@@ -254,13 +267,15 @@ Use a sampling rate of ${freq} Hz to track computational performance
     Register Keyword  Before system bring up  Set timem output path
     Register Keyword  After system shutdown  Wait for timem output
     Register Keyword  After finishing benchmark
-    ...               Run Keyword In Benchmark Directory  Aggregate metrics  cpu_usage  peak_rss  virtual_memory
+    ...               Run Keyword In Test Directory  Aggregate metrics  cpu_usage  peak_rss  virtual_memory
 
 Use ${launch_file} in ${package} package to launch
     Register Keyword  Before starting iteration
     ...               Bring Up ROS Core
     Register Keyword  System bring up
     ...               Bring Up ROS System  ${package}  ${launch_file}
+    Register Keyword  After system bring up
+    ...               Run Keyword In Run Directory  Log ROS Parameters
     Register Keyword  System shutdown
     ...               Shutdown ROS System
     Register Keyword  After finishing iteration
@@ -271,8 +286,9 @@ Generate report using ${report} in ${package} package
     ${package_path} =  Find ROS Package  ${package}
     Copy Files  ${package_path}/config/${report}  ${SUITE_SOURCE}  ${OUTPUT_DIR}
     ${result} =  Run Process  rst2pdf  ${report}  -o  report.pdf
+    ...          cwd=${OUTPUT_DIR}
     ${_}  ${basename} =  Split Path  ${SUITE_SOURCE}
-    Remove Files  ${report}  ${basename}
+    Remove Files  ${OUTPUT_DIR}/${report}  ${OUTPUT_DIR}/${basename}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
 
 Wait for ${system} system
@@ -302,14 +318,26 @@ Before ${system} system shutdown
 After ${system} system shutdown
     Run Registered Keywords  After system shutdown
 
+Convert To Directory Name
+    [Arguments]  ${name}
+    ${filename} =  Convert To Lower Case  ${name}
+    ${filename} =  Replace String  ${filename}  ${SPACE}  _
+    [Return]  ${filename}
+
 Benchmark ${system} for ${iterations} iterations
     [Teardown]  Terminate All Processes
-    ${prefix} =  Convert To Lower Case  ${TEST_NAME}
-    ${prefix} =  Replace String  ${prefix}  ${SPACE}  _
-    ${prefix} =  Join Path  ${OUTPUT_DIR}  ${prefix}
+    ${prefix} =  Convert To Directory Name  ${TEST_NAME}
+    ${prefix} =  Join Path  ${OUTPUT_DIR}  tests  ${prefix}
     Create Directory  ${prefix}
     Empty Directory  ${prefix}
-    Set Test Variable  ${BENCHMARK_DIR}  ${prefix}
+    Set Test Variable  ${TEST_DIR}  ${prefix}
+    ${timestamp} =  Get Current Date
+    ${metadata_path} =  Join Path  ${prefix}  metadata.json
+    Create Json File  ${metadata_path}
+    ...  name=${TEST_NAME}
+    ...  timestamp=${timestamp}
+    ...  iterations=${iterations}
+    ...  system=${system}
     Run Keyword  Before starting ${system} benchmark
     Log To Console  ${\n}
     FOR  ${index}  IN RANGE  1  ${iterations} + 1
@@ -333,3 +361,8 @@ Benchmark ${system} for ${iterations} iterations
 
 Benchmark ${system} with default settings
     Benchmark ${system} for 100 iterations
+
+Lambkin Setup
+    ${dir} =  Join Path  ${OUTPUT_DIR}  tests
+    Create Directory  ${dir}
+    Empty Directory  ${dir}

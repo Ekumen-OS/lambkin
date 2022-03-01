@@ -21,6 +21,10 @@ the amount of iterations.
 .. include:: tum_benchmark.robot
    :code: robotframework
 
+.. raw:: pdf
+
+   PageBreak
+
 Environment
 ~~~~~~~~~~~
 
@@ -41,13 +45,13 @@ The other sequences were recorded in a large hall with several office containers
 *Pioneer SLAM 1*, *Pioneer SLAM 2* and *Pioneer SLAM 3* differ in the actual trajectories but
 all contain several loop closures.
 
-A motion capture system from MotionAnalysis was used to record the ground-truth trajectory, 
+A motion capture system from MotionAnalysis was used to record the ground-truth trajectory,
 
 Computer Vision Group, TUM Department of Informatics, Technical University of Munich.
 https://vision.in.tum.de/data/datasets/rgbd-dataset/download
 
 A Benchmark for the Evaluation of RGB-D SLAM Systems (J. Sturm, N. Engelhard, F. Endres, W. Burgard and D. Cremers),
-In Proc. of the International Conference on Intelligent Robot Systems (IROS), 2012. 
+In Proc. of the International Conference on Intelligent Robot Systems (IROS), 2012.
 http://dx.doi.org/10.1109/IROS.2012.6385773
 
 Metrics
@@ -73,7 +77,7 @@ For each metric, its median, mean, and standard deviation are provided.
 
 .. raw:: pdf
 
-   PageBreak   
+   PageBreak
 
 Results
 -------
@@ -91,20 +95,20 @@ Metrics
 *******
 
 .. csv-table:: Table 1. Statistical data for each metric
-   :file: freiburg2_pioneer_360/metrics.csv
+   :file: tests/freiburg2_pioneer_360/metrics.csv
    :header-rows: 1
 
-.. figure:: freiburg2_pioneer_360/plot_APE.svg
+.. figure:: tests/freiburg2_pioneer_360/plot_APE.svg
    :scale: 80 %
 
    Figure 1. APE over time and APE RMSE histogram
 
-.. figure:: freiburg2_pioneer_360/plot_RPE.svg
+.. figure:: tests/freiburg2_pioneer_360/plot_RPE.svg
    :scale: 80 %
 
    Figure 2. RPE over time and RPE RMSE histogram
 
-.. figure:: freiburg2_pioneer_360/plot_rss_over_time.svg
+.. figure:: tests/freiburg2_pioneer_360/plot_rss_over_time.svg
    :scale: 80 %
 
    Figure 3. RSS over time
@@ -116,12 +120,12 @@ Metrics
 Estimated trajectories
 **********************
 
-.. figure:: freiburg2_pioneer_360/runs/1/ape_map.svg
+.. figure:: tests/freiburg2_pioneer_360/runs/1/ape_map.svg
    :scale: 60 %
 
    Figure 4. APE mapped onto trajectory in the first run
 
-.. figure:: freiburg2_pioneer_360/runs/1/map.pgm
+.. figure:: tests/freiburg2_pioneer_360/runs/1/map.pgm
    :scale: 150 %
 
    Figure 5. Map generated in the first run
@@ -139,20 +143,20 @@ Metrics
 *******
 
 .. csv-table:: Table 2. Statistical data for each metric
-   :file: freiburg2_pioneer_slam_1/metrics.csv
-   :header-rows: 1   
+   :file: tests/freiburg2_pioneer_slam_1/metrics.csv
+   :header-rows: 1
 
-.. figure:: freiburg2_pioneer_slam_1/plot_APE.svg
+.. figure:: tests/freiburg2_pioneer_slam_1/plot_APE.svg
    :scale: 80 %
 
    Figure 6. APE over time and APE RMSE histogram
 
-.. figure:: freiburg2_pioneer_slam_1/plot_RPE.svg
+.. figure:: tests/freiburg2_pioneer_slam_1/plot_RPE.svg
    :scale: 80 %
 
    Figure 7. RPE over time and RPE RMSE histogram
 
-.. figure:: freiburg2_pioneer_slam_1/plot_rss_over_time.svg
+.. figure:: tests/freiburg2_pioneer_slam_1/plot_rss_over_time.svg
    :scale: 80 %
 
    Figure 8. RSS over time
@@ -164,16 +168,15 @@ Metrics
 Estimated trajectories
 **********************
 
-.. figure:: freiburg2_pioneer_slam_1/runs/1/ape_map.svg
+.. figure:: tests/freiburg2_pioneer_slam_1/runs/1/ape_map.svg
    :scale: 60 %
 
    Figure 9. APE mapped onto trajectory in the first run
 
-.. figure:: freiburg2_pioneer_slam_1/runs/1/map.pgm
+.. figure:: tests/freiburg2_pioneer_slam_1/runs/1/map.pgm
    :scale: 150 %
 
    Figure 10. Map generated in the first run
-
 
 .. raw:: pdf
 
@@ -188,20 +191,20 @@ Metrics
 *******
 
 .. csv-table:: Table 3. Statistical data for each metric
-   :file: freiburg2_pioneer_slam_2/metrics.csv
+   :file: tests/freiburg2_pioneer_slam_2/metrics.csv
    :header-rows: 1
 
-.. figure:: freiburg2_pioneer_slam_2/plot_APE.svg
+.. figure:: tests/freiburg2_pioneer_slam_2/plot_APE.svg
    :scale: 80 %
 
    Figure 11. APE over time and APE RMSE histogram
 
-.. figure:: freiburg2_pioneer_slam_2/plot_RPE.svg
+.. figure:: tests/freiburg2_pioneer_slam_2/plot_RPE.svg
    :scale: 80 %
 
    Figure 12. RPE over time and RPE RMSE histogram
 
-.. figure:: freiburg2_pioneer_slam_2/plot_rss_over_time.svg
+.. figure:: tests/freiburg2_pioneer_slam_2/plot_rss_over_time.svg
    :scale: 80 %
 
    Figure 13. RSS over time
@@ -213,12 +216,12 @@ Metrics
 Estimated trajectories
 **********************
 
-.. figure:: freiburg2_pioneer_slam_2/runs/1/ape_map.svg
+.. figure:: tests/freiburg2_pioneer_slam_2/runs/1/ape_map.svg
    :scale: 60 %
 
    Figure 14. APE mapped onto trajectory in the first run
 
-.. figure:: freiburg2_pioneer_slam_2/runs/1/map.pgm
+.. figure:: tests/freiburg2_pioneer_slam_2/runs/1/map.pgm
    :scale: 150 %
 
    Figure 15. Map generated in the first run
@@ -236,20 +239,20 @@ Metrics
 *******
 
 .. csv-table:: Table 4. Statistical data for each metric
-   :file: freiburg2_pioneer_slam_3/metrics.csv
+   :file: tests/freiburg2_pioneer_slam_3/metrics.csv
    :header-rows: 1
 
-.. figure:: freiburg2_pioneer_slam_3/plot_APE.svg
+.. figure:: tests/freiburg2_pioneer_slam_3/plot_APE.svg
    :scale: 80 %
 
    Figure 16. APE over time and APE RMSE histogram
 
-.. figure:: freiburg2_pioneer_slam_3/plot_RPE.svg
+.. figure:: tests/freiburg2_pioneer_slam_3/plot_RPE.svg
    :scale: 80 %
 
    Figure 17. RPE over time and RPE RMSE histogram
 
-.. figure:: freiburg2_pioneer_slam_3/plot_rss_over_time.svg
+.. figure:: tests/freiburg2_pioneer_slam_3/plot_rss_over_time.svg
    :scale: 80 %
 
    Figure 18. RSS over time
@@ -261,12 +264,12 @@ Metrics
 Estimated trajectories
 **********************
 
-.. figure:: freiburg2_pioneer_slam_3/runs/1/ape_map.svg
+.. figure:: tests/freiburg2_pioneer_slam_3/runs/1/ape_map.svg
    :scale: 60 %
 
    Figure 19. APE mapped onto trajectory in the first run
 
-.. figure:: freiburg2_pioneer_slam_3/runs/1/map.pgm
+.. figure:: tests/freiburg2_pioneer_slam_3/runs/1/map.pgm
    :scale: 150 %
 
    Figure 20. Map generated in the first run

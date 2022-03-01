@@ -15,15 +15,19 @@
 import argparse
 
 import os
+import pathlib
 import shutil
 
 import lambkin.aggregate as aggregate
 
 def robot(args):
-    if args.remaining_args and '--' in args.remaining_args:
+    if '--' in args.remaining_args:
         args.remaining_args.remove('--')
+    if '-d' not in args.remaining_args and \
+       '--outputdir' not in args.remaining_args:
+        args.remaining_args.extend(['-d', args.file.stem])
     path_to_executable = shutil.which('robot')
-    args = [path_to_executable] + args.remaining_args + args.files
+    args = [path_to_executable] + args.remaining_args + [args.file]
     os.execv(path_to_executable, args)
 
 def main(argv=None):
@@ -32,8 +36,8 @@ def main(argv=None):
     subparsers = parser.add_subparsers()
     robot_subparser = subparsers.add_parser('robot')
     robot_subparser.add_argument(
-        '-f', '--file', dest='files', action='append',
-        help='Path to robot files, useful in shebang lines.')
+        '-f', '--file', type=pathlib.PurePath, required=True,
+        help='Path to robot file, useful in shebang lines.')
     robot_subparser.set_defaults(subcommand=robot)
 
     aggregate_subparser = subparsers.add_parser(

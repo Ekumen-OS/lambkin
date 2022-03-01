@@ -30,17 +30,22 @@ This is an example on how to run an existing benchmark using the provided `slam_
 4. After the run, you should see the following folder structure in your current directory:
 
     ```bash
-    ├── hallway_return/         # LAMBKIN output files and images
-    │   └── runs/
-    │       ├── 1/
-    │       ├── 2/
-    │       ├── 3/
-    │       └── ...
-    ├── report.pdf              # LAMBKIN benchmark report
-    ├── output.xml              # RobotFramework test execution information
-    ├── report.html             # RobotFramework test report
-    ├── log.html                # RobotFramework logs
-    └── hallway_return.bag      # Input dataset
+    ├── magazino_benchmark/
+    │    ├── tests/                  # LAMBKIN output artifacts
+    │    │    └── hallway_return/
+    │    │         ├── runs/
+    │    │         │    ├── 1/
+    │    │         │    ├── 2/
+    │    │         │    ├── 3/
+    │    │         │    └── ...
+    │    │         ├── metadata.json # Test case metadata
+    │    │         └── ...
+    │    ├── report.pdf              # LAMBKIN benchmark report
+    │    ├── output.xml              # RobotFramework test execution information
+    │    ├── report.html             # RobotFramework test report
+    │    ├── log.html                # RobotFramework logs
+    │    └── ...
+    └── hallway_return.bag           # Input dataset
     ```
 
 ## Changing an existing benchmark
@@ -52,7 +57,7 @@ In order to make the development process easier and skip the image rebuilding st
 For instance, if you are changing the `lambkin` package itself, you could use the following command to run the previous benchmark with your changes:
 
 ```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot --rebuild --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/lambkin
+<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot --rebuild --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
 ```
 
 The `--rebuild` option will rebuild the `catkin` workspace for the changes to take effect before execution.
@@ -66,7 +71,7 @@ There is a shortcut to bind mount the same benchmark package you are running:
 And you can mount more than one package at your convenience:
 
 ```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot ---rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/lambkin
+<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot ---rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
 ```
 
 ## Using interactive mode
@@ -81,7 +86,7 @@ you can use the `--interactive` flag, which gives you access to a command-line i
 You might want to combine this option with [package binding](#changing-an-existing-benchmark) to use your preferred IDE in the host while testing your changes in the running container:
 
 ```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run --interactive --rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/lambkin
+<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run --interactive --rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
 ```
 
 Once inside the container, you can run a benchmark using the `rosrun` command:
