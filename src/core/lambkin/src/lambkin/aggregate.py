@@ -80,10 +80,6 @@ def aggregate_metrics(args) -> None:
         df_results = df.combine_first(df_results)
     export_to_file(df_results, results_path)
 
-    df_stats = df_results.agg(args.functions).T
-    df_stats.index.name = 'metric'
-    export_to_file(df_stats, args.output_path / 'stats.data')
-
 
 def aggregate_results(args) -> None:
     # Collect metadata and dataframes from all the directories
@@ -128,11 +124,6 @@ def get_parser() -> argparse.ArgumentParser:
         default=supported_metrics,
         help='Metrics to aggregate.'
              'It defaults to all available metrics: %(choices)s.')
-    metrics_subparser.add_argument(
-        '-f', '--functions', type=str, nargs='+',
-        default=['median', 'mean', 'std'],
-        help='Functions to use for aggregating the data. '
-             'It defaults to median, mean and std.')
     metrics_subparser.set_defaults(subcommand=aggregate_metrics)
 
     results_subparser = subparsers.add_parser('results', parents=[common_parser])
