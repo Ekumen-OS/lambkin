@@ -61,25 +61,29 @@ class EvoAggregator(Aggregator):
                 traj_list.append(df)
         df_traj = pd.concat(traj_list).sort_values(by=['time'])
 
-        error_arrays = self.df_results.loc['np_arrays', 'error_array'].tolist()
-        time_arrays = self.df_results.loc['np_arrays', 'seconds_from_start'].tolist()
-
-        self.df_timeseries = pd.DataFrame(error_arrays, self.df_results.columns).T
-        self.df_timeseries.index.name = 'index'
-        # Average timepoints between all runs
-        self.df_timeseries['time'] = pd.DataFrame(time_arrays).T.mean(axis='columns')
-
-        melted_df = pd.melt(
-            frame = self.df_timeseries,
-            id_vars = ['time'],
+        df_values = pd.melt(
+            frame = pd.DataFrame(
+                self.df_results.loc['np_arrays', 'error_array'].tolist(),
+                self.df_results.columns).T,
             var_name = 'run_id',
-            value_name = self.metric,
-            ignore_index = False
-        ).sort_values(by=['time'])
+            value_name = self.metric
+        ).rename_axis('index')
+
+        df_time = pd.melt(
+            frame = pd.DataFrame(
+                self.df_results.loc['np_arrays', 'seconds_from_start'].tolist(),
+                self.df_results.columns).T,
+            var_name = 'run_id',
+            value_name = 'time'
+        ).rename_axis('index')
+
+        df_merged = df_time.merge(
+            df_values, on=['index', 'run_id']
+        ).sort_values(by=['time']).dropna()
 
         # Match metric values to nearest trajectory timepoint
         self.df_timeseries = pd.merge_asof(
-            df_traj, melted_df, on='time', by='run_id'
+            df_traj, df_merged, on='time', by='run_id'
         ).set_index('time')
 
     @classmethod
