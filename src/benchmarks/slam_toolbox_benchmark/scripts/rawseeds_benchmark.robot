@@ -37,4 +37,4 @@ Benchmark SLAM Toolbox 2D SLAM
 Benchmark Teardown
     Lambkin Teardown
     Run Keyword If All Tests Passed
-    ...  Generate report using reports/rawseeds_report in slam_toolbox_benchmark package
+    ...  Generate report using rawseeds_report in slam_toolbox_benchmark package

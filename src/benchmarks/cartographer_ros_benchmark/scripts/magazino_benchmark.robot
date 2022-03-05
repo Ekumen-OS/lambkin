@@ -37,4 +37,4 @@ Benchmark Cartographer ROS 2D SLAM
 Benchmark Teardown
     Lambkin Teardown
     Run Keyword If All Tests Passed
-    ...  Generate report using reports/magazino_report in cartographer_ros_benchmark package
+    ...  Generate report using magazino_report in cartographer_ros_benchmark package

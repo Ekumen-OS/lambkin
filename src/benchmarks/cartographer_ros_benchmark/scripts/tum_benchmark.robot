@@ -40,4 +40,4 @@ Benchmark Cartographer ROS 2D SLAM
 Benchmark Teardown
     Lambkin Teardown
     Run Keyword If All Tests Passed
-    ...  Generate report using reports/tum_report in cartographer_ros_benchmark package
+    ...  Generate report using tum_report in cartographer_ros_benchmark package
