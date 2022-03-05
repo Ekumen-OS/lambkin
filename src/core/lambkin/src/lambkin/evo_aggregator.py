@@ -43,7 +43,7 @@ class EvoAggregator(Aggregator):
             for result, dirpath in zip(results, dirpaths)
         ], axis='columns')
 
-        self.df_metrics = pd.DataFrame({
+        self.df_metric = pd.DataFrame({
             f'{self.metric}_rmse': pd.to_numeric(
                 self.df_results.loc['stats', 'rmse'])
         }).rename_axis('run_id')
@@ -87,7 +87,7 @@ class EvoAggregator(Aggregator):
         return {cls.metric} if cls.metric else {}
 
     def get_metrics_by_run(self) -> pd.DataFrame:
-        return self.df_metrics
+        return self.df_metric
 
     def generate_timeseries(self) -> Generator[Tuple[str, pd.DataFrame], None, None]:
         yield self.metric, self.df_timeseries
