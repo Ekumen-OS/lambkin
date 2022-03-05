@@ -95,6 +95,7 @@ def aggregate_results(args) -> None:
                 dataframe[key] = value
             results.setdefault(path.name, []).append(dataframe)
 
+    # Aggregate dataframes and create output files
     for filename, dataframes in results.items():
         df_results = pd.concat(dataframes, ignore_index=True).rename_axis('index')
         export_to_file(df_results, args.output_path / filename)
@@ -120,10 +121,9 @@ def get_parser() -> argparse.ArgumentParser:
     metrics_subparser = subparsers.add_parser('metrics', parents=[common_parser])
     metrics_subparser.add_argument(
         '-m', '--metrics', choices=supported_metrics, nargs='+',
-        metavar='METRIC',
-        default=supported_metrics,
-        help='Metrics to aggregate.'
-             'It defaults to all available metrics: %(choices)s.')
+        metavar='METRIC', default=supported_metrics, help=(
+            'Metrics to aggregate.'
+            'It defaults to all available metrics: %(choices)s.'))
     metrics_subparser.set_defaults(subcommand=aggregate_metrics)
 
     results_subparser = subparsers.add_parser('results', parents=[common_parser])

@@ -53,9 +53,8 @@ class EvoAggregator(Aggregator):
         for dirpath in dirpaths:
             for path in dirpath.glob('*.tum'):
                 traj = file_interface.read_tum_trajectory_file(path)
-                df = pandas_bridge.trajectory_to_df(traj)
-                df.index.name = 'time'
-                df = df.reset_index()
+                df = pandas_bridge.trajectory_to_df(traj) \
+                    .rename_axis('time').reset_index()
                 df['time'] = df['time'] - df.loc[0, 'time']
                 df['traj'] = path.stem
                 df['run_id'] = dirpath.name
@@ -79,8 +78,9 @@ class EvoAggregator(Aggregator):
         ).sort_values(by=['time'])
 
         # Match metric values to nearest trajectory timepoint
-        self.df_timeseries = pd.merge_asof(df_traj, melted_df, on='time', by='run_id')
-        self.df_timeseries.set_index('time', inplace=True)
+        self.df_timeseries = pd.merge_asof(
+            df_traj, melted_df, on='time', by='run_id'
+        ).set_index('time')
 
     @classmethod
     def get_supported_metrics(cls) -> Set[str]:
