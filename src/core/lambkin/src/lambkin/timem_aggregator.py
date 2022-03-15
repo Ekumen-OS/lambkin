@@ -24,9 +24,7 @@ from typing import Tuple
 from scipy.interpolate import interp1d
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 
 from .aggregator import Aggregator
 
@@ -39,7 +37,10 @@ class TimemAggregator(Aggregator):
         peak_rss: List[float] = []
         cpu_usage: List[float] = []
         series: List[pd.DataFrame] = []
-        for i, dirpath in enumerate(dirpaths, start=1):
+        run_ids: List[int] = []
+        for dirpath in dirpaths:
+            run_id = dirpath.name
+            run_ids.append(run_id)
             path = dirpath / 'timem_output.json'
             with path.open('r') as f:
                 output = json.load(f)
@@ -67,60 +68,26 @@ class TimemAggregator(Aggregator):
                 data[:, 0], data[:, 2],
                 bounds_error=False, fill_value=0)
             series.append(pd.DataFrame({
-                'run_id': i, 'time': time, 'rss': interpolate_rss(time),
+                'run_id': run_id, 'time': time, 'rss': interpolate_rss(time),
                 'virtual_memory': interpolate_virtual_memory(time)
             }))
         self.df_metrics = pd.DataFrame({
+            'run_id': run_ids,
             'peak_rss': peak_rss,
             'cpu_usage': cpu_usage,
-        })
-        self.df_series = pd.concat(series, ignore_index=True)
+        }).set_index('run_id')
+        self.df_series = pd.concat(series, ignore_index=True).set_index('time')
 
     @classmethod
     def get_supported_metrics(cls) -> Set[str]:
         return {'peak_rss', 'cpu_usage', 'virtual_memory'}
 
-    def get_dataframe(self) -> pd.DataFrame:
+    def get_metrics_by_run(self) -> pd.DataFrame:
         included_metrics = self.metrics.copy()
         # TODO(nahuel): generate a metric value for virtual_memory
-        included_metrics.remove('virtual_memory')
-        return self.df_metrics[included_metrics].rename(columns={
-            'peak_rss': 'Peak RSS (MB)',
-            'cpu_usage': 'CPU Usage (%)',
-        })
+        included_metrics.discard('virtual_memory')
+        return self.df_metrics[list(included_metrics)]
 
-    def generate_figures(self) -> Generator[Tuple[str, plt.Figure], None, None]:
-        if 'peak_rss' in self.metrics:
-            fig = plt.figure()
-            ax = fig.gca()
-            ax.set_title(f'RSS\nTime series with 95% confidence intervals')
-            ax.set_xlabel(f'Time (sec)')
-            ax.set_ylabel(f'RSS (MB)')
-            sns.lineplot(x='time', y='rss', n_boot=20, data=self.df_series)
-            yield 'rss_over_time', fig
-
-            fig = plt.figure()
-            ax = fig.gca()
-            ax.set_title(f'Peak RSS\nHistogram')
-            ax.set_xlabel(f'Peak RSS (MB)')
-            ax.set_ylabel(f'Iterations')
-            sns.histplot(self.df_metrics['peak_rss'], kde=True, ax=ax)
-            yield 'peak_rss', fig
-
-        if 'virtual_memory' in self.metrics:
-            fig = plt.figure()
-            ax = fig.gca()
-            ax.set_title(f'Virtual Memory\nTime series with 95% confidence intervals')
-            ax.set_xlabel(f'Time (sec)')
-            ax.set_ylabel(f'Virtual Memory (MB)')
-            sns.lineplot(x='time', y='virtual_memory', n_boot=20, data=self.df_series)
-            yield 'virtual_memory_over_time', fig
-
-        if 'cpu_usage' in self.metrics:
-            fig = plt.figure()
-            ax = fig.gca()
-            ax.set_title(f'CPU Usage\nHistogram')
-            ax.set_xlabel(f'CPU Usage (%)')
-            ax.set_ylabel(f'Iterations')
-            sns.histplot(self.df_metrics['cpu_usage'], kde=True, ax=ax)
-            yield 'cpu_usage', fig
+    def generate_timeseries(self) -> Generator[Tuple[str, pd.DataFrame], None, None]:
+        yield 'rss', self.df_series[['run_id', 'rss']]
+        yield 'virtual_memory', self.df_series[['run_id', 'virtual_memory']]

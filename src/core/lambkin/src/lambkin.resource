@@ -140,6 +140,7 @@ Plot 2D Trajectories
     ...          --t_max_diff  0.1
     ...          --align
     ...          --save_plot  traj.svg
+    ...          --save_as_tum
     ...          @{options}
     ...          stdout=DEVNULL  stderr=DEVNULL  cwd=${cwd}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
@@ -186,9 +187,16 @@ Compute RPE
 Aggregate Metrics
     [Arguments]  @{metrics}  ${cwd}=.
     ${runs} =  List Directories In Directory  ${cwd}/runs  absolute=True
-    ${result} =  Run Process  lambkin  aggregate  @{runs}
+    ${result} =  Run Process  lambkin  aggregate  metrics  @{runs}
     ...          --metrics  @{metrics}
     ...          --functions  median  mean  std
+    ...          cwd=${cwd}
+    Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
+
+Aggregate Results
+    [Arguments]  ${cwd}=${OUTPUT_DIR}
+    ${tests} =  List Directories In Directory  ${cwd}/tests  absolute=True
+    ${result} =  Run Process  lambkin  aggregate  results  @{tests}
     ...          cwd=${cwd}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
 
@@ -284,12 +292,14 @@ Use ${launch_file} in ${package} package to launch
 Generate report using ${report} in ${package} package
     # TODO(nahuel): have a declarative way of running this on Suite Teardown
     ${package_path} =  Find ROS Package  ${package}
-    Copy Files  ${package_path}/config/${report}  ${SUITE_SOURCE}  ${OUTPUT_DIR}
-    ${result} =  Run Process  rst2pdf  ${report}  -o  report.pdf
+    ${report_project_path} =  Join Path  ${package_path}  reports  ${report}
+    Copy Files  ${report_project_path}/*  ${OUTPUT_DIR}
+    Copy File  ${SUITE_SOURCE}  ${OUTPUT_DIR}
+    ${result} =  Run Process  sphinx-build  -M  latexpdf  .  build
     ...          cwd=${OUTPUT_DIR}
-    ${_}  ${basename} =  Split Path  ${SUITE_SOURCE}
-    Remove Files  ${OUTPUT_DIR}/${report}  ${OUTPUT_DIR}/${basename}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
+    ${report_result_path} =  Join Path  ${OUTPUT_DIR}  build  latex  report.pdf
+    Copy File  ${report_result_path}  ${OUTPUT_DIR}
 
 Wait for ${system} system
     Sleep  3 seconds
@@ -318,6 +328,16 @@ Before ${system} system shutdown
 After ${system} system shutdown
     Run Registered Keywords  After system shutdown
 
+Register Parameters
+    [Arguments]  &{params}
+    Set Test Variable  ${TEST_PARAMS}  ${params}
+    ${items} =  Get Dictionary Items  ${params}
+    FOR  ${key}  ${value}  IN  @{items}
+        ${name} =  Convert To Upper Case  ${key}
+        ${name} =  Replace String  ${name}  ${SPACE}  _
+        Set Environment Variable  TEST_PARAM_${name}  ${value}
+    END
+
 Convert To Directory Name
     [Arguments]  ${name}
     ${filename} =  Convert To Lower Case  ${name}
@@ -332,12 +352,14 @@ Benchmark ${system} for ${iterations} iterations
     Empty Directory  ${prefix}
     Set Test Variable  ${TEST_DIR}  ${prefix}
     ${timestamp} =  Get Current Date
+    ${params} =  Get Variable Value  ${TEST_PARAMS}  &{EMPTY}
     ${metadata_path} =  Join Path  ${prefix}  metadata.json
     Create Json File  ${metadata_path}
     ...  name=${TEST_NAME}
     ...  timestamp=${timestamp}
     ...  iterations=${iterations}
     ...  system=${system}
+    ...  params=${params}
     Run Keyword  Before starting ${system} benchmark
     Log To Console  ${\n}
     FOR  ${index}  IN RANGE  1  ${iterations} + 1
@@ -366,3 +388,6 @@ Lambkin Setup
     ${dir} =  Join Path  ${OUTPUT_DIR}  tests
     Create Directory  ${dir}
     Empty Directory  ${dir}
+
+Lambkin Teardown
+    Run Keyword If All Tests Passed  Aggregate Results

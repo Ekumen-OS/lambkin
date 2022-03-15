@@ -18,8 +18,7 @@ Resource          lambkin.resource
 
 Test Template     Benchmark Cartographer ROS 2D SLAM
 Suite Setup       Lambkin Setup
-Suite Teardown    Run Keyword If All Tests Passed
-...               Generate report using tum_report.rst in cartographer_ros_benchmark package
+Suite Teardown    Benchmark Teardown
 
 *** Test Cases ***         DATASET
 Freiburg2 Pioneer 360      rgbd_dataset_freiburg2_pioneer_360.bag
@@ -30,9 +29,15 @@ Freiburg2 Pioneer SLAM 3   rgbd_dataset_freiburg2_pioneer_slam3.bag
 *** Keywords ***
 Benchmark Cartographer ROS 2D SLAM
     [Arguments]  ${dataset}
+    Register Parameters  dataset=${dataset}
     Use /tf /scan /pose data in ${dataset} as input
     Track /tf:world.kinect /tf:map.base_link trajectories
     And save the resulting map
     Use tum_benchmark.launch in cartographer_ros_benchmark package to launch
     Use a sampling rate of 20 Hz to track computational performance
     Benchmark Cartographer ROS for 10 iterations
+
+Benchmark Teardown
+    Lambkin Teardown
+    Run Keyword If All Tests Passed
+    ...  Generate report using tum_report in cartographer_ros_benchmark package
