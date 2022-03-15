@@ -16,4 +16,4 @@ from .ros import wait_for_ros_master
 from .ros import ros_master_should_be_running
 
 from .hooks import Hooks
-from .test_macros import TestMacros
+from .test_case_evaluation import TestCaseEvaluation
