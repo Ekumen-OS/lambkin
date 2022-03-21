@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-
+from importlib import import_module
 from itertools import product
 
 from robot.api import TestSuite
@@ -22,17 +21,8 @@ from typing import Any
 from typing import Generator
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Tuple
-
-
-def linspace(start: float, end: float, num: int) -> Generator[float, None, None]:
-    """Generates evenly spaced numbers over a specified interval."""
-    yield from np.linspace(start, end, num)
-
-
-def sequence(*args: Any) -> Generator[Any, None, None]:
-    """Generates a sequence consisting of the provided values."""
-    yield from args
 
 
 class TestCaseEvaluation:
@@ -40,6 +30,9 @@ class TestCaseEvaluation:
     generator expressions in test case arguments."""
 
     ROBOT_LISTENER_API_VERSION = 3
+    EVALUATION_SCOPE = {
+        'np': import_module('numpy'),
+    }
 
     def __init__(self):
         self.ROBOT_LIBRARY_LISTENER = self
@@ -58,18 +51,26 @@ class TestCaseEvaluation:
                 new_test_case = suite.tests.create(name=f'{test_case.name} {num}')
                 new_test_case.body.create_keyword(name=keyword.name, args=args)
 
-    @staticmethod
-    def _generate_args(args: Iterable[str]) -> Generator[Tuple[Any], None, None]:
-        """Generates new argument tuples with the cartesian
-        product of evaluated expressions."""
+    @classmethod
+    def _generate_args(cls, args: Iterable[str]) -> Generator[Tuple[Any], None, None]:
+        """Generates new argument tuples with the cartesian product
+        of evaluated expressions."""
         iterators: List[Iterable[Any]] = []
         for arg in args:
-            try:
-                result = eval(arg)
+            if expression := cls._get_expression(arg):
+                result = eval(expression, {}, cls.EVALUATION_SCOPE)
                 if not isinstance(result, Iterable):
-                    raise TypeError('Evaluated expression does not produce an iterable')
+                    raise TypeError(f'Evaluated expression did not produce an iterable: {expression}')
                 iterators.append(result)
-            except Exception:
-                # If the argument can't be evaluated, keep it as is
+            else:
                 iterators.append([arg])
         yield from product(*iterators)
+
+    @staticmethod
+    def _get_expression(arg: str) -> Optional[str]:
+        """Returns the expression to evaluate from a given argument.
+        Returns `None` if the string does not match the expected inline
+        code syntax (`${{expression}}`)."""
+        if arg.startswith('${{') and arg.endswith('}}'):
+            return arg[3:-2]
+        return None

@@ -21,11 +21,11 @@ Test Template     Benchmark SLAM Toolbox 2D SLAM
 Suite Setup       Lambkin Setup
 Suite Teardown    Benchmark Teardown
 
-*** Test Cases ***         DATASET                                      RESOLUTION                  SEARCH_RESOLUTION
-Freiburg2 Pioneer 360      rgbd_dataset_freiburg2_pioneer_360.bag       linspace(0.025, 0.125, 5)   sequence(0.025, 0.050)
-Freiburg2 Pioneer SLAM 1   rgbd_dataset_freiburg2_pioneer_slam.bag      linspace(0.025, 0.125, 5)   sequence(0.025, 0.050)
-Freiburg2 Pioneer SLAM 2   rgbd_dataset_freiburg2_pioneer_slam2.bag     linspace(0.025, 0.125, 5)   sequence(0.025, 0.050)
-Freiburg2 Pioneer SLAM 3   rgbd_dataset_freiburg2_pioneer_slam3.bag     linspace(0.025, 0.125, 5)   sequence(0.025, 0.050)
+*** Test Cases ***         DATASET                                      RESOLUTION                          SEARCH_RESOLUTION
+Freiburg2 Pioneer 360      rgbd_dataset_freiburg2_pioneer_360.bag       ${{np.linspace(0.025, 0.125, 5)}}   ${{[0.025, 0.050]}}
+Freiburg2 Pioneer SLAM 1   rgbd_dataset_freiburg2_pioneer_slam.bag      ${{np.linspace(0.025, 0.125, 5)}}   ${{[0.025, 0.050]}}
+Freiburg2 Pioneer SLAM 2   rgbd_dataset_freiburg2_pioneer_slam2.bag     ${{np.linspace(0.025, 0.125, 5)}}   ${{[0.025, 0.050]}}
+Freiburg2 Pioneer SLAM 3   rgbd_dataset_freiburg2_pioneer_slam3.bag     ${{np.linspace(0.025, 0.125, 5)}}   ${{[0.025, 0.050]}}
 
 *** Keywords ***
 Benchmark SLAM Toolbox 2D SLAM
