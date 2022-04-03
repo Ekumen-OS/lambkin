@@ -57,7 +57,8 @@ class TestCaseEvaluation:
         of evaluated expressions."""
         iterators: List[Iterable[Any]] = []
         for arg in args:
-            if expression := cls._get_expression(arg):
+            expression = cls._get_expression(arg)
+            if expression is not None:
                 result = eval(expression, {}, cls.EVALUATION_SCOPE)
                 if not isinstance(result, Iterable):
                     raise TypeError(f'Evaluated expression did not produce an iterable: {expression}')
