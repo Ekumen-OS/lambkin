@@ -10,6 +10,7 @@ catkin_python_setup()
 install(
   PROGRAMS
   scripts/magazino_benchmark.robot
+  scripts/mars_benchmark.robot
   scripts/rawseeds_benchmark.robot
   scripts/tum_benchmark.robot
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
