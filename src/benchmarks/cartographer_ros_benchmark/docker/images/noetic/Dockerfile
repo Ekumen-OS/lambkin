@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y ninja-build stow && \
     rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y libgmock-dev && \
-    rosdep update && rosdep install -y -i --from-paths src && \
+    rosdep update && rosdep install -y -i --from-paths src --skip-keys libabsl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && catkin_make_isolated --install
