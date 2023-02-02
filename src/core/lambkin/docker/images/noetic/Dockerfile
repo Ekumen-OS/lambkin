@@ -87,7 +87,7 @@ RUN git clone -b v1.16.0 https://github.com/MichaelGrupp/evo.git evo \
 
 RUN pip install \
   numpy==1.20.3 \
-  numexpr==2.7.3\
+  numexpr==2.7.3 \
   python-dateutil==2.8.1 \
   robotframework==4.1.3 \
   sphinxcontrib-svg2pdfconverter==1.2.0 \
