@@ -14,8 +14,8 @@
 
 from importlib import import_module
 from itertools import product
-from collections.abc import Iterable
-from collections.abc import Generator
+from typing import Iterable
+from typing import Generator
 
 from robot.api import TestSuite
 
