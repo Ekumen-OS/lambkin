@@ -34,6 +34,10 @@ ENV BENCHMARK_PACKAGE=cartographer_ros_benchmark
 
 COPY . ${BENCHMARK_WORKSPACE}/src/${BENCHMARK_PACKAGE}
 
+RUN apt-get update && rosdep update && \
+    rosdep install -y -i --from-paths src --skip-keys libabsl-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && catkin_make_isolated --install
 
 WORKDIR ${BENCHMARK_WORKING_DIRECTORY}

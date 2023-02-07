@@ -5,14 +5,14 @@
     <remap from="scan" to="/vertical_velodyne/scan"/>
     <rosparam>
       transform_tolerance: 0.01
-      min_height: 0.0
-      max_height: 1.0
-      angle_min: -3
-      angle_max: 3
-      angle_increment: 0.00435 # M_PI/720.0
+      min_height: -0.05
+      max_height: 0.05
+      angle_min: -3.14159  # -M_PI
+      angle_max: 3.14159  # M_PI
+      angle_increment: 0.004364 # M_PI/720.0
       scan_time: 0.1
-      range_min: 0.45
-      range_max: 4.0
+      range_min: 0.05
+      range_max: 100.0
       use_inf: true
       concurrency_level: 2
     </rosparam>

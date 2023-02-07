@@ -1,11 +1,9 @@
 SLAM Toolbox 2D SLAM benchmarks with MARS dataset
 =================================================
 
-.. contents:: Table of Contents
-
-.. raw:: pdf
-
-   PageBreak
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
 Definition
 ----------
@@ -27,10 +25,6 @@ Environment
 - OS: Ubuntu 20.04.3 LTS
 - ROS: ROS Noetic Ninjemys
 - SLAM system: SLAM Toolbox 1.5.6
-
-.. raw:: pdf
-
-   PageBreak
 
 Dataset
 ~~~~~~~
@@ -75,9 +69,9 @@ To estimate performance of the SLAM system:
 Aggregated information is provided for statistical analysis of the results.
 For each metric, its median, mean, and standard deviation are provided.
 
-.. raw:: pdf
+.. raw:: latex
 
-   PageBreak
+   \clearpage
 
 Results
 -------
@@ -111,6 +105,7 @@ Metrics
 .. raw:: latex
 
    \clearpage
+
 .. list-table:: Time series and histograms
 
    * - .. plot::

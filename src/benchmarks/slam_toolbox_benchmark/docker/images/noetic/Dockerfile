@@ -16,14 +16,13 @@ FROM lambkin:noetic
 
 WORKDIR ${BENCHMARK_WORKSPACE}
 
-RUN apt-get update \
-  && apt-get install --no-install-recommends -y \
-    ros-noetic-slam-toolbox \
-  && rm -rf /var/lib/apt/lists/*
-
 ENV BENCHMARK_PACKAGE=slam_toolbox_benchmark
 
 COPY . ${BENCHMARK_WORKSPACE}/src/${BENCHMARK_PACKAGE}
+
+RUN apt-get update && rosdep update \
+  && rosdep install -i -y --from-path src \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && catkin_make_isolated --install
 
