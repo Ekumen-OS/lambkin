@@ -1,4 +1,4 @@
-# How to contribute to Beluga
+# How to contribute to Lambkin
 
 Thank you for investing your time in contributing to this project!
 
