@@ -64,6 +64,11 @@ RUN apt-get update \
     python3-rosinstall \
   && rm -rf /var/lib/apt/lists/*
 
+## NOTE(hidmic): patch roslaunch for stderr logging
+## See https://github.com/ros/ros_comm/issues/2310
+RUN sed -i 's/if is_child_mode():/if True:/g' \
+  /opt/ros/*/lib/*/dist-packages/roslaunch/nodeprocess.py
+
 RUN rosdep init && rosdep update
 
 # Install third party libraries and tools

@@ -49,7 +49,8 @@ Find ROS Package
     [Return]  ${result.stdout}
 
 Bring Up ROS Core
-    Start Process  roscore  alias=ROS_MASTER
+    Set Environment Variable  ROS_HOME  ${RUN_DIR}/_ros
+    Start Managed Process  roscore  alias=ROS_MASTER
     Wait for ROS Master  timeout=10s
     ROS Master Should Be Running
     Process Should Be Running  ROS_MASTER
@@ -58,32 +59,70 @@ Bring Up ROS Core
     Run Process  rosparam  set  use_sim_time  true
 
 Shutdown ROS Core
-    Terminate Process  ROS_MASTER
+    Terminate Managed Process  ROS_MASTER
     Process Should Be Stopped  ROS_MASTER
 
 Bring Up ROS System
     [Arguments]  ${package}  ${launch_file}  &{kwargs}
-    Start Process  roslaunch  --wait
-    ...            --sigint-timeout  20
-    ...            --sigterm-timeout  20
-    ...            ${package}  ${launch_file}  &{kwargs}
-    ...            alias=ROS_SYSTEM  stdout=DEVNULL
+    Start Managed Process  roslaunch  --wait  --log
+    ...                    --sigint-timeout  20
+    ...                    --sigterm-timeout  20
+    ...                    ${package}  ${launch_file}  &{kwargs}
+    ...                    alias=ROS_SYSTEM
     Process Should Be Running  ROS_SYSTEM  msg=ROS system is not running
 
 Shutdown ROS System
-    Terminate Process  ROS_SYSTEM
+    Terminate Managed Process  ROS_SYSTEM
     Process Should Be Stopped  ROS_SYSTEM
-    # TODO(hidmic): log errors coming the ROS system somehow
 
 Start Recording ROS Bag
     [Arguments]  ${bag}  &{kwargs}
-    Start Process  rosbag  record  --quiet  --all  --output-name  ${bag}
-    ...            alias=${bag}  stdout=DEVNULL  stderr=DEVNULL  &{kwargs}
+    Start Managed Process  rosbag  record  --quiet  --all  --output-name  ${bag}
+    ...                    alias=${bag}  &{kwargs}
     Process Should Be Running  ${bag}  msg=${bag} recording process is not running
 
+Reset Process Logs
+    [Arguments]  ${dir}
+    Create Directory  ${dir}
+    Set Test Variable  ${PROCESS_LOG_DIR}  ${dir}
+    Set Test Variable  ${PROCESS_COUNTER}  0
+
+Start Managed Process
+    [Arguments]  ${command}  @{args}  &{kwargs}
+    ${log_dir} =  Get Variable Value  $PROCESS_LOG_DIR  .
+    ${id} =  Increment Test Variable  $PROCESS_COUNTER
+    ${process} =  Start Process  ${command}  @{args}
+    ...           stdout=${PROCESS_LOG_DIR}/${command}-${id}-stdout.log
+    ...           stderr=${PROCESS_LOG_DIR}/${command}-${id}-stderr.log
+    ...           &{kwargs}
+    [Return]  ${process}
+
+Terminate Managed Process
+    [Arguments]  ${handle}=${null}  &{kwargs}
+    ${process} =  Get Process Object  ${handle}
+    ${result} =  Terminate Process  ${handle}  &{kwargs}
+    IF  ${result.rc} != 0
+        Log To Console  ${process.args}[0] process exit with return code ${result.rc}  stream=STDERR
+        Log To Console  You may check its output in ${result.stdout_path} and ${result.stderr_path}  stream=STDERR
+    END
+    [Return]  ${result}
+
+Run Managed Process
+    [Arguments]  ${command}  @{args}  &{kwargs}
+    ${log_dir} =  Get Variable Value  $PROCESS_LOG_DIR  .
+    ${id} =  Increment Test Variable  $PROCESS_COUNTER
+    ${result} =  Run Process  ${command}  @{args}
+    ...          stdout=${PROCESS_LOG_DIR}/${command}-${id}-stdout.log
+    ...          stderr=${PROCESS_LOG_DIR}/${command}-${id}-stderr.log  &{kwargs}
+    IF  ${result.rc} != 0
+        Log To Console  ${command} process exit with return code ${result.rc}  stream=STDERR
+        Log To Console  You may check its output in ${result.stdout_path} and ${result.stderr_path}  stream=STDERR
+    END
+    [Return]  ${result}
+
 Play ROS Bags
-    [Arguments]  ${bags}  ${topics}=${null}  ${start}=${null}  ${duration}=${null}
-    ...          ${rate}=${null}  &{kwargs}
+    [Arguments]  ${bags}  ${topics}=${null}  ${start}=${null}
+    ...          ${duration}=${null}  ${rate}=${null}  &{kwargs}
     ${bags} =  Split String  ${bags}
     FOR  ${bag}  IN  @{bags}
         File Should Exist  ${bag}
@@ -105,20 +144,20 @@ Play ROS Bags
     IF  '${rate}' != '${null}'
         Append To List  ${options}  --rate  ${rate}
     END
-    Run Process  rosbag  play  @{bags}  @{options}
-    ...          stdout=DEVNULL  stderr=DEVNULL  &{kwargs}
+    ${result} =  Run Managed Process  rosbag  play  @{bags}  @{options}  &{kwargs}
+    [Return]  ${result}
 
 Stop Recording ROS Bag
     [Arguments]  ${bag}  ${cwd}=.
-    Terminate Process  ${bag}
-    ${bag}  Join Path  ${cwd}  ${bag}
+    Terminate Managed Process  ${bag}
+    ${bag} =  Join Path  ${cwd}  ${bag}
     Wait Until Created  ${bag}
 
 Save 2D Map
     [Arguments]  ${map}  ${timeout}=5s  ${cwd}=.  &{kwargs}
     Process Should Be Running  ROS_SYSTEM
-    Run Process  rosrun  map_server  map_saver  -f  ${map}
-    ...          cwd=${cwd}  timeout=${timeout}  &{kwargs}
+    Run Managed Process  rosrun  map_server  map_saver  -f  ${map}
+    ...                  cwd=${cwd}  timeout=${timeout}  &{kwargs}
     Wait Until Created  ${cwd}/${map}.pgm
     File Should Exist  ${cwd}/${map}.yaml
 
@@ -133,7 +172,7 @@ Plot 2D Trajectories
         File Should Exist  ${map}
         Append To List  ${options}  --ros_map_yaml  ${map}
     END
-    ${result} =  Run Process  evo_traj  bag  ${bag}  @{trajectories}
+    ${result} =  Run Managed Process  evo_traj  bag  ${bag}  @{trajectories}
     ...          --ref  ${reference}
     ...          --no_warnings
     ...          --plot_mode  xy
@@ -142,7 +181,7 @@ Plot 2D Trajectories
     ...          --save_plot  traj.svg
     ...          --save_as_tum
     ...          @{options}
-    ...          stdout=DEVNULL  stderr=DEVNULL  cwd=${cwd}
+    ...          cwd=${cwd}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
     Wait Until Created  ${cwd}/traj_trajectories.svg
 
@@ -153,7 +192,7 @@ Compute APE
     ${bag}  Join Path  ${cwd}  ${bag}
     File Should Exist  ${bag}
     Run Process  evo_config  set  save_traj_in_zip
-    ${result} =  Run Process  evo_ape  bag  ${bag}
+    ${result} =  Run Managed Process  evo_ape  bag  ${bag}
     ...          ${reference}  ${estimate}
     ...          --no_warnings
     ...          --t_max_diff  0.1
@@ -161,7 +200,7 @@ Compute APE
     ...          --align
     ...          --save_plot  ape.svg
     ...          --save_results  ape.zip
-    ...          stdout=DEVNULL  stderr=DEVNULL  cwd=${cwd}
+    ...          cwd=${cwd}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
     Wait Until Created  ${cwd}/ape.zip
 
@@ -172,7 +211,7 @@ Compute RPE
     ${bag}  Join Path  ${cwd}  ${bag}
     File Should Exist  ${bag}
     Run Process  evo_config  set  save_traj_in_zip
-    ${result} =  Run Process  evo_rpe  bag  ${bag}
+    ${result} =  Run Managed Process  evo_rpe  bag  ${bag}
     ...          ${reference}  ${estimate}
     ...          --no_warnings
     ...          --t_max_diff  0.1
@@ -180,14 +219,14 @@ Compute RPE
     ...          --align
     ...          --save_plot  rpe.svg
     ...          --save_results  rpe.zip
-    ...          stdout=DEVNULL  stderr=DEVNULL  cwd=${cwd}
+    ...          cwd=${cwd}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
     Wait Until Created  ${cwd}/rpe.zip
 
 Aggregate Metrics
     [Arguments]  @{metrics}  ${cwd}=.
     ${runs} =  List Directories In Directory  ${cwd}/runs  absolute=True
-    ${result} =  Run Process  lambkin  aggregate  metrics  @{runs}
+    ${result} =  Run Managed Process  lambkin  aggregate  metrics  @{runs}
     ...          --metrics  @{metrics}
     ...          --functions  median  mean  std
     ...          cwd=${cwd}
@@ -196,7 +235,7 @@ Aggregate Metrics
 Aggregate Results
     [Arguments]  ${cwd}=${OUTPUT_DIR}
     ${tests} =  List Directories In Directory  ${cwd}/tests  absolute=True
-    ${result} =  Run Process  lambkin  aggregate  results  @{tests}
+    ${result} =  Run Managed Process  lambkin  aggregate  results  @{tests}
     ...          cwd=${cwd}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
 
@@ -295,7 +334,7 @@ Generate report using ${report} in ${package} package
     ${report_project_path} =  Join Path  ${package_path}  reports  ${report}
     Copy Files  ${report_project_path}/*  ${OUTPUT_DIR}
     Copy File  ${SUITE_SOURCE}  ${OUTPUT_DIR}
-    ${result} =  Run Process  sphinx-build  -M  latexpdf  .  build
+    ${result} =  Run Managed Process  sphinx-build  -M  latexpdf  .  build
     ...          cwd=${OUTPUT_DIR}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
     ${report_result_path} =  Join Path  ${OUTPUT_DIR}  build  latex  report.pdf
@@ -368,6 +407,7 @@ Benchmark ${system} for ${iterations} iterations
         Create Directory  ${run_prefix}
         Empty Directory  ${run_prefix}
         Set Test Variable  ${RUN_DIR}  ${run_prefix}
+        Reset Process Logs  ${RUN_DIR}/logs
         Run Keyword  Before starting ${system} iteration
         Run Keyword  Before ${system} system bring up
         Run Registered Keywords  System bring up

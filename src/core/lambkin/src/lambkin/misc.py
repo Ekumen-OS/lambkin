@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .misc import increment_test_variable
-from .ros import wait_for_ros_master
-from .ros import ros_master_should_be_running
+from robot.api.deco import keyword
+from robot.libraries.BuiltIn import BuiltIn
 
-from .hooks import Hooks
-from .test_case_evaluation import TestCaseEvaluation
+
+@keyword('Increment Test Variable')
+def increment_test_variable(name):
+    builtin = BuiltIn()
+    value = builtin.get_variable_value(name, default=0)
+    builtin.set_test_variable(name, int(value) + 1)
+    return value
