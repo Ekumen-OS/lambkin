@@ -14,7 +14,7 @@ Indoor Loop              MARS_Loop_1.bag MARS_Loop_2.bag MARS_Loop_3.bag
 Benchmark Cartographer ROS 2D SLAM
     [Arguments]  ${dataset}
     Register Parameters  dataset=${dataset}
-    Use /tf /vertical_velodyne/velodyne_points /odometry/filtered data in ${dataset} as input
+    Use /tf /vertical_velodyne/velodyne_points /odometry/filtered data in ${dataset} at 5x as input
     Track /tf:odom.base_link /tf:map.base_link trajectories
     And save the resulting map
     Use mars_benchmark.launch in cartographer_ros_benchmark package to launch

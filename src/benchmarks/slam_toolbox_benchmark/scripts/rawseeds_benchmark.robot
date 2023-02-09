@@ -27,7 +27,7 @@ Indoors with static illumination      Bicocca_2009-02-25b_Static_Lamps.bag
 Benchmark SLAM Toolbox 2D SLAM
     [Arguments]  ${dataset}
     Register Parameters  dataset=${dataset}
-    Use 2 minutes of /tf /odom /scan/front /scan/rear data in ${dataset} as input
+    Use 2 minutes of /tf /odom /scan/front /scan/rear data in ${dataset} at 10x as input
     Track /tf:map.base_link /tf:odom.base_link trajectories
     And save the resulting map
     Use rawseeds_benchmark.launch in slam_toolbox_benchmark package to launch
