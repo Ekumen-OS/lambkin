@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y ninja-build stow && \
     rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y libgmock-dev && \
-    rosdep update && rosdep install -y -i --from-paths src && \
+    rosdep update && rosdep install -y -i --from-paths src --skip-keys libabsl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && catkin_make_isolated --install
@@ -33,6 +33,10 @@ RUN . /opt/ros/$ROS_DISTRO/setup.sh && catkin_make_isolated --install
 ENV BENCHMARK_PACKAGE=cartographer_ros_benchmark
 
 COPY . ${BENCHMARK_WORKSPACE}/src/${BENCHMARK_PACKAGE}
+
+RUN apt-get update && rosdep update && \
+    rosdep install -y -i --from-paths src --skip-keys libabsl-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && catkin_make_isolated --install
 
