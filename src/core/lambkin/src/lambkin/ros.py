@@ -14,8 +14,10 @@
 
 import time
 
+import rosbag
 import roslaunch.core
 
+from robot.api import logger
 from robot.api.deco import keyword
 from robot.utils import timestr_to_secs
 
@@ -41,3 +43,16 @@ def ros_master_should_be_running(msg=None):
         if msg is None:
             msg = 'ROS master is not running'
         raise AssertionError(msg)
+
+
+@keyword('Warn If Bagfile Is Compressed')
+def warn_if_bagfile_is_compressed(bagfile_path):
+    with rosbag.Bag(bagfile_path) as bagfile:
+        compression_info = bagfile.get_compression_info()
+        if compression_info.compression != rosbag.Compression.NONE:
+            warning = '[!] {} has {} compression, performance may be degraded'.format(
+                bagfile_path, compression_info.compression
+            )
+            hint = 'Consider decompressing it: rosbag decompress {}'.format(bagfile_path)
+            logger.console(warning)
+            logger.console(hint)

@@ -87,7 +87,7 @@ Play ROS Bags
     ${bags} =  Split String  ${bags}
     FOR  ${bag}  IN  @{bags}
         File Should Exist  ${bag}
-        # TODO(nahuel): warning if ROS bag is compressed
+        Warn If Bagfile Is Compressed  ${bag}
     END
     @{options} =  Create List  --quiet  --clock
     IF  '${topics}' != '${null}' and '${topics}' != 'all'
