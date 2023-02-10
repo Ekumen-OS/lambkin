@@ -27,7 +27,7 @@ Hallway Return           hallway_return.bag
 Benchmark Cartographer ROS 2D SLAM
     [Arguments]  ${dataset}
     Register Parameters  dataset=${dataset}
-    Use 2 minutes of all data in ${dataset} as input
+    Use 2 minutes of all data in ${dataset} at 5x as input
     Track /tf:odom.base_link /tf:map.base_link trajectories
     And save the resulting map
     Use magazino_benchmark.launch in cartographer_ros_benchmark package to launch

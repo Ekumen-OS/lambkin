@@ -89,7 +89,7 @@ Play ROS Bags
         File Should Exist  ${bag}
         Warn If Bagfile Is Compressed  ${bag}
     END
-    @{options} =  Create List  --quiet  --clock
+    @{options} =  Create List  --quiet  --clock  --wait-for-subscribers
     IF  '${topics}' != '${null}' and '${topics}' != 'all'
         @{topics} =  Split String  ${topics}
         Append To List  ${options}  --topics  @{topics}
@@ -104,6 +104,8 @@ Play ROS Bags
     END
     IF  '${rate}' != '${null}'
         Append To List  ${options}  --rate  ${rate}
+        ${clock_rate} =  Evaluate  $rate * 10
+        Append To List  ${options}  --hz  ${clock_rate}
     END
     Run Process  rosbag  play  @{bags}  @{options}
     ...          stdout=DEVNULL  stderr=DEVNULL  &{kwargs}

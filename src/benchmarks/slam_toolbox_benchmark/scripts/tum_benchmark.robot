@@ -30,7 +30,7 @@ Freiburg2 Pioneer SLAM 3   rgbd_dataset_freiburg2_pioneer_slam3.bag
 Benchmark SLAM Toolbox 2D SLAM
     [Arguments]  ${dataset}
     Register Parameters  dataset=${dataset}
-    Use /tf /scan data in ${dataset} as input
+    Use /tf /scan data in ${dataset} at 10x as input
     Track /tf:world.kinect /tf:map.base_link trajectories
     And save the resulting map
     Use tum_benchmark.launch in slam_toolbox_benchmark package to launch

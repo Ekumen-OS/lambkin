@@ -27,7 +27,7 @@ Indoor loop              MARS_Loop_1.bag MARS_Loop_2.bag MARS_Loop_3.bag
 Benchmark SLAM Toolbox 2D SLAM
     [Arguments]  ${dataset}
     Register Parameters  dataset=${dataset}
-    Use /tf /vertical_velodyne/velodyne_points data in ${dataset} as input
+    Use /tf /vertical_velodyne/velodyne_points data in ${dataset} at 10x as input
     Track /tf:odom.base_link /tf:map.base_link trajectories
     And save the resulting map
     Use mars_benchmark.launch in slam_toolbox_benchmark package to launch
