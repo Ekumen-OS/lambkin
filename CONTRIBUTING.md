@@ -78,7 +78,7 @@ This is an example on how to run an existing benchmark using the provided `slam_
 #### Create a new issue
 
 If you spot a problem or have a feature request you'd like to discuss, [search if an issue already exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments).
-If a related issue doesn't exist, you can [open a new issue](https://github.com/ekumenlabs/beluga/issues/new/choose).
+If a related issue doesn't exist, you can [open a new issue](https://github.com/ekumenlabs/lambkin/issues/new/choose).
 
 ### Make changes
 
