@@ -1,154 +1,143 @@
-# How to contribute to Lambkin
+<!-- omit in toc -->
+# Contributing to LAMBKIN
 
-Thank you for investing your time in contributing to this project!
+First off, thanks for taking the time to contribute! ❤️
 
-## Contributions
+All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
 
-Any contribution that you make to this repository will
-be under the Apache 2 License, as dictated by that
-[license](./LICENSE):
+> And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
+> - Star the project
+> - Tweet about it
+> - Refer this project in your project's readme
+> - Mention the project at local meetups and tell your friends/colleagues
 
-~~~
-5. Submission of Contributions. Unless You explicitly state otherwise,
-   any Contribution intentionally submitted for inclusion in the Work
-   by You to the Licensor shall be under the terms and conditions of
-   this License, without any additional terms or conditions.
-   Notwithstanding the above, nothing herein shall supersede or modify
-   the terms of any separate license agreement you may have executed
-   with Licensor regarding such Contributions.
-~~~
+<!-- omit in toc -->
+## Table of Contents
 
-Contributors must sign-off each commit by adding a `Signed-off-by: ...`
-line to commit messages to certify that they have the right to submit
-the code they are contributing to the project according to the
-[Developer Certificate of Origin (DCO)](https://developercertificate.org/).
+- [Code of Conduct](#code-of-conduct)
+- [I Have a Question](#i-have-a-question)
+- [I Want To Contribute](#i-want-to-contribute)
+  - [Reporting Bugs](#reporting-bugs)
+  - [Requesting Features](#requesting-features)
+  - [Your First Code Contribution](#your-first-code-contribution)
 
-## Getting started
+## Code of Conduct
 
-### Run benchmarks
+This project and everyone participating in it is governed by the [LAMBKIN Code of Conduct](https://github.com/ekumenlabs/lambkin/blob/master/CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code.
 
-This is an example on how to run an existing benchmark using the provided `slam_toolbox_benchmark` package.
 
-1. Build `lambkin` and `slam_toolbox_benchmark` docker images.
+## I Have a Question
 
-    ```bash
-    make -C <PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin/docker/
-    make -C <PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/
-    ```
+> If you want to ask a question, we assume that you have read the available [Documentation](https://github.com/ekumenlabs/lambkin).
 
-2. Change to a directory containing the required datasets in ROS 1 bag format. For this example, you'll need the Magazino robot
-[hallway_return.bag](https://storage.googleapis.com/cartographer-public-data/bags/toru/hallway_return.bag) dataset from
-[Cartographer's Public Data repository](https://google-cartographer-ros.readthedocs.io/en/latest/data.html#magazino).
+Before you ask a question, it is best to search for existing [Issues](https://github.com/ekumenlabs/lambkin/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
 
-    ```bash
-    cd <PATH_TO_FOLDER_WITH_DATASET>
-    ```
+If you then still feel the need to ask a question and need clarification, we recommend the following:
 
-    The current directory will be bound to `/root/work` inside the container.
+- Open an [Issue](https://github.com/ekumenlabs/lambkin/issues/new).
+- Provide as much context as you can about what you're running into.
+- Provide project and platform versions, depending on what seems relevant.
 
-3. Execute the benchmark pipeline with this command:
+We will then take care of the issue as soon as possible.
 
-    ```bash
-    <PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot
-    ```
+## I Want To Contribute
 
-4. After the run, you should see the following folder structure in your current directory:
+> ### Legal Notice <!-- omit in toc -->
+> When contributing to this project, you must agree that you have authored 100% of the content,
+> that you have the necessary rights to the content and that the content you contribute may be
+> provided under the [Apache 2.0 License](./LICENSE) (item 5).
 
-    ```bash
-    ├── magazino_benchmark/
-    │    ├── tests/                  # LAMBKIN output artifacts
-    │    │    └── hallway_return/
-    │    │         ├── runs/
-    │    │         │    ├── 1/
-    │    │         │    ├── 2/
-    │    │         │    ├── 3/
-    │    │         │    └── ...
-    │    │         ├── metadata.json # Test case metadata
-    │    │         └── ...
-    │    ├── report.pdf              # LAMBKIN benchmark report
-    │    ├── output.xml              # RobotFramework test execution information
-    │    ├── report.html             # RobotFramework test report
-    │    ├── log.html                # RobotFramework logs
-    │    └── ...
-    └── hallway_return.bag           # Input dataset
-    ```
+### Reporting Bugs
 
-### Issues
+<!-- omit in toc -->
+#### Before Submitting a Bug Report
 
-#### Create a new issue
+A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information, and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
-If you spot a problem or have a feature request you'd like to discuss, [search if an issue already exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments).
-If a related issue doesn't exist, you can [open a new issue](https://github.com/ekumenlabs/lambkin/issues/new/choose).
+- Make sure that you are using the latest version.
+- Determine if your bug is really a bug and not an error on your side e.g. using incompatible versions (Make sure that you have read the [documentation](https://github.com/ekumenlabs/lambkin). If you are looking for support, you might want to check [this section](#i-have-a-question)).
+- To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/ekumenlabs/lambkin/issues?q=label%3Abug).
+- Collect information about the bug:
+  - Stack trace (Traceback)
+  - OS, Platform and Version (Windows, Linux, macOS, x86, ARM)
+  - Version of the interpreter, compiler, middleware, package manager, depending on what is relevant.
+  - Possibly your input and the output
+  - Can you reliably reproduce the issue? And can you also reproduce it with older versions?
 
-### Make changes
+<!-- omit in toc -->
+#### How Do I Submit a Good Bug Report?
 
-If you want to change the benchmark definition (amount of iterations, duration of each run, SLAM system parameters, etc.)
-or the way benchmarking tools are implemented, in principle, you will need to rebuild the corresponding docker images.
+We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
-In order to make the development process easier and skip the image rebuilding step, we provide an option to bind mount any modified package using [docker volumes](https://docs.docker.com/storage/volumes/).
-For instance, if you are changing the `lambkin` package itself, you could use the following command to run the previous benchmark with your changes:
+- Open an [Issue](https://github.com/ekumenlabs/lambkin/issues/new). (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
+- Explain the behavior you would expect and the actual behavior.
+- Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem and create a reduced test case.
+- Provide the information you collected in the previous section.
 
-```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot --rebuild --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
-```
+Once it's filed:
 
-The `--rebuild` option will rebuild the `catkin` workspace for the changes to take effect before execution.
+- The project team will label the issue accordingly.
+- A team member will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, the team will ask you for those steps and label the issue as `needs-repro`. Bugs with the `needs-repro` label will not be addressed until they are reproduced.
+- If the team is able to reproduce the issue, it will be labelled `needs-fix`, as well as possibly other labels, and the issue will be left to be [implemented by someone](#your-first-code-contribution).
 
-There is a shortcut to bind mount the same benchmark package you are running:
+### Requesting Features
 
-```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot --rebuild --rebind
-```
+This section guides you through submitting a feature request for LAMBKIN, **including completely new additions and minor improvements to existing functionality**. Following these guidelines will help maintainers and the community to understand your suggestion and find related suggestions.
 
-And you can mount more than one package at your convenience:
+<!-- omit in toc -->
+#### Before Submitting a Feature Request
 
-```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run magazino_benchmark.robot ---rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
-```
+- Make sure that you are using the latest version.
+- Read the [documentation](https://github.com/ekumenlabs/lambkin) carefully and find out if the functionality is already covered.
+- Perform a [search](https://github.com/ekumenlabs/lambkin/issues) to see if the feature has already been requested. If it has, add a comment to the existing issue instead of opening a new one.
+- Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to convince the project's developers of the merits of this feature.
 
-#### Make changes locally
+<!-- omit in toc -->
+#### How Do I Submit a Good Feature Request?
 
-1. Clone the repository.
-   ```bash
-   git clone git@github.com:ekumenlabs/lambkin.git
-   ```
+Feature requests are tracked as [GitHub issues](https://github.com/ekumenlabs/lambkin/issues).
 
-2. Create a working branch and start with your changes. The suggested branch name convention is `<user_name>/<feature_name>`.
+- Use a **clear and descriptive title** for the issue to identify the suggestion.
+- Provide a **step-by-step description of the suggested feature** in as many details as possible.
+- **Describe the current behavior** and **explain which behavior you expected to see instead** and why. At this point you can also tell which alternatives do not work for you.
+- **Explain why this feature would be useful** to most LAMBKIN users. You may also want to point out the other projects that solved it better and which could serve as inspiration.
 
-3. Push your changes and [create a PR](https://github.com/ekumenlabs/lambkin/compare)!
+### Your First Code Contribution
 
-4. At the time a feature branch is squashed-and-merged into `main`, the commit message should adhere to the following good practices:
-   - Limit the subject line to 50 characters.
-   - Capitalize the subject line.
-   - Do not end the subject line with a period.
-   - Use the imperative mood in the subject line.
-   - Wrap the body at 72 characters.
-   - Use the body to explain _what_ and _why_ vs. _how_.
-   - See https://cbea.ms/git-commit/ for more information and the reasoning behind this.
+This section guides you through contributing code to LAMBKIN. Following these guidelines will help maintainers and ensure your contributions are reviewed and eventually accepted.
 
-#### Using the interactive mode
+#### A Primer On Project Workflow
 
-When developing, we found useful to test commands before adding them to the automation pipeline. Instead of running a `RobotFramework` script,
-you can use the `--interactive` flag, which gives you access to a command-line interface attached to a container already configured to run GUI apps. Running the following command on different terminal windows will give you access to the same container:
+This projects adopts a [feature branch workflow](https://about.gitlab.com/topics/version-control/what-is-git-workflow/#feature-branching-git-workflow) ([forking workflow](https://about.gitlab.com/topics/version-control/what-is-git-workflow/#forking-git-workflow) for contributors that are not maintainers), with pull requests for code integration. Every code contribution must be associated to a [feature request](#requesting-features) or [bug report](#reporting-bugs) with enough consensus and evidence to move forward, signaled with `needs-work` and `needs-fix` labels respectively. Contributors must sign-off each commit by adding a `Signed-off-by: ...` line to every commit message to certify that they have the right to submit the code they are contributing to the project according to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/). Pull requests must have reviewed and approved at least once to be merged.
 
-```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run --interactive
-```
+#### How Do I Submit a Good Code Contribution?
 
-You might want to combine this option with [package binding](#changing-an-existing-benchmark) to use your preferred IDE in the host while testing your changes in the running container:
+- **Pull latest `main` branch**. Clone repository (or repository fork) locally if you haven't yet.
+- **Branch from `main` branch**. Use a descriptive name for your feature branch. Make sure to prefix it with the associated issue number.
+- **Work on your contribution**. See [instructions](docs/getting-started.md) on how to get started with LAMBKIN development.
+- **Lint and test your changes**. For bug fixes, make sure regression tests are included.
+- **Document your changes as needed**. For new features, make sure added functionality is clearly documented.
+- **Push your feature branch**. To upstream repository (or repository fork).
+- **Open pull request to `main`**. Make sure all tests and linters pass on your branch before opening.
 
-```bash
-<PATH_TO_LAMBKIN_INSTALLATION>/src/benchmarks/slam_toolbox_benchmark/docker/run --interactive --rebuild --rebind --bind lambkin:<PATH_TO_LAMBKIN_INSTALLATION>/src/core/lambkin
-```
+<!-- omit in toc -->
+### Styleguides
 
-Once inside the container, you can run a benchmark using the `rosrun` command:
+<!-- omit in toc -->
+#### Commit messages
 
-```
-root@lambkin_slam_toolbox:~/work# rosrun slam_toolbox_benchmark magazino_benchmark.robot
-```
+Commit messages should adhere to the following good practices:
 
-Use this command to rebuild the `catkin` workspace for your changes to take effect:
+- Limit the subject line to 50 characters.
+- Capitalize the subject line.
+- Do not end the subject line with a period.
+- Use the imperative mood in the subject line.
+- Wrap the body at 72 characters.
+- Use the body to explain _what_ and _why_ vs. _how_.
 
-```
-root@lambkin_slam_toolbox:~/work# catkin_make_isolated --install -C /root/ws
-```
+See https://cbea.ms/git-commit for more information and the reasoning behind this.
+
+<!-- omit in toc -->
+## Attribution
+This guide is based on the **contributing-gen**. [Make your own](https://github.com/bttger/contributing-gen)!

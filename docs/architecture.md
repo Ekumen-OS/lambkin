@@ -1,8 +1,8 @@
 # Architecture
 
-The packages found in `lambkin` fall into one of these three categories:
+The packages found in LAMBKIN fall into one of these three categories:
 
-- [Core packages](../src/core) (i.e. `lambkin`) with common tools shared by all benchmarks.
+- [Core packages](../src/core) (e.g. `lambkin`) with common tools shared by all benchmarks.
 - [Tool packages](../src/tools) not needed during benchmarking (i.e. dataset format convertion tools).
 - [Benchmark packages](../src/benchmarks) that target a specific SLAM system (i.e. Cartographer ROS, SLAM Toolbox).
 
