@@ -14,27 +14,30 @@
 # limitations under the License.
 
 *** Settings ***
-Resource          lambkin.resource
+Documentation   SLAM Toolbox 2D SLAM benchmark using Rawseeds datasets
+Resource        lambkin/robot/resources/all.resource
 
-Test Template     Benchmark SLAM Toolbox 2D SLAM
-Suite Setup       Lambkin Setup
-Suite Teardown    Benchmark Teardown
+Suite Setup     Setup SLAM Toolbox 2D SLAM benchmark suite
+Suite Teardown  Teardown SLAM Toolbox 2D SLAM benchmark suite
+Test Template   Run SLAM Toolbox 2D SLAM benchmark case for each ${dataset}
 
-*** Test Cases ***                    DATASET
-Indoors with static illumination      Bicocca_2009-02-25b_Static_Lamps.bag
+
+*** Test Cases ***                DATASET
+Indoors with static illumination  Bicocca_2009-02-25b_Static_Lamps.bag
+
 
 *** Keywords ***
-Benchmark SLAM Toolbox 2D SLAM
-    [Arguments]  ${dataset}
-    Register Parameters  dataset=${dataset}
-    Use 2 minutes of /tf /odom /scan/front /scan/rear data in ${dataset} at 10x as input
-    Track /tf:map.base_link /tf:odom.base_link trajectories
-    And save the resulting map
-    Use rawseeds_benchmark.launch in slam_toolbox_benchmark package to launch
-    Use a sampling rate of 20 Hz to track computational performance
-    Benchmark SLAM Toolbox for 10 iterations
+SLAM Toolbox 2D SLAM benchmark suite
+    Extends ROS 2D SLAM system benchmark suite
+    Extends generic resource usage benchmark suite
+    Generates latexpdf report from rawseeds_report template in slam_toolbox_benchmark ROS package
 
-Benchmark Teardown
-    Lambkin Teardown
-    Run Keyword If All Tests Passed
-    ...  Generate report using rawseeds_report in slam_toolbox_benchmark package
+SLAM Toolbox 2D SLAM benchmark case
+    Extends ROS 2D SLAM system benchmark case
+    Extends generic resource usage benchmark case
+    Uses 2 minutes of ${dataset} at 10x as input
+    Uses rawseeds_benchmark.launch in slam_toolbox_benchmark ROS package as rig
+    Uses timemory-timem to sample sync_slam_toolbox_node performance
+    Tracks /tf:odom.base_link /tf:map.base_link trajectories
+    Uses /gt as trajectory groundtruth
+    Uses 10 iterations

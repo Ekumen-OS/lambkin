@@ -19,28 +19,30 @@ Resource        lambkin/robot/resources/all.resource
 
 Suite Setup     Setup SLAM Toolbox 2D SLAM benchmark suite
 Suite Teardown  Teardown SLAM Toolbox 2D SLAM benchmark suite
-Test Template   Run SLAM Toolbox 2D SLAM benchmark case for each ${dataset}
+Test Template   Run SLAM Toolbox 2D SLAM benchmark case for each ${dataset} ${map_resolution} ${search_resolution}
 
 
-*** Test Cases ***        DATASET
-Freiburg2 Pioneer 360     rgbd_dataset_freiburg2_pioneer_360.bag
-Freiburg2 Pioneer SLAM 1  rgbd_dataset_freiburg2_pioneer_slam.bag
-Freiburg2 Pioneer SLAM 2  rgbd_dataset_freiburg2_pioneer_slam2.bag
-Freiburg2 Pioneer SLAM 3  rgbd_dataset_freiburg2_pioneer_slam3.bag
+*** Test Cases ***        DATASET                                   MAP RESOLUTION                     SEARCH RESOLUTION
+Freiburg2 Pioneer 360     rgbd_dataset_freiburg2_pioneer_360.bag    ${{np.linspace(0.025, 0.125, 5)}}  ${{[0.025, 0.050]}}
+Freiburg2 Pioneer SLAM 1  rgbd_dataset_freiburg2_pioneer_slam.bag   ${{np.linspace(0.025, 0.125, 5)}}  ${{[0.025, 0.050]}}
+Freiburg2 Pioneer SLAM 2  rgbd_dataset_freiburg2_pioneer_slam2.bag  ${{np.linspace(0.025, 0.125, 5)}}  ${{[0.025, 0.050]}}
+Freiburg2 Pioneer SLAM 3  rgbd_dataset_freiburg2_pioneer_slam3.bag  ${{np.linspace(0.025, 0.125, 5)}}  ${{[0.025, 0.050]}}
 
 
 *** Keywords ***
 SLAM Toolbox 2D SLAM benchmark suite
     Extends ROS 2D SLAM system benchmark suite
     Extends generic resource usage benchmark suite
-    Generates latexpdf report from tum_report template in slam_toolbox_benchmark ROS package
+    Generates latexpdf report from parametric_report template in slam_toolbox_benchmark ROS package
 
 SLAM Toolbox 2D SLAM benchmark case
     Extends ROS 2D SLAM system benchmark case
     Extends generic resource usage benchmark case
     Uses /tf /scan data in ${dataset} at 10x as input
-    Uses tum_benchmark.launch in slam_toolbox_benchmark ROS package as rig
+    Uses parametric_benchmark.launch in slam_toolbox_benchmark ROS package as rig
+    Sets map_resolution launch argument to ${map_resolution}
+    Sets search_resolution launch argument to ${search_resolution}
     Uses timemory-timem to sample sync_slam_toolbox_node performance
-    Tracks /tf:odom.base_link /tf:map.base_link trajectories
+    Tracks /tf:map.base_link /tf:odom.base_link trajectories
     Uses /tf:world.kinect as trajectory groundtruth
     Uses 10 iterations

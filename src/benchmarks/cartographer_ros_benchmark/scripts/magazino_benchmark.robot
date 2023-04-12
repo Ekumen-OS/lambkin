@@ -14,27 +14,30 @@
 # limitations under the License.
 
 *** Settings ***
-Resource          lambkin.resource
+Documentation   Cartographer ROS 2D SLAM benchmark using Magazino datasets
+Resource        lambkin/robot/resources/all.resource
 
-Test Template     Benchmark Cartographer ROS 2D SLAM
-Suite Setup       Lambkin Setup
-Suite Teardown    Benchmark Teardown
+Suite Setup     Setup Cartographer ROS 2D SLAM benchmark suite
+Suite Teardown  Teardown Cartographer ROS 2D SLAM benchmark suite
+Test Template   Run Cartographer ROS 2D SLAM benchmark case for each ${dataset}
+
 
 *** Test Cases ***       DATASET
 Hallway Return           hallway_return.bag
 
-*** Keywords ***
-Benchmark Cartographer ROS 2D SLAM
-    [Arguments]  ${dataset}
-    Register Parameters  dataset=${dataset}
-    Use 2 minutes of all data in ${dataset} at 5x as input
-    Track /tf:odom.base_link /tf:map.base_link trajectories
-    And save the resulting map
-    Use magazino_benchmark.launch in cartographer_ros_benchmark package to launch
-    Use a sampling rate of 20 Hz to track computational performance
-    Benchmark Cartographer ROS for 10 iterations
 
-Benchmark Teardown
-    Lambkin Teardown
-    Run Keyword If All Tests Passed
-    ...  Generate report using magazino_report in cartographer_ros_benchmark package
+*** Keywords ***
+Cartographer ROS 2D SLAM benchmark suite
+    Extends ROS 2D SLAM system benchmark suite
+    Extends generic resource usage benchmark suite
+    Generates latexpdf report from magazino_report template in cartographer_ros_benchmark ROS package
+
+Cartographer ROS 2D SLAM benchmark case
+    Extends ROS 2D SLAM system benchmark case
+    Extends generic resource usage benchmark case
+    Uses 2 minutes of ${dataset} at 5x as input
+    Uses magazino_benchmark.launch in cartographer_ros_benchmark ROS package as rig
+    Uses timemory-timem to sample cartographer_node performance
+    Uses /tf:odom.base_link as trajectory groundtruth
+    Tracks /tf:map.base_link trajectory
+    Uses 10 iterations

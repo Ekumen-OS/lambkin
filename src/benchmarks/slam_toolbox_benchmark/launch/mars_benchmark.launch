@@ -1,6 +1,6 @@
 <launch>
   <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node"
-      name="pointcloud_to_laserscan" required="true">
+        name="pointcloud_to_laserscan" required="true">
     <remap from="cloud_in" to="/vertical_velodyne/velodyne_points"/>
     <remap from="scan" to="/vertical_velodyne/scan"/>
     <rosparam>
@@ -18,9 +18,8 @@
     </rosparam>
   </node>
 
-  <arg name="main_node_prefix" default="$(optenv LAMBKIN_MAIN_NODE_PREFIX)"/>
-  <node launch-prefix="$(arg main_node_prefix)" pkg="slam_toolbox" type="async_slam_toolbox_node"
-      name="slam_toolbox" output="screen" required="true">
+  <node pkg="slam_toolbox" type="sync_slam_toolbox_node" name="slam_toolbox"
+        launch-prefix="$(env sync_slam_toolbox_node_PREFIX)" output="screen" required="true">
     <rosparam command="load" file="$(find slam_toolbox_benchmark)/config/mars_benchmark.yaml" />
     <remap from="scan" to="/vertical_velodyne/scan" />
   </node>
