@@ -1,4 +1,4 @@
-# Copyright 2022 Ekumen, Inc.
+# Copyright 2023 Ekumen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Localization and Mapping Benchmarking Toolkit.
+*** Settings ***
+Documentation    Wrappers for Sphinx CLI applications.
 
-This package is a mixture of automation and conventions
-that bind many tools and libraries into a reusable toolkit
-to ease localization and mapping evaluation.
-"""
+Resource         lambkin/robot/resources/library/process.resource
 
-import lambkin.cli as cli
-import lambkin.data as data
-import lambkin.robot as robot
-import lambkin.utilities as utilities
 
-__all__ = ['cli', 'data', 'robot', 'utilities']
+*** Keywords ***
+Build Sphinx Documentation
+    [Documentation]  Invokes sphinx-build on input to build on output.
+    [Arguments]  ${output}=build  ${input}=.  ${builder}=latexpdf
+    [Tags]  imperative
+    ${result} =  Run Managed Process
+    ...  sphinx-build  -M  ${builder}  ${input}  ${output}  -W
+    RETURN  ${result}

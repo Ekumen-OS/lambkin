@@ -12,17 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Localization and Mapping Benchmarking Toolkit.
+*** Settings ***
+Documentation  Localization And Mapping Benchmarking Toolkit
 
-This package is a mixture of automation and conventions
-that bind many tools and libraries into a reusable toolkit
-to ease localization and mapping evaluation.
-"""
-
-import lambkin.cli as cli
-import lambkin.data as data
-import lambkin.robot as robot
-import lambkin.utilities as utilities
-
-__all__ = ['cli', 'data', 'robot', 'utilities']
+Resource       lambkin/robot/resources/benchmarks/all.resource
+Resource       lambkin/robot/resources/library/all.resource

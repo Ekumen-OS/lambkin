@@ -1,0 +1,9 @@
+<launch>
+  <node pkg="tf" type="static_transform_publisher" name="mocap_tf_broadcaster"
+        args="1 0 0 0 0 0 1 mocap_frame mocap_device 100"  output="screen"/>
+  <node pkg="tf" type="static_transform_publisher" name="slam_tf_broadcaster"
+        args="1 0 0 0 0 0 1 map base_link 100"  output="screen"/>
+
+  <node pkg="rostopic" type="rostopic" name="occupancy_grid_pub" output="screen" args="pub -l /map nav_msgs/OccupancyGrid
+        '{info: {height: 2, width: 2, origin: {orientation: {w: 1}}}, data: [100, 100, 100, 100]}'"/>
+</launch>

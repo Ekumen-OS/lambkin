@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""This module contains the lambkin CLI."""
+
 import argparse
 
 import os
 import pathlib
 import shutil
 
-import lambkin.aggregate as aggregate
 
 def robot(args):
+    """Robotframework CLI as a subcommand."""
     if '--' in args.remaining_args:
         args.remaining_args.remove('--')
     if '-d' not in args.remaining_args and \
@@ -30,20 +32,23 @@ def robot(args):
     args = [path_to_executable] + args.remaining_args + [args.file]
     os.execv(path_to_executable, args)
 
+
 def main(argv=None):
+    """Entrypoint for lambkin CLI."""
     parser = argparse.ArgumentParser(
-        description='Localization And Mapping Benchmarking CLI')
+        description='Localization And Mapping Benchmarking Toolkit CLI')
+    parser.set_defaults(subcommand=None)
     subparsers = parser.add_subparsers()
-    robot_subparser = subparsers.add_parser('robot')
+    robot_subparser = subparsers.add_parser(
+        'robot', description='Wrapper for RobotFramework CLI')
     robot_subparser.add_argument(
         '-f', '--file', type=pathlib.PurePath, required=True,
         help='Path to robot file, useful in shebang lines.')
     robot_subparser.set_defaults(subcommand=robot)
 
-    aggregate_subparser = subparsers.add_parser(
-        'aggregate', parents=[aggregate.get_parser()], add_help=False)
-    aggregate_subparser.set_defaults(subcommand=aggregate.main)
-
     args, unknown = parser.parse_known_args(argv)
     args.remaining_args = unknown
+    if not args.subcommand:
+        parser.print_help()
+        return 0
     return args.subcommand(args)

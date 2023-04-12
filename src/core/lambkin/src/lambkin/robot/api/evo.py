@@ -1,4 +1,4 @@
-# Copyright 2022 Ekumen, Inc.
+# Copyright 2023 Ekumen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Localization and Mapping Benchmarking Toolkit.
+"""This module supplements RobotFramework ``evo`` library resource."""
 
-This package is a mixture of automation and conventions
-that bind many tools and libraries into a reusable toolkit
-to ease localization and mapping evaluation.
-"""
+from robot.api.deco import keyword
 
-import lambkin.cli as cli
-import lambkin.data as data
-import lambkin.robot as robot
-import lambkin.utilities as utilities
+from lambkin.data.evo import _to_evo_filestem
 
-__all__ = ['cli', 'data', 'robot', 'utilities']
+
+@keyword('Convert To EVO Filestem')
+def convert_to_evo_filestem(name: str, name_format: str) -> str:
+    """
+    Convert `name` to a filestem like ``evo`` does.
+
+    `name_format` may be either 'ros' to deal with ROS topic name
+    semantics or 'path' to deal with filesystem semantics.
+    """
+    return _to_evo_filestem(name, name_format)
