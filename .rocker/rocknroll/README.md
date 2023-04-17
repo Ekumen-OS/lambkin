@@ -2,7 +2,16 @@
 
 A package with extensions for [`rocker`](https://github.com/osrf/rocker).
 
-### extensions
+### Installation
+
+As usual for a Python package:
+
+```sh
+cd path/to/rocknroll
+pip install -U .
+```
+
+### Extensions
 
 #### Local
 
