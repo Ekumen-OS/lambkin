@@ -111,7 +111,17 @@ Before base benchmark case execution
     ...  See `Before ${some} benchmark case execution` documentation.
     [Tags]  declarative  override
 
-    Log To Console  ${\n}  no_newline=yes
+    Log To Console  message=
+    ${parameters} =  Get Variable Value  $BENCHMARK.CASE.PARAMETERS  &{EMPTY}
+    IF  ${parameters} != &{EMPTY}
+        Log To Console  ...running ${BENCHMARK.CASE.TYPE} benchmark case for
+        FOR  ${name}  ${value}  IN  &{BENCHMARK.CASE.PARAMETERS}
+            Log To Console  message=\ \ \ \ ${name} \= ${value}
+        END
+    ELSE
+        Log To Console  ...running ${BENCHMARK.CASE.TYPE} benchmark case
+    END
+
     ${now} =  Get Current Date
 
     ${name} =  Convert To Snake Case  ${BENCHMARK.CASE.NAME}
@@ -137,7 +147,8 @@ Before base benchmark case iteration
     [Documentation]
     ...  See `Before ${some} benchmark case iteration` documentation.
     [Tags]  override
-    Log To Console  Running ${BENCHMARK.CASE.TYPE} benchmark... ${BENCHMARK.CASE.ITERATION}/${BENCHMARK.CASE.ITERATIONS}
+
+    Log To Console  .  no_newline=yes
     ${now} =  Get Current Date
 
     ${iteration} =  Convert To String  ${BENCHMARK.CASE.ITERATION}
