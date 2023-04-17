@@ -62,7 +62,7 @@ Tracks ${trajectories} trajectories
 Performs trajectory corrections
     [Documentation]
     ...  States that some SLAM system benchmark will correct trajectories being
-    ...  trakced before computing any errors w.r.t. some groundtruth. See ``evo``
+    ...  tracked before computing any errors w.r.t. some groundtruth. See ``evo``
     ...  documentation for reference on trajectory corrections.
     [Arguments]  &{kwargs}
     [Tags]  declarative
