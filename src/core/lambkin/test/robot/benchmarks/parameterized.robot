@@ -20,33 +20,37 @@ Library   Collections
 
 Suite Setup     Setup parameterized benchmark suite
 Suite Teardown  Teardown parameterized benchmark suite
-Test Template   Run parameterized benchmark case for each ${parameter}
+Test Template   Run parameterized benchmark case for each ${a} and ${b} values
 
 
 *** Test Cases ***
 Parameterized benchmark using no expressions
-    value1
-    value2
-    value3
-    value4
-    value5
-    value6
-    value7
-    value8
-    value9
-    value10
+    1  1
+    1  2
+    1  3
+    2  1
+    2  2
+    2  3
+    3  1
+    3  2
+    3  3
+
 
 Parameterized benchmark using loop expressions
-    FOR  ${index}  IN RANGE  1  10 + 1
-        value${index}
+    FOR  ${i}  IN RANGE  1  3 + 1
+        FOR  ${j}  IN RANGE  1  3 + 1
+            ${i}  ${j}
+        END
     END
 
-Parameterized benchmark using generator expressions  value${{range(1, 10 + 1)}}
+Parameterized benchmark using generator expressions
+    ${{range(1, 3 + 1)}}  ${{range(1, 3 + 1)}}
 
 
 *** Keywords ***
 Per parameterized benchmark case iteration
     Should Be Equal  ${BENCHMARK.CASE.TYPE}  parameterized
-    Dictionary Should Contain Item  ${BENCHMARK.CASE.PARAMETERS}
-    ...  parameter  value${BENCHMARK.CASE.VARIATION}
-    Should Be Equal  ${parameter}  value${BENCHMARK.CASE.VARIATION}
+    Dictionary Should Contain Item  ${BENCHMARK.CASE.PARAMETERS}  a  ${a}
+    Dictionary Should Contain Item  ${BENCHMARK.CASE.PARAMETERS}  b  ${b}
+    ${variation} =  Evaluate  (${a} - 1) * 3 + ${b}
+    Should Be Equal  ${variation}  ${BENCHMARK.CASE.VARIATION}

@@ -60,7 +60,7 @@ class InlineExpressionExpander(SuiteVisitor):
             )
         del keyword.parent.body[index]
 
-    EXPRESSION_PATTERN = re.compile(r'\$\{\{(?P<inline_expression>.*)\}\}')
+    EXPRESSION_PATTERN = re.compile(r'\$\{\{(?P<inline_expression>.*?)\}\}')
 
     @classmethod
     def _expand_expressions(cls, unevaluated_expression: str) -> Iterable[Any]:
@@ -80,12 +80,14 @@ class InlineExpressionExpander(SuiteVisitor):
         if index > 0:
             expansions.append([unevaluated_expression[:index]])
         for match in matches:
+            if match.start() > index:
+                expansions.append([unevaluated_expression[index:match.start()]])
             values = eval(
                 match.group('inline_expression'), global_scope, local_scope)
             if isinstance(values, str) or not isinstance(values, Iterable):
                 values = [values]
             expansions.append(values)
-        index = matches[-1].end()
+            index = match.end()
         if index < len(unevaluated_expression):
             expansions.append([unevaluated_expression[index:]])
         if len(expansions) == 1:

@@ -131,6 +131,7 @@ Run ${some} benchmark case for ${parameterization}
         Set Test Variable  $${name}  ${value}
     END
     Run ${some} benchmark case once
+    Set Test Variable  $BENCHMARK.CASE.PARAMETERS  &{EMPTY}
 
 Run ${some} benchmark case once
     [Documentation]
