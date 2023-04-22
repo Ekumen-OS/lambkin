@@ -191,10 +191,15 @@ SomeTrajectoryType = Union[PosePath3DType, PoseTrajectory3DType]
 
 def _to_dict(trajectory: SomeTrajectoryType) -> Mapping:
     """Convert `trajectory` to a semi-structured mapping."""
+    if hasattr(trajectory, 'timestamps'):
+        time_since_epoch = trajectory.timestamps
+        time = time_since_epoch - time_since_epoch[0]
+    else:
+        time = time_since_epoch = np.full_like(
+            trajectory.positions_xyz[:, 0], np.nan)
     return {
-        'time': getattr(
-            trajectory, 'timestamps', np.full_like(
-                trajectory.positions_xyz[:, 0], np.nan)),
+        'time': time,
+        'time_since_epoch': time_since_epoch,
         'x': trajectory.positions_xyz[:, 0],
         'y': trajectory.positions_xyz[:, 1],
         'z': trajectory.positions_xyz[:, 2],

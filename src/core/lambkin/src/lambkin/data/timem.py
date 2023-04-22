@@ -97,9 +97,18 @@ def history(
                 data = json.load(f)
             data = data['timemory']
             data = data['timem'][0]
+            if not data['history']:
+                break
+            entry = data['history'][0]
+            sample_timestamp = entry['sample_timestamp']
+            start_time = sample_timestamp['time_since_epoch'] / 1e9
             for sample in data['history']:
                 sample_timestamp = sample.pop('sample_timestamp')
-                values = dict(time=sample_timestamp['time_since_epoch'])
+                time_since_epoch = sample_timestamp['time_since_epoch'] / 1e9
+                values = dict(
+                    time=time_since_epoch - start_time,
+                    time_since_epoch=time_since_epoch
+                )
                 for metric_name, metric_data in sample.items():
                     values.update(_parse_metric_data(metric_name, metric_data))
                 yield Measurement(metadata, values)

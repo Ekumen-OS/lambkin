@@ -63,35 +63,7 @@ def testing_data_path(tmp_path_factory):
                         },
                         'history': [{
                             'sample_timestamp': {
-                                'time_since_epoch': 10 * iteration + 5
-                            },
-                            'cpu_util': {
-                                'value': 20.,
-                                'unit_value': 1,
-                                'unit_repr': '%'
-                            },
-                            'peak_rss': {
-                                'value': 28.6,
-                                'unit_value': 1000000,
-                                'unit_repr': 'MB'
-                            },
-                            'written_bytes': {
-                                'value': {
-                                    'value0': 0.05,
-                                    'value1': 1e-3
-                                },
-                                'unit_value': {
-                                    'value0': 1000000,
-                                    'value1': 1000000
-                                },
-                                'unit_repr': {
-                                    'value0': 'MB',
-                                    'value1': 'MB/sec'
-                                }
-                            }
-                        }, {
-                            'sample_timestamp': {
-                                'time_since_epoch': 10 * iteration
+                                'time_since_epoch': 10 * iteration * 1e9
                             },
                             'cpu_util': {
                                 'value': 2.,
@@ -107,6 +79,34 @@ def testing_data_path(tmp_path_factory):
                                 'value': {
                                     'value0': 0,
                                     'value1': 0
+                                },
+                                'unit_value': {
+                                    'value0': 1000000,
+                                    'value1': 1000000
+                                },
+                                'unit_repr': {
+                                    'value0': 'MB',
+                                    'value1': 'MB/sec'
+                                }
+                            }
+                        }, {
+                            'sample_timestamp': {
+                                'time_since_epoch': (10 * iteration + 5) * 1e9
+                            },
+                            'cpu_util': {
+                                'value': 20.,
+                                'unit_value': 1,
+                                'unit_repr': '%'
+                            },
+                            'peak_rss': {
+                                'value': 28.6,
+                                'unit_value': 1000000,
+                                'unit_repr': 'MB'
+                            },
+                            'written_bytes': {
+                                'value': {
+                                    'value0': 0.05,
+                                    'value1': 1e-3
                                 },
                                 'unit_value': {
                                     'value0': 1000000,
@@ -234,6 +234,7 @@ def test_wide_normalized_timem_history():
         'variation.parameters.scenario',
 
         'some-process.series.time',
+        'some-process.series.time_since_epoch',
         'some-process.series.cpu_util',
         'some-process.series.peak_rss',
         'some-process.series.written_bytes.value0',
@@ -246,9 +247,9 @@ def test_wide_normalized_timem_history():
     df = df.sort_values(by=[
         'variation.index',
         'iteration.index',
-        'some-process.series.time'
+        'some-process.series.time_since_epoch'
     ])
-    periods = df['some-process.series.time'].diff()[1:]
+    periods = df['some-process.series.time_since_epoch'].diff()[1:]
     assert periods.eq((5 * ureg.second).to_base_units().magnitude).all()
     assert df['some-process.series.cpu_util'].le(
         (20 * ureg.percent).to_base_units().magnitude
@@ -275,6 +276,7 @@ def test_long_normalized_timem_history():
 
         'process.name',
         'process.series.time',
+        'process.series.time_since_epoch',
         'process.series.cpu_util',
         'process.series.peak_rss',
         'process.series.written_bytes.value0',
@@ -287,10 +289,11 @@ def test_long_normalized_timem_history():
     df = df.sort_values(by=[
         'variation.index',
         'iteration.index',
-        'process.series.time'
+        'process.series.time_since_epoch'
     ])
     assert df['process.name'].eq('some-process').all()
-    periods = df['process.series.time'].diff()[1:]
+    periods = df['process.series.time_since_epoch'].diff()[1:]
+    print(df['process.series.time_since_epoch'])
     assert periods.eq((5 * ureg.second).to_base_units().magnitude).all()
     assert df['process.series.cpu_util'].le(
         (20 * ureg.percent).to_base_units().magnitude

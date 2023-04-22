@@ -236,6 +236,7 @@ def test_wide_normalized_evo_trajectory():
         'variation.parameters.scenario',
 
         '/tf:map.base_link.time',
+        '/tf:map.base_link.time_since_epoch',
         '/tf:map.base_link.x',
         '/tf:map.base_link.y',
         '/tf:map.base_link.z',
@@ -275,6 +276,7 @@ def test_long_normalized_evo_trajectory():
 
         'trajectory.name',
         'trajectory.time',
+        'trajectory.time_since_epoch',
         'trajectory.x',
         'trajectory.y',
         'trajectory.z',
