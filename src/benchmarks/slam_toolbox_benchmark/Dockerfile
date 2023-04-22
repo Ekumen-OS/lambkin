@@ -29,7 +29,11 @@ RUN --mount=type=bind,source=.,target=/tmp/ws/src/package,readonly cd /tmp/ws &&
 RUN cat <<EOF > /opt/ros/application/entrypoint.bash
 # Auto-generated with Docker Buildkit
 source /opt/ros/application/setup.bash
-rosrun slam_toolbox_benchmark \$@
+if [ \$# -ne 0 ]; then
+    rosrun slam_toolbox_benchmark \$@
+else
+    bash
+fi
 EOF
 
 USER $USERNAME
