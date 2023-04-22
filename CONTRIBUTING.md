@@ -20,6 +20,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
   - [Reporting Bugs](#reporting-bugs)
   - [Requesting Features](#requesting-features)
   - [Your First Code Contribution](#your-first-code-contribution)
+- [Styleguides](#styleguides)
 
 ## Code of Conduct
 
@@ -121,11 +122,10 @@ This projects adopts a [feature branch workflow](https://about.gitlab.com/topics
 - **Push your feature branch**. To upstream repository (or repository fork).
 - **Open pull request to `main`**. Make sure all tests and linters pass on your branch before opening.
 
-<!-- omit in toc -->
-### Styleguides
+## Styleguides
 
 <!-- omit in toc -->
-#### Commit messages
+### Commit messages
 
 Commit messages should adhere to the following good practices:
 
