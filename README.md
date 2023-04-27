@@ -8,7 +8,7 @@ Lambkin is a mixture of automation tools and conventions for SLAM benchmarking, 
 -   Standard performance metrics.
 -   Automatic report generation.
 
-To do this, the main library leverages existing technologies such as:
+To do this, the main library leverages many great technologies such as:
 
 - [Robot Framework](https://robotframework.org/) and [roslaunch](http://wiki.ros.org/roslaunch) for process orchestration.
 - [timem](https://timemory.readthedocs.io/en/develop/features.html#command-line-tools) for computational performance instrumentation.
@@ -17,8 +17,6 @@ To do this, the main library leverages existing technologies such as:
 - [rosbag](http://wiki.ros.org/rosbag) for data storage.
 - [docker](https://docs.docker.com/) for containerization.
 - [reStructuredText](https://docutils.sourceforge.io/rst.html) for report generation.
-
-In the following sections, you'll find a description of the rationale behind the use of the main technologies.
 
 ### Docker
 
@@ -43,16 +41,7 @@ We've also chosen [rosbag](http://wiki.ros.org/rosbag) as the preferred format f
 
 For the benchmark automation scripts we use [Robot Framework](https://robotframework.org/), which is a generic open source framework for robotic process automation (RPA).
 
-We've extended it with custom libraries that allow you to write benchmarking steps in a human-readable format. This format is flexible enough to adapt to a wide variety of scenarios. Here is an example of the syntax:
-
-```robot
-Use /tf /scan /pose data in rgbd_dataset_freiburg2_pioneer_360.bag as input
-Track /tf:world.kinect /tf:map.base_link trajectories
-And save the resulting map
-Use tum_benchmark.launch in cartographer_ros_benchmark package to launch
-Use a sampling rate of 20 Hz to track computational performance
-Benchmark Cartographer ROS for 100 iterations
-```
+We've extended it with custom libraries that allow you to write benchmarking steps in a human-readable format. This format is flexible enough to adapt to a wide variety of scenarios.
 
 ## Supported metrics
 
@@ -63,5 +52,5 @@ We currently support the following performance metrics:
 
 ## Next steps
 
-- Read about `lambkin`'s [architecture](docs/ARCHITECTURE.md).
-- Get hands-on experience with the [getting started](docs/GETTING_STARTED.md) tutorial.
+- Read about `lambkin`'s [architecture](docs/architecture.md).
+- Get hands-on experience with the [getting started](docs/getting-started.md) tutorial.

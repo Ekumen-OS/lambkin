@@ -12,9 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .misc import increment_test_variable
-from .ros import wait_for_ros_master
-from .ros import ros_master_should_be_running
+"""
+Localization and Mapping Benchmarking Toolkit.
 
-from .hooks import Hooks
-from .test_case_evaluation import TestCaseEvaluation
+This package is a mixture of automation and conventions
+that bind many tools and libraries into a reusable toolkit
+to ease localization and mapping evaluation.
+"""
+
+import lambkin.cli as cli
+import lambkin.data as data
+import lambkin.robot as robot
+import lambkin.utilities as utilities
+
+__all__ = ['cli', 'data', 'robot', 'utilities']

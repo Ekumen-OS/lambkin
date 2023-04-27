@@ -1,0 +1,3 @@
+<launch>
+  <node name="relay" pkg="topic_tools" type="relay" args="/input /output" />
+</launch>

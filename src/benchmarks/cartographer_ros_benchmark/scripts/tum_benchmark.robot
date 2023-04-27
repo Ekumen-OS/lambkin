@@ -14,11 +14,13 @@
 # limitations under the License.
 
 *** Settings ***
-Resource          lambkin.resource
+Documentation   Cartographer ROS 2D SLAM benchmark using TUM datasets
+Resource        lambkin/robot/resources/all.resource
 
-Test Template     Benchmark Cartographer ROS 2D SLAM
-Suite Setup       Lambkin Setup
-Suite Teardown    Benchmark Teardown
+Suite Setup     Setup Cartographer ROS 2D SLAM benchmark suite
+Suite Teardown  Teardown Cartographer ROS 2D SLAM benchmark suite
+Test Template   Run Cartographer ROS 2D SLAM benchmark case for each ${dataset}
+
 
 *** Test Cases ***         DATASET
 Freiburg2 Pioneer 360      rgbd_dataset_freiburg2_pioneer_360.bag
@@ -26,18 +28,19 @@ Freiburg2 Pioneer SLAM 1   rgbd_dataset_freiburg2_pioneer_slam.bag
 Freiburg2 Pioneer SLAM 2   rgbd_dataset_freiburg2_pioneer_slam2.bag
 Freiburg2 Pioneer SLAM 3   rgbd_dataset_freiburg2_pioneer_slam3.bag
 
-*** Keywords ***
-Benchmark Cartographer ROS 2D SLAM
-    [Arguments]  ${dataset}
-    Register Parameters  dataset=${dataset}
-    Use /tf /scan /pose data in ${dataset} at 5x as input
-    Track /tf:world.kinect /tf:map.base_link trajectories
-    And save the resulting map
-    Use tum_benchmark.launch in cartographer_ros_benchmark package to launch
-    Use a sampling rate of 20 Hz to track computational performance
-    Benchmark Cartographer ROS for 10 iterations
 
-Benchmark Teardown
-    Lambkin Teardown
-    Run Keyword If All Tests Passed
-    ...  Generate report using tum_report in cartographer_ros_benchmark package
+*** Keywords ***
+SLAM Toolbox 2D SLAM benchmark suite
+    Extends ROS 2D SLAM system benchmark suite
+    Extends generic resource usage benchmark suite
+    Generates latexpdf report from tum_report template in slam_toolbox_benchmark ROS package
+
+SLAM Toolbox 2D SLAM benchmark case
+    Extends ROS 2D SLAM system benchmark case
+    Extends generic resource usage benchmark case
+    Uses /tf /scan data in ${dataset} at 10x as input
+    Uses tum_benchmark.launch in cartographer_ros_benchmark ROS package as rig
+    Uses timemory-timem to sample cartographer_node performance
+    Tracks /tf:odom.base_link /tf:map.base_link trajectories
+    Uses /tf:world.kinect as trajectory groundtruth
+    Uses 10 iterations

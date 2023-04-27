@@ -1,11 +1,9 @@
 <launch>
-  <arg name="main_node_prefix" default="$(optenv LAMBKIN_MAIN_NODE_PREFIX)"/>
-
   <node name="cartographer_node" pkg="cartographer_ros"
       type="cartographer_node" args="
           -configuration_directory $(find cartographer_ros_benchmark)/config
-          -configuration_basename tum_benchmark.lua"
-      launch-prefix="$(arg main_node_prefix)" output="log" required="true">
+          -configuration_basename tum_benchmark.lua" output="log"
+      launch-prefix="$(env cartographer_node_PREFIX)" required="true">
     <remap from="odom" to="/pose" />
   </node>
 

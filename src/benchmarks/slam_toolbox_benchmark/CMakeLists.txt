@@ -5,15 +5,13 @@ find_package(catkin REQUIRED)
 
 catkin_package()
 
-catkin_python_setup()
-
 install(
   PROGRAMS
-  scripts/magazino_benchmark.robot
-  scripts/mars_benchmark.robot
-  scripts/parametric_benchmark.robot
-  scripts/rawseeds_benchmark.robot
-  scripts/tum_benchmark.robot
+    scripts/magazino_benchmark.robot
+    scripts/mars_benchmark.robot
+    scripts/parametric_tum_benchmark.robot
+    scripts/rawseeds_benchmark.robot
+    scripts/tum_benchmark.robot
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(

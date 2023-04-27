@@ -14,30 +14,33 @@
 # limitations under the License.
 
 *** Settings ***
-Resource          lambkin.resource
+Documentation   SLAM Toolbox 2D SLAM benchmark using TUM datasets
+Resource        lambkin/robot/resources/all.resource
 
-Test Template     Benchmark SLAM Toolbox 2D SLAM
-Suite Setup       Lambkin Setup
-Suite Teardown    Benchmark Teardown
+Suite Setup     Setup SLAM Toolbox 2D SLAM benchmark suite
+Suite Teardown  Teardown SLAM Toolbox 2D SLAM benchmark suite
+Test Template   Run SLAM Toolbox 2D SLAM benchmark case for each ${dataset}
 
-*** Test Cases ***         DATASET
-Freiburg2 Pioneer 360      rgbd_dataset_freiburg2_pioneer_360.bag
-Freiburg2 Pioneer SLAM 1   rgbd_dataset_freiburg2_pioneer_slam.bag
-Freiburg2 Pioneer SLAM 2   rgbd_dataset_freiburg2_pioneer_slam2.bag
-Freiburg2 Pioneer SLAM 3   rgbd_dataset_freiburg2_pioneer_slam3.bag
+
+*** Test Cases ***        DATASET
+Freiburg2 Pioneer 360     rgbd_dataset_freiburg2_pioneer_360.bag
+Freiburg2 Pioneer SLAM 1  rgbd_dataset_freiburg2_pioneer_slam.bag
+Freiburg2 Pioneer SLAM 2  rgbd_dataset_freiburg2_pioneer_slam2.bag
+Freiburg2 Pioneer SLAM 3  rgbd_dataset_freiburg2_pioneer_slam3.bag
+
 
 *** Keywords ***
-Benchmark SLAM Toolbox 2D SLAM
-    [Arguments]  ${dataset}
-    Register Parameters  dataset=${dataset}
-    Use /tf /scan data in ${dataset} at 10x as input
-    Track /tf:world.kinect /tf:map.base_link trajectories
-    And save the resulting map
-    Use tum_benchmark.launch in slam_toolbox_benchmark package to launch
-    Use a sampling rate of 20 Hz to track computational performance
-    Benchmark SLAM Toolbox for 10 iterations
+SLAM Toolbox 2D SLAM benchmark suite
+    Extends ROS 2D SLAM system benchmark suite
+    Extends generic resource usage benchmark suite
+    Generates latexpdf report from tum_report template in slam_toolbox_benchmark ROS package
 
-Benchmark Teardown
-    Lambkin Teardown
-    Run Keyword If All Tests Passed
-    ...  Generate report using tum_report in slam_toolbox_benchmark package
+SLAM Toolbox 2D SLAM benchmark case
+    Extends ROS 2D SLAM system benchmark case
+    Extends generic resource usage benchmark case
+    Uses /tf /scan data in ${dataset} at 10x as input
+    Uses tum_benchmark.launch in slam_toolbox_benchmark ROS package as rig
+    Uses timemory-timem to sample sync_slam_toolbox_node performance
+    Tracks /tf:odom.base_link /tf:map.base_link trajectories
+    Uses /tf:world.kinect as trajectory groundtruth
+    Uses 10 iterations
