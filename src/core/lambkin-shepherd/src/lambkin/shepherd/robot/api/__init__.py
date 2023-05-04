@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
+"""This subpackage hosts modules to supplement user-defined keywords in resource files."""
 
-exclude_components: []
+import lambkin.shepherd.robot.api.evo as evo
+import lambkin.shepherd.robot.api.filesystem as filesystem
+import lambkin.shepherd.robot.api.hooks as hooks
+import lambkin.shepherd.robot.api.ros as ros
+
+import lambkin.shepherd.robot.api.utilities as utilities
+
+__all__ = ['evo', 'filesystem', 'hooks', 'ros', 'utilities']

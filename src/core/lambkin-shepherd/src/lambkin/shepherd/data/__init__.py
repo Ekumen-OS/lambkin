@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
+"""This subpackage eases manipulation and analysis of benchmarks' output data."""
 
-exclude_components: []
+import lambkin.shepherd.data.access as access
+import lambkin.shepherd.data.evo as evo
+import lambkin.shepherd.data.pandas as pandas
+import lambkin.shepherd.data.ros as ros
+import lambkin.shepherd.data.timem as timem
+
+__all__ = ['access', 'evo', 'pandas', 'ros', 'timem']

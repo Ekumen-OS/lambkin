@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
+*** Settings ***
+Documentation    Wrappers for Sphinx CLI applications.
 
-exclude_components: []
+Resource         lambkin/shepherd/robot/resources/library/process.resource
+
+
+*** Keywords ***
+Build Sphinx Documentation
+    [Documentation]  Invokes sphinx-build on input to build on output.
+    [Arguments]  ${output}=build  ${input}=.  ${builder}=latexpdf
+    [Tags]  imperative
+    ${result} =  Run Managed Process
+    ...  sphinx-build  -M  ${builder}  ${input}  ${output}  -W
+    RETURN  ${result}

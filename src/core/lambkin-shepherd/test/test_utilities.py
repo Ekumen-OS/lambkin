@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
+import pytest
 
-exclude_components: []
+from lambkin.shepherd.utilities import safe_merge
+from lambkin.shepherd.utilities import snake_case
+
+
+def test_snake_case():
+    assert snake_case('SomeExample') == 'some_example'
+    assert snake_case('Some Example') == 'some_example'
+    assert snake_case('some-example') == 'some_example'
+
+
+def test_safe_merge():
+    assert safe_merge({'a': 1}, {'b': 2}) == {'a': 1, 'b': 2}
+
+    with pytest.raises(ValueError):
+        safe_merge({'a': 1}, {'a': 2})

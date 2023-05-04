@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
+from lambkin.shepherd.data.units import ureg
 
-exclude_components: []
+
+def test_percentages():
+    assert 10 * ureg.percent == 0.1
+    assert ureg.Quantity('10 %') == 0.1
