@@ -12,13 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This subpackage hosts modules to supplement RobotFramework keywords in resource files."""
-
-import lambkin.shepherd.robot.api.evo as evo
-import lambkin.shepherd.robot.api.filesystem as filesystem
-import lambkin.shepherd.robot.api.hooks as hooks
-import lambkin.shepherd.robot.api.ros as ros
-
-import lambkin.shepherd.robot.api.utilities as utilities
-
-__all__ = ['evo', 'filesystem', 'hooks', 'ros', 'utilities']
+"""This subpackage hosts reusable ROS specific benchmark templates as RobotFramework keywords."""

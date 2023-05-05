@@ -17,8 +17,6 @@
 from robot.api.deco import keyword
 from robot.utils.robottypes import TRUE_STRINGS, FALSE_STRINGS
 
-from lambkin.shepherd.utilities import snake_case
-
 from typing import List
 
 
@@ -29,6 +27,7 @@ def convert_to_snake_case(value: str) -> str:
 
     See :py:func:`snake_case` documentation.
     """
+    from lambkin.shepherd.utilities import snake_case
     return snake_case(value)
 
 

@@ -16,11 +16,11 @@
 
 import time
 
+import importlib
+
 from robot.api import logger
 from robot.api.deco import keyword
-from robot.utils import timestr_to_secs
 
-from importlib import import_module
 from typing import Optional, Union
 
 
@@ -39,11 +39,12 @@ def wait_for_ros_master(timeout: Union[float, str] = inf) -> bool:
     :return: whether the ROS master is running or not.
     """
     if isinstance(timeout, str):
+        from robot.utils import timestr_to_secs
         timeout = timestr_to_secs(timeout)
     timeout = float(timeout)
     deadline = time.time() + timeout
-    roslaunch = import_module('roslaunch.core')
-    master = roslaunch.Master()
+    roslaunch = importlib.import_module('roslaunch')
+    master = roslaunch.core.Master()
     while time.time() < deadline:
         if master.is_running():
             return True
@@ -58,8 +59,8 @@ def ros_master_should_be_running(msg: Optional[str] = None):
 
     :param msg: optional assertion message.
     """
-    roslaunch = import_module('roslaunch.core')
-    master = roslaunch.Master()
+    roslaunch = importlib.import_module('roslaunch')
+    master = roslaunch.core.Master()
     if not master.is_running():
         if msg is None:
             msg = 'ROS master is not running'
@@ -73,7 +74,7 @@ def warn_if_bagfile_is_compressed(bagfile_path: str) -> bool:
 
     :param bagfile_path: path to ROS bag to be checked.
     """
-    rosbag = import_module('rosbag')
+    rosbag = importlib.import_module('rosbag')
     with rosbag.Bag(bagfile_path) as bagfile:
         compression_info = bagfile.get_compression_info()
         compression_type = compression_info.compression
