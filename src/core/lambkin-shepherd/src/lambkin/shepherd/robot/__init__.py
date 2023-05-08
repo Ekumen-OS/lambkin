@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
+"""This subpackage hosts RobotFramework machinery for benchmark orchestration."""
 
-exclude_components: []
+import lambkin.shepherd.robot.api as api
+import lambkin.shepherd.robot.listeners as listeners
+
+__all__ = ['api', 'listeners']

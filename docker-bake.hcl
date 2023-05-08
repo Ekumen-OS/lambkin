@@ -20,7 +20,7 @@ target "lambkin-ubuntu-focal-dev" {
   contexts = {
     baseimage = "docker-image://osrf/ros:noetic-desktop-full-focal"
   }
-  args = { configuration = "{'exclude_components': ['lambkin']}" }
+  args = { configuration = "{'exclude_components': ['lambkin-shepherd']}" }
   tags = ["ekumenlabs/lambkin:ubuntu-focal-dev"]
 }
 
@@ -32,7 +32,7 @@ target "lambkin-ubuntu-focal" {
 }
 
 target "slam-toolbox-benchmarks" {
-  context = "src/benchmarks/slam_toolbox_benchmark"
+  context = "src/benchmarks/slam_toolbox_benchmarks"
   contexts = {
     lambkin = "target:lambkin-ubuntu-focal"
   }
@@ -43,7 +43,7 @@ target "slam-toolbox-benchmarks" {
 }
 
 target "cartographer-ros-benchmarks" {
-  context = "src/benchmarks/cartographer_ros_benchmark"
+  context = "src/benchmarks/cartographer_ros_benchmarks"
   contexts = {
     lambkin = "target:lambkin-ubuntu-focal"
   }

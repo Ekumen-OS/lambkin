@@ -13,10 +13,8 @@
 # limitations under the License.
 
 ---
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
-
-exclude_components: []
+- name: Install lambkin package in full
+  ansible.builtin.pip:
+    name: "{{ repository_path }}/src/core/lambkin-shepherd[full]"
+    state: latest
+    executable: pip3

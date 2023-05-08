@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin-shepherd
-  - latex
-  - ros-noetic
-  - timemory
+*** Settings ***
+Documentation  Localization And Mapping Benchmarking Toolkit benchmarks
 
-exclude_components: []
+Resource       lambkin/shepherd/robot/resources/benchmarks/ros/base.resource
+Resource       lambkin/shepherd/robot/resources/benchmarks/ros/slam.resource

@@ -1,0 +1,10 @@
+<launch>
+  <arg name="map_resolution" default="0.05" />
+  <arg name="search_resolution" default="0.1" />
+  <node pkg="slam_toolbox" type="sync_slam_toolbox_node" name="slam_toolbox"
+        launch-prefix="$(env sync_slam_toolbox_node_PREFIX)" output="screen" required="true">
+    <rosparam command="load" file="$(find slam_toolbox_benchmarks)/config/tum_benchmark.yaml" />
+    <param name="loop_search_space_resolution" value="$(arg search_resolution)" />
+    <param name="resolution" value="$(arg map_resolution)" />
+  </node>
+</launch>

@@ -1,7 +1,0 @@
-<launch>
-  <node pkg="slam_toolbox" type="sync_slam_toolbox_node" name="slam_toolbox"
-        launch-prefix="$(env sync_slam_toolbox_node_PREFIX)" output="screen" required="true">
-    <rosparam command="load" file="$(find slam_toolbox_benchmark)/config/rawseeds_benchmark.yaml" />
-    <remap from="scan" to="/scan/front" />
-  </node>
-</launch>
