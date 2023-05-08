@@ -35,6 +35,7 @@ Skip Unless ROS Package Exists
     [Documentation]  Skips test case unless ROS package can be found.
     [Arguments]  ${package_name}  ${msg}=${null}
     [Tags]  imperative
+    Skip Unless Executable Exists  rospack
     ${msg} =  Set Variable If  ${msg} == ${null}
     ...  ${package_name} package not found
     ${path} =  Find ROS Package  ${package_name}

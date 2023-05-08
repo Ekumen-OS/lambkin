@@ -17,7 +17,11 @@
 import lambkin.shepherd.robot.api.evo as evo
 import lambkin.shepherd.robot.api.filesystem as filesystem
 import lambkin.shepherd.robot.api.hooks as hooks
-import lambkin.shepherd.robot.api.ros as ros
+
+try:
+    import lambkin.shepherd.robot.api.ros as ros
+except ImportError:
+    pass
 
 import lambkin.shepherd.robot.api.utilities as utilities
 

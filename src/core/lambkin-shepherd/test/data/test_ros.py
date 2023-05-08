@@ -94,7 +94,8 @@ def test_messages():
 
 
 @pytest.mark.skipif(
-    module_missing('PIL'), reason='PIL is not installed')
+    module_missing('rosbag') or module_missing('PIL'),
+    reason='PIL is not installed')
 def test_occupancy_grids():
     for metadata, grid in occupancy_grids():
         assert grid.info.resolution == 0.1
