@@ -31,6 +31,22 @@ target "lambkin-ubuntu-focal" {
   tags = ["ekumenlabs/lambkin:ubuntu-focal"]
 }
 
+target "lambkin-ubuntu-jammy-dev" {
+  contexts = {
+    baseimage = "docker-image://osrf/ros:humble-desktop-full-jammy"
+  }
+  args = { configuration = "{'include_components': ['ros-humble', 'latex', 'timemory']}" }
+  tags = ["ekumenlabs/lambkin:ubuntu-jammy-dev"]
+}
+
+target "lambkin-ubuntu-jammy" {
+  contexts = {
+    baseimage = "docker-image://osrf/ros:humble-desktop-full-jammy"
+  }
+  args = { configuration = "{'include_components': ['ros-humble', 'lambkin-shepherd', 'latex', 'timemory']}" }
+  tags = ["ekumenlabs/lambkin:ubuntu-jammy"]
+}
+
 target "slam-toolbox-benchmarks" {
   context = "src/benchmarks/slam_toolbox_benchmarks"
   contexts = {
