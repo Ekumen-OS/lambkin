@@ -13,8 +13,8 @@ readme = "README.md"
 packages = [{ include = "lambkin", from = "src" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Framework :: RobotFramework :: Library",
-    "License :: OSI Approved :: Apached Software License",
+    "Framework :: Robot Framework :: Library",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Other",
     "Intended Audience :: Developers",
@@ -57,9 +57,9 @@ sphinx-rtd-theme = "*"
 
 [tool.poetry.extras]
 processing = ["evo", "Pillow", "scipy"]
-visualization = ["evo", "matplolib", "seaborn"]
-reporting = ["matplolib", "seaborn", "sphinx"]
-full = ["evo", "Pillow", "matplolib", "seaborn", "scipy", "sphinx"]
+visualization = ["evo", "matplotlib", "seaborn"]
+reporting = ["matplotlib", "seaborn", "Sphinx"]
+full = ["evo", "Pillow", "matplotlib", "seaborn", "scipy", "Sphinx"]
 
 [tool.poetry.scripts]
 shepherd = "lambkin.shepherd.cli:main"
