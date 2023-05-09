@@ -16,8 +16,6 @@
 
 from robot.api.deco import keyword
 
-from lambkin.shepherd.data.evo import _to_evo_filestem
-
 
 @keyword('Convert To EVO Filestem')
 def convert_to_evo_filestem(name: str, name_format: str) -> str:
@@ -27,4 +25,5 @@ def convert_to_evo_filestem(name: str, name_format: str) -> str:
     `name_format` may be either 'ros' to deal with ROS topic name
     semantics or 'path' to deal with filesystem semantics.
     """
+    from lambkin.shepherd.data.evo import _to_evo_filestem
     return _to_evo_filestem(name, name_format)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This modules provides RobotFramework listeners to augment its capabilities."""
+"""This module provides RobotFramework listeners to augment its capabilities."""
 
 import re
 
