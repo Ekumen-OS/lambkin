@@ -22,5 +22,5 @@ install(
 ## Testing ##
 #############
 
-roslint_python(scripts/bag2map)
+roslint_python(scripts/mapping_orchestrator_node.py)
 roslint_add_test()
