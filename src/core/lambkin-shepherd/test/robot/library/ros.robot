@@ -64,7 +64,7 @@ ROS occupancy grids can be saved
     Skip Unless ROS Package Exists  map_server
     Bring Up ROS Core
     Start Managed Process  rostopic  pub
-    ...  -f  ${CURDIR}/data/occupancy_grid.yaml
+    ...  -f  ${CURDIR}/data/ros/occupancy_grid.yaml
     ...  --latch  /map  nav_msgs/OccupancyGrid
     Save ROS Occupancy Grid Map  empty_map  cwd=${TEST_TEMPDIR}
     Terminate Managed Process

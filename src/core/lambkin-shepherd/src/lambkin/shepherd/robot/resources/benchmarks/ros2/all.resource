@@ -15,8 +15,5 @@
 *** Settings ***
 Documentation  Localization And Mapping Benchmarking Toolkit benchmarks
 
-Resource       lambkin/shepherd/robot/resources/benchmarks/base.resource
-Resource       lambkin/shepherd/robot/resources/benchmarks/ros/all.resource
-Resource       lambkin/shepherd/robot/resources/benchmarks/ros2/all.resource
-Resource       lambkin/shepherd/robot/resources/benchmarks/rusage.resource
-Resource       lambkin/shepherd/robot/resources/benchmarks/slam.resource
+Resource       lambkin/shepherd/robot/resources/benchmarks/ros2/base.resource
+Resource       lambkin/shepherd/robot/resources/benchmarks/ros/slam.resource

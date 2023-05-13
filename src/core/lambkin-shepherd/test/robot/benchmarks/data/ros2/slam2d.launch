@@ -1,0 +1,9 @@
+<launch>
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="mocap_tf_broadcaster"
+        args="--x 1 --y 0 --z 0 --qx 0 --qy 0 --qz 0 --qw 1 --frame-id mocap_frame --child-frame-id mocap_device"  output="screen"/>
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="slam_tf_broadcaster"
+        args="--x 1 --y 0 --z 0 --qx 0 --qy 0 --qz 0 --qw 1 --frame-id map --child-frame-id base_link"  output="screen"/>
+
+  <executable cmd="ros2 topic pub /map nav_msgs/OccupancyGrid
+      '{info: {height: 2, width: 2, origin: {orientation: {w: 1}}}, data: [100, 100, 100, 100]}'"/>
+</launch>
