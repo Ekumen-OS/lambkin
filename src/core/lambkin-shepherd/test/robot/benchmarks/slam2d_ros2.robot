@@ -35,7 +35,7 @@ Basic ROS 2 2D SLAM system benchmark suite
 
 Basic ROS 2 2D SLAM system benchmark case
     Extends ROS 2 2D SLAM system benchmark case
-    Uses data/ros2/slam2d.launch as rig
+    Uses data/ros2/slam2d.launch.xml as rig
     Tracks /tf:map.base_link trajectory
     Uses /tf:mocap_frame.mocap_device as trajectory groundtruth
     Performs trajectory corrections  align=no

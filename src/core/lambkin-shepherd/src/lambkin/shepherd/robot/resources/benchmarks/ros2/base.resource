@@ -134,7 +134,7 @@ Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as inpu
     Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
     Uses ${topics} data in ${bag} at ${rate}x as input
 
-Uses ${launch_file:.+\.launch} as rig
+Uses ${launch_file} as rig
     [Documentation]
     ...  Specifies a launch file for the benchmark case rig.
     ...  Paths are resolved relative to the benchmark suite.
@@ -144,7 +144,7 @@ Uses ${launch_file:.+\.launch} as rig
     ${launch_file} =  Resolve File Path or Fail  ${launch_file}
     Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
 
-Uses ${launch_file:.+\.launch} in ${package_name} ROS 2 package as rig
+Uses ${launch_file} in ${package_name} ROS 2 package as rig
     [Documentation]
     ...  Specifies a launch file for the benchmark case rig.
     [Tags]  declarative

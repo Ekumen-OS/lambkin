@@ -36,7 +36,7 @@ Basic ROS 2 system benchmark suite
 Basic ROS 2 system benchmark case
     Extends ROS 2 system benchmark case
     Uses data/ros2/basic as input
-    Uses data/ros2/basic.launch as rig
+    Uses data/ros2/basic.launch.xml as rig
 
 After basic ROS 2 system benchmark case iteration
     Directory Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${BENCHMARK.OUTPUT.ROS.BAG}
