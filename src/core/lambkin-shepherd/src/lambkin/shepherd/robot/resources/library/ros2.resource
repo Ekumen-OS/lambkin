@@ -42,7 +42,7 @@ Skip Unless ROS 2 Package Exists
 
 Set ROS 2 Parameter For Every Node
     [Documentation]  Sets a ROS 2 parameter for each running node.
-    [Arguments]  ${name}  ${value}  ${node}=${null}
+    [Arguments]  ${name}  ${value}
     [Tags]  imperative
     ${result} =  Run Process  ros2  node  list
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
@@ -99,8 +99,7 @@ Start Recording ROS 2 Bag
     RETURN  ${process}
 
 Play ROS 2 Bag
-    # NOTE(nahuel): This can only play one ROS bag.
-    [Documentation]  Plays one ROS 2 bag while clocking.
+    [Documentation]  Plays one ROS 2 bag.
     [Arguments]  ${bag}  ${cwd}=.  &{kwargs}
     [Tags]  imperative
     ${options} =  Convert To Command Line Options  &{kwargs}
