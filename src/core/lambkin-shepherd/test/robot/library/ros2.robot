@@ -50,7 +50,7 @@ ROS 2 parameters can be dumped
 ROS 2 parameters can be set
     Skip Unless ROS 2 Package Exists  topic_tools
     Start Process  ros2  run  topic_tools  relay  /tf
-    Set ROS 2 Parameter For Every Node  use_sim_time  true
+    Set ROS 2 Parameter  use_sim_time  true  /relay
     Dump ROS 2 Parameters  ${TEST_TEMPDIR}
     Terminate Process
     File Should Exist  ${TEST_TEMPDIR}/relay_params.yaml

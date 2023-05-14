@@ -40,13 +40,18 @@ Skip Unless ROS 2 Package Exists
     ${path} =  Find ROS 2 Package  ${package_name}
     Skip If  "${path}" == "${None}"  msg=${msg}
 
-Set ROS 2 Parameter For Every Node
-    [Documentation]  Sets a ROS 2 parameter for each running node.
-    [Arguments]  ${name}  ${value}
-    [Tags]  imperative
-    ${result} =  Run Process  ros2  node  list
+Get ROS 2 Node List
+    [Documentation]  Returns a list of available ROS 2 nodes.
+    [Arguments]  &{kwargs}
+    ${options} =  Convert To Command Line Options  &{kwargs}
+    ${result} =  Run Managed Process  ros2  node  list  @{options}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
     @{nodes} =  Split To Lines  ${result.stdout}
+    RETURN  @{nodes}
+
+Set ROS 2 Parameter
+    [Documentation]  Sets a ROS 2 parameter for the given nodes.
+    [Arguments]  ${name}  ${value}  @{nodes}
     FOR  ${node}  IN  @{nodes}
         ${result} =  Run Process  ros2  param  set  ${node}  ${name}  ${value}
         Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
@@ -56,9 +61,7 @@ Dump ROS 2 Parameters
     [Documentation]  Writes ROS 2 parameters from each node to a given directory.
     [Arguments]  ${cwd}=.  @{arguments}
     [Tags]  imperative
-    ${result} =  Run Process  ros2  node  list
-    Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
-    @{nodes} =  Split To Lines  ${result.stdout}
+    @{nodes} =  Get ROS 2 Node List
     FOR  ${node}  IN  @{nodes}
         ${result} =  Run Process  ros2  param  dump  ${node}  @{arguments}
         Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}

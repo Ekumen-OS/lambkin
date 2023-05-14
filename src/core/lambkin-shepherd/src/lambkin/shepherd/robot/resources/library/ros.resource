@@ -69,7 +69,7 @@ Dump ROS Parameters
     [Arguments]  ${file}=ros_param_dump.yaml  &{kwargs}
     [Tags]  imperative
     ${result} =  Run Managed Process  rosparam  dump  ${file}  -v  &{kwargs}
-    Should Be Equal As Integers  ${result.rc}  0
+    Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
 
 Launch ROS System
     [Documentation]  Launches a ROS system via roslaunch.

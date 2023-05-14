@@ -186,7 +186,8 @@ Before ROS 2 system benchmark case rig bringup
     [Documentation]
     ...  See `Before ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
-    Set ROS 2 Parameter For Every Node  use_sim_time  ${BENCHMARK.RIG.ROS.SIMULATED}
+    @{nodes} =  Get ROS 2 Node List
+    Set ROS 2 Parameter  use_sim_time  ${BENCHMARK.RIG.ROS.SIMULATED}  @{nodes}
     Start recording ROS 2 bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
     ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}  all=yes
