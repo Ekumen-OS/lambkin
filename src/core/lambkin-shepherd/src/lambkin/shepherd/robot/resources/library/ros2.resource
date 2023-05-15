@@ -78,7 +78,7 @@ Launch ROS 2 System
     Append To List  ${arguments}  ${launch_file}
     IF  "${package}" != "${null}"  Append To List  ${arguments}  ${package}
     Reverse List  ${arguments}
-    # TODO(nahuel): Verify the need for --wait --log --sigint-timeout --sigterm-timeout
+    Set Environment Variable  OVERRIDE_LAUNCH_PROCESS_OUTPUT  log
     ${process} =  Start Managed Process  ros2  launch
     ...           @{arguments}  &{kwargs}  alias=${name}
     Process Should Be Running  ${name}  msg=${name} ROS system is not running
