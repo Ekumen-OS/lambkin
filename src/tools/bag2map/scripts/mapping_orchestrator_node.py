@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-
+from rosbag import Bag
 import rospy
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
@@ -7,6 +7,7 @@ from std_msgs.msg import String
 from multiprocessing import Event, Lock
 from slam_toolbox_msgs.srv import SaveMap
 import os
+from pathlib import Path
 
 
 SAVE_MAP_SERVICE_TIMEOUT = 60  # seconds
@@ -14,7 +15,6 @@ SAVE_MAP_SERVICE_TIMEOUT = 60  # seconds
 
 class Orchestrator:
     FIRST_ODOM_MSG_TIMEOUT = 60  # seconds
-    MAX_TIME_BETWEEN_ODOM_MSGS = 2  # seconds
 
     def __init__(self):
         self._received_event = Event()
@@ -45,29 +45,41 @@ class Orchestrator:
     def _on_odom(self, _):
         self._received_event.set()
 
-    def is_alive(self) -> bool:
-        ret = self._received_event.wait(self.MAX_TIME_BETWEEN_ODOM_MSGS)
-        self._received_event.clear()
-        return ret
-
 
 def main():
     rospy.init_node("orchestrator", anonymous=False)
     orchestrator = Orchestrator()
+    output_dir = rospy.get_param("~output_dir")
+    end_timestamp: float = float(rospy.get_param("~end_timestamp", 0))
+    bag_path = Path(rospy.get_param("~bag_path"))
+    assert bag_path.is_file(
+    ), f"Bag file doesn't exist in {bag_path.resolve()}"
+
+    bag_end_timestamp = Bag(bag_path.resolve()).get_end_time()
+
+    if end_timestamp == 0:
+        end_timestamp = bag_end_timestamp
+    else:
+        assert end_timestamp < bag_end_timestamp, f"The provided end time is past the bag's end time."
+        "{end_timestamp} vs {bag_end_timestamp}"
+
+    rospy.loginfo("Got save map service")
+    os.makedirs(output_dir, exist_ok=True)
+
     save_map_client = rospy.ServiceProxy("/slam_toolbox/save_map", SaveMap)
     rospy.loginfo("Waiting for save map service")
-    output_dir = rospy.get_param("~output_dir")
     save_map_client.wait_for_service(SAVE_MAP_SERVICE_TIMEOUT)
-    rospy.loginfo("Got save map service")
+
+    rate = rospy.Rate(hz=1)
+
     while True:
         if rospy.is_shutdown():
             rospy.logerr("Ros master died, aborting mapping.")
             return -1
-        if not orchestrator.is_alive():
-            rospy.loginfo(
-                "Didn't get any odom message in time, proceeding to save map.")
+        rate.sleep()
+        if rospy.Time.now().to_time() >= end_timestamp:
+            rospy.loginfo("Finished mapping, proceeding to save the map.")
             break
-    os.makedirs(output_dir, exist_ok=True)
     save_map_client.call(name=String(data=output_dir))
 
 

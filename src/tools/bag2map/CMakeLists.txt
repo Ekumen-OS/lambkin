@@ -9,7 +9,6 @@ catkin_package()
 ## Install ##
 #############
 
-
 catkin_install_python(PROGRAMS
   scripts/mapping_orchestrator_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
