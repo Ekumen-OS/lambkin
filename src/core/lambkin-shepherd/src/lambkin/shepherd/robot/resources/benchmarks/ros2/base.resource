@@ -117,7 +117,7 @@ Uses ${duration} of ${topics:/.*} data in ${bag} as input to ROS 2 system
     [Tags]  declarative
     Uses ${duration} of ${topics} data in ${bag} at 1x as input to ROS 2 system
 
-Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input tp ROS 2 system
+Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
     ...  will use for data input. Durations are specified as time strings.
