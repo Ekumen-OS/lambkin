@@ -51,32 +51,32 @@ ROS 2 system benchmark case
 
 Uses ${bag} as input to ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
-    ...  will use for data input. The path to ROS bag will be resolved
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
+    ...  will use for data input. The path to ROS 2 bag will be resolved
     ...  relative to the benchmark suite.
     [Tags]  declarative
     Uses ${bag} at 1x as input to ROS 2 system
 
 Uses ${duration} of ${bag} as input to ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
     ...  will use for data input. Durations are specified as time strings.
-    ...  The path to ROS bag will be resolved relative to the benchmark suite.
+    ...  The path to ROS 2 bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
     Uses ${duration} of ${bag} at 1x as input to ROS 2 system
 
 Uses ${topics:/.+} data in ${bag} as input to ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
-    ...  will use for data input. The path to ROS bag will be resolved
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
+    ...  will use for data input. The path to ROS 2 bag will be resolved
     ...  relative to the benchmark suite.
     [Tags]  declarative
     Uses ${topics} data in ${bag} at 1x as input to ROS 2 system
 
 Uses ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
-    ...  will use for data input. The path to ROS bag will be resolved
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
+    ...  will use for data input. The path to ROS 2 bag will be resolved
     ...  relative to the working directory and the benchmark suite
     ...  parent directory.
     [Tags]  declarative
@@ -91,8 +91,8 @@ Uses ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
 
 Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
-    ...  will use for data input. The path to ROS bag will be resolved
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
+    ...  will use for data input. The path to ROS 2 bag will be resolved
     ...  relative to the benchmark suite.
     [Tags]  declarative
     ${topics} =  Split String  ${topics}
@@ -101,9 +101,9 @@ Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 syst
 
 Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
     ...  will use for data input. Durations are specified as time strings.
-    ...  The path to ROS bag will be resolved relative to the benchmark suite.
+    ...  The path to ROS 2 bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
     ${duration} =  Convert Time  ${duration}
     Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
@@ -111,17 +111,17 @@ Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
 
 Uses ${duration} of ${topics:/.*} data in ${bag} as input to ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
     ...  will use for data input. Durations are specified as time strings.
-    ...  The path to ROS bag will be resolved relative to the benchmark suite.
+    ...  The path to ROS 2 bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
     Uses ${duration} of ${topics} data in ${bag} at 1x as input to ROS 2 system
 
 Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input tp ROS 2 system
     [Documentation]
-    ...  Specifies the ROS bag data that some ROS system benchmark case
+    ...  Specifies the ROS 2 bag data that some ROS 2 system benchmark case
     ...  will use for data input. Durations are specified as time strings.
-    ...  The path to ROS bag will be resolved relative to the benchmark suite.
+    ...  The path to ROS 2 bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
     ${duration} =  Convert Time  ${duration}
     Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
@@ -130,7 +130,7 @@ Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as inpu
 Generates ${format} report from ${template_name} template in ${package_name} ROS 2 package
     [Documentation]
     ...  Specifies report generation using Sphinx template projects that are
-    ...  to be found in ROS package paths, under the reports subdirectory.
+    ...  to be found in ROS 2 package paths, under the reports subdirectory.
     ...  See `Generates ${format} report from ${template_path} template`
     ...  documentation for further reference.
     [Tags]  declarative
