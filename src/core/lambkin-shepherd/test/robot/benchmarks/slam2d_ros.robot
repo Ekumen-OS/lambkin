@@ -42,4 +42,4 @@ Basic ROS 2D SLAM system benchmark case
     Holds 3 seconds
 
 After basic ROS 2D SLAM system benchmark case iteration
-    File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/output.bag
+    File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${BENCHMARK.OUTPUT.ROS.BAG}

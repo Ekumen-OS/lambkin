@@ -22,21 +22,12 @@ Documentation
 Resource  lambkin/shepherd/robot/resources/library/filesystem.resource
 Resource  lambkin/shepherd/robot/resources/library/ros2.resource
 Resource  lambkin/shepherd/robot/resources/benchmarks/base.resource
+Resource  lambkin/shepherd/robot/resources/benchmarks/ros_base.resource
 
 Library   Collections
 Library   DateTime
 Library   OperatingSystem
 Library   String
-
-
-*** Variables ***
-${BENCHMARK.INPUT.ROS.RATE}            ${1}
-${BENCHMARK.INPUT.ROS.TOPICS}          ${null}
-${BENCHMARK.INPUT.ROS.DURATION}        ${null}
-${BENCHMARK.OUTPUT.ROS.BAG}            output
-${BENCHMARK.RIG.ROS.LAUNCH.PACKAGE}    ${null}
-@{BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}  @{EMPTY}
-${BENCHMARK.RIG.ROS.SIMULATED}         ${False}
 
 
 *** Keywords ***
@@ -45,6 +36,7 @@ ROS 2 system benchmark suite
     ...  Generic ROS 2 system benchmark suite description.
     [Tags]  descriptive
     Extends base benchmark suite
+    Extends ROS base benchmark suite
 
 ROS 2 system benchmark case
     [Documentation]
@@ -55,32 +47,33 @@ ROS 2 system benchmark case
     ...  ROS 2 bag recording.
     [Tags]  descriptive
     Extends base benchmark case
+    Extends ROS base benchmark case
 
-Uses ${bag} as input
+Uses ${bag} as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. The path to ROS bag will be resolved
     ...  relative to the benchmark suite.
     [Tags]  declarative
-    Uses ${bag} at 1x as input
+    Uses ${bag} at 1x as input to ROS 2 system
 
-Uses ${duration} of ${bag} as input
+Uses ${duration} of ${bag} as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. Durations are specified as time strings.
     ...  The path to ROS bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
-    Uses ${duration} of ${bag} at 1x as input
+    Uses ${duration} of ${bag} at 1x as input to ROS 2 system
 
-Uses ${topics:/.+} data in ${bag} as input
+Uses ${topics:/.+} data in ${bag} as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. The path to ROS bag will be resolved
     ...  relative to the benchmark suite.
     [Tags]  declarative
-    Uses ${topics} data in ${bag} at 1x as input
+    Uses ${topics} data in ${bag} at 1x as input to ROS 2 system
 
-Uses ${bag} at ${rate:(\d*\.)?\d+}x as input
+Uses ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. The path to ROS bag will be resolved
@@ -96,7 +89,7 @@ Uses ${bag} at ${rate:(\d*\.)?\d+}x as input
     ${rate} =  Convert To Number  ${rate}
     Set Test Variable  $BENCHMARK.INPUT.ROS.RATE  ${rate}
 
-Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input
+Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. The path to ROS bag will be resolved
@@ -104,9 +97,9 @@ Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input
     [Tags]  declarative
     ${topics} =  Split String  ${topics}
     Set Test Variable  $BENCHMARK.INPUT.ROS.TOPICS  ${topics}
-    Uses ${bag} at ${rate}x as input
+    Uses ${bag} at ${rate}x as input to ROS 2 system
 
-Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input
+Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. Durations are specified as time strings.
@@ -114,17 +107,17 @@ Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input
     [Tags]  declarative
     ${duration} =  Convert Time  ${duration}
     Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
-    Uses ${bag} at ${rate}x as input
+    Uses ${bag} at ${rate}x as input to ROS 2 system
 
-Uses ${duration} of ${topics:/.*} data in ${bag} as input
+Uses ${duration} of ${topics:/.*} data in ${bag} as input to ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. Durations are specified as time strings.
     ...  The path to ROS bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
-    Uses ${duration} of ${topics} data in ${bag} at 1x as input
+    Uses ${duration} of ${topics} data in ${bag} at 1x as input to ROS 2 system
 
-Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input
+Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input tp ROS 2 system
     [Documentation]
     ...  Specifies the ROS bag data that some ROS system benchmark case
     ...  will use for data input. Durations are specified as time strings.
@@ -132,34 +125,7 @@ Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as inpu
     [Tags]  declarative
     ${duration} =  Convert Time  ${duration}
     Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
-    Uses ${topics} data in ${bag} at ${rate}x as input
-
-Uses ${launch_file} as rig
-    [Documentation]
-    ...  Specifies a launch file for the benchmark case rig.
-    ...  Paths are resolved relative to the benchmark suite.
-    [Tags]  declarative
-    Variable Should Not Exist  $BENCHMARK.RIG.ROS.LAUNCH.FILE
-    ...  ROS launch file already set to ${BENCHMARK.RIG.ROS.LAUNCH_FILE}
-    ${launch_file} =  Resolve File Path or Fail  ${launch_file}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
-
-Uses ${launch_file} in ${package_name} ROS 2 package as rig
-    [Documentation]
-    ...  Specifies a launch file for the benchmark case rig.
-    [Tags]  declarative
-    Variable Should Not Exist  $BENCHMARK.RIG.ROS.LAUNCH.FILE
-    ...  ROS launch file already set to ${BENCHMARK.RIG.ROS.LAUNCH_FILE}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.PACKAGE  ${package_name}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
-
-Sets ${name} launch argument to ${value}
-    [Documentation]
-    ...  Specifies an argument for the benchmark case rig launch file.
-    [Tags]  declarative
-    ${args} =  Set Variable  ${BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}
-    Append To List  ${args}  ${name}:=${value}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS  ${args}
+    Uses ${topics} data in ${bag} at ${rate}x as input to ROS 2 system
 
 Generates ${format} report from ${template_name} template in ${package_name} ROS 2 package
     [Documentation]
@@ -168,7 +134,7 @@ Generates ${format} report from ${template_name} template in ${package_name} ROS
     ...  See `Generates ${format} report from ${template_path} template`
     ...  documentation for further reference.
     [Tags]  declarative
-    ${package_path} =  Find ROS Package  ${package_name}
+    ${package_path} =  Find ROS 2 Package  ${package_name}
     ${template_path} =  Join Path  ${package_path}  reports  ${template_name}
     Directory Should Exist  ${template_path}
     ...  No ${template_name} template found in ${package_name} ROS package
@@ -180,7 +146,7 @@ Before ROS 2 system benchmark case iteration
     [Documentation]
     ...  See `Before ${some} benchmark case iteration` documentation.
     [Tags]  declarative  override
-    Set Environment Variable  ROS_HOME  ${BENCHMARK.CASE.ITERATION.PATH}/_ros
+    Set Environment Variable  ROS_LOG_DIR  ${BENCHMARK.CASE.ITERATION.PATH}/_ros
 
 Before ROS 2 system benchmark case rig bringup
     [Documentation]

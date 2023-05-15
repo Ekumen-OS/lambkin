@@ -22,21 +22,12 @@ Documentation
 Resource  lambkin/shepherd/robot/resources/library/filesystem.resource
 Resource  lambkin/shepherd/robot/resources/library/ros.resource
 Resource  lambkin/shepherd/robot/resources/benchmarks/base.resource
+Resource  lambkin/shepherd/robot/resources/benchmarks/ros_base.resource
 
 Library   Collections
 Library   DateTime
 Library   OperatingSystem
 Library   String
-
-
-*** Variables ***
-${BENCHMARK.INPUT.ROS.RATE}            ${1}
-${BENCHMARK.INPUT.ROS.TOPICS}          ${null}
-${BENCHMARK.INPUT.ROS.DURATION}        ${null}
-${BENCHMARK.OUTPUT.ROS.BAG}            output.bag
-${BENCHMARK.RIG.ROS.LAUNCH.PACKAGE}    ${null}
-@{BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}  @{EMPTY}
-${BENCHMARK.RIG.ROS.SIMULATED}         ${False}
 
 
 *** Keywords ***
@@ -45,6 +36,7 @@ ROS system benchmark suite
     ...  Generic ROS system benchmark suite description.
     [Tags]  descriptive
     Extends base benchmark suite
+    Extends ROS base benchmark suite
 
 ROS system benchmark case
     [Documentation]
@@ -55,6 +47,7 @@ ROS system benchmark case
     ...  ROS bag recording.
     [Tags]  descriptive
     Extends base benchmark case
+    Extends ROS base benchmark case
 
 Uses ${bags:.+\.bag} as input
     [Documentation]
@@ -138,33 +131,6 @@ Uses ${duration} of ${topics:/.*} data in ${bags:.+\.bag} at ${rate:(\d*\.)?\d+}
     ${duration} =  Convert Time  ${duration}
     Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
     Uses ${topics} data in ${bags} at ${rate}x as input
-
-Uses ${launch_file:.+\.launch} as rig
-    [Documentation]
-    ...  Specifies a launch file for the benchmark case rig.
-    ...  Paths are resolved relative to the benchmark suite.
-    [Tags]  declarative
-    Variable Should Not Exist  $BENCHMARK.RIG.ROS.LAUNCH.FILE
-    ...  ROS launch file already set to ${BENCHMARK.RIG.ROS.LAUNCH_FILE}
-    ${launch_file} =  Resolve File Path or Fail  ${launch_file}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
-
-Uses ${launch_file:.+\.launch} in ${package_name} ROS package as rig
-    [Documentation]
-    ...  Specifies a launch file for the benchmark case rig.
-    [Tags]  declarative
-    Variable Should Not Exist  $BENCHMARK.RIG.ROS.LAUNCH.FILE
-    ...  ROS launch file already set to ${BENCHMARK.RIG.ROS.LAUNCH_FILE}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.PACKAGE  ${package_name}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
-
-Sets ${name} launch argument to ${value}
-    [Documentation]
-    ...  Specifies an argument for the benchmark case rig launch file.
-    [Tags]  declarative
-    ${args} =  Set Variable  ${BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}
-    Append To List  ${args}  ${name}:=${value}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS  ${args}
 
 Generates ${format} report from ${template_name} template in ${package_name} ROS package
     [Documentation]
