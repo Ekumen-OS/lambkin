@@ -84,10 +84,12 @@ Uses ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     ...  ROS bags already set to ${BENCHMARK.INPUT.ROS.BAGS}
     ${paths} =  Create List
     ${path} =  Resolve File Path or Fail  ${bag}
+    Warn If ROS 2 Bag Is Compressed  ${path}
     Append To List  ${paths}  ${path}
     Set Test Variable  $BENCHMARK.INPUT.ROS.BAGS  ${paths}
     ${rate} =  Convert To Number  ${rate}
     Set Test Variable  $BENCHMARK.INPUT.ROS.RATE  ${rate}
+    Set Test Variable  $BENCHMARK.RIG.ROS.SIMULATED  ${True}
 
 Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]

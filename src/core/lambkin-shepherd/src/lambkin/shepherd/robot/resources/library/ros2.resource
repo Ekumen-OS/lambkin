@@ -19,6 +19,7 @@ Resource          lambkin/shepherd/robot/resources/library/process.resource
 Resource          lambkin/shepherd/robot/resources/library/utilities.resource
 
 Library           DateTime
+Library           lambkin.shepherd.robot.api.ros2
 
 
 *** Keywords ***

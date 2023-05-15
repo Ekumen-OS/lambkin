@@ -77,3 +77,28 @@ ROS 2 occupancy grids can be saved
     Should Be Equal  "${dimensions}"  "2 2"
     ${data} =  Get Line  ${image}  -1
     Should Be Equal  "${data}"  "\x00\x00\x00\x00"
+
+Compressed bag can be detected
+    Skip Unless Executables Exist  ros2
+    Start Process  ros2  topic  pub
+    ...  -r  10  /foo  std_msgs/String  data: bar  alias=PUB
+    Start Process  ros2  bag  record
+    ...  --output  ${TEST_TEMPDIR}/empty.bag  --all
+    ...  --compression-mode  file  --compression-format  zstd  alias=RECORD
+    Sleep  2s
+    Terminate Process  RECORD
+    Terminate Process  PUB
+    ${compressed} =  Warn If ROS 2 Bag Is Compressed  ${TEST_TEMPDIR}/empty.bag
+    Should Be True  ${compressed}
+
+Uncompressed bag can be detected
+    Skip Unless Executables Exist  ros2
+    Start Process  ros2  topic  pub
+    ...  -r  10  /foo  std_msgs/String  data: bar  alias=PUB
+    Start Process  ros2  bag  record
+    ...  --output  ${TEST_TEMPDIR}/empty.bag  --all  alias=RECORD
+    Sleep  2s
+    Terminate Process  RECORD
+    Terminate Process  PUB
+    ${compressed} =  Warn If ROS 2 Bag Is Compressed  ${TEST_TEMPDIR}/empty.bag
+    Should Not Be True  ${compressed}
