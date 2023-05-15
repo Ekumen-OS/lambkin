@@ -64,8 +64,7 @@ After ROS 2 2D SLAM system benchmark case iteration
     ...                            ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
     ...                            Ground truth trajectory already tracked
 
-    # TODO(nahuel): Implement workaround for TF trajectories which are not supported
-    # in the current version of evo.
+    # NOTE(nahuel): TF trajectories are not supported in the current version of evo.
     # See:
     # - https://github.com/MichaelGrupp/evo/issues/443.
     # - https://github.com/MichaelGrupp/evo/blob/v1.22.0/evo/tools/file_interface.py#L279-L280
