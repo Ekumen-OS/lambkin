@@ -1,7 +1,7 @@
 <launch>
 
   <param name="/use_sim_time" value="true" />
-  <arg name="bag_path" doc="Full path to the .bag file to play" />
+  <arg name="bag_path" doc="Full path to the .bag file to play." />
   <arg name="odom_frame" default="odom" doc="Odom frame." />
   <arg name="base_frame" default="base_footprint" doc="Robot's base frame." />
   <arg name="scan_topic" default="/scan" doc="Where are lidar messages published to." />
@@ -23,7 +23,7 @@
     <remap from="/tf_static" to="/tf_static_replayed" />
   </node>
 
-  <node pkg="bag2map" type="mapping_orchestrator_node.py" name="orchestrator" output="screen"
+  <node pkg="bag2map" type="mapping_orchestrator_node" name="mapping_orchestrator" output="screen"
     required="true">
     <param name="output_dir" type="string" value="$(arg output_dir)" />
     <param name="bag_path" type="string" value="$(arg bag_path)" />

@@ -47,10 +47,10 @@ class Orchestrator:
 
 
 def main():
-    rospy.init_node("orchestrator", anonymous=False)
+    rospy.init_node("mapping_orchestrator", anonymous=False)
     orchestrator = Orchestrator()
     output_dir = rospy.get_param("~output_dir")
-    end_timestamp: float = float(rospy.get_param("~end_timestamp", 0))
+    end_timestamp = float(rospy.get_param("~end_timestamp", 0))
     bag_path = Path(rospy.get_param("~bag_path"))
     assert bag_path.is_file(
     ), f"Bag file doesn't exist in {bag_path.resolve()}"
@@ -60,8 +60,9 @@ def main():
     if end_timestamp == 0:
         end_timestamp = bag_end_timestamp
     else:
-        assert end_timestamp < bag_end_timestamp, f"The provided end time is past the bag's end time."
-        "{end_timestamp} vs {bag_end_timestamp}"
+        message = ("The provided end time is past the bag's end time."
+                            f"{end_timestamp} vs {bag_end_timestamp}")
+        assert end_timestamp < bag_end_timestamp, message
 
     rospy.loginfo("Got save map service")
     os.makedirs(output_dir, exist_ok=True)

@@ -10,7 +10,7 @@ catkin_package()
 #############
 
 catkin_install_python(PROGRAMS
-  scripts/mapping_orchestrator_node.py
+  scripts/mapping_orchestrator_node
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(
@@ -21,5 +21,5 @@ install(
 ## Testing ##
 #############
 
-roslint_python(scripts/mapping_orchestrator_node.py)
+roslint_python(scripts/mapping_orchestrator_node)
 roslint_add_test()
