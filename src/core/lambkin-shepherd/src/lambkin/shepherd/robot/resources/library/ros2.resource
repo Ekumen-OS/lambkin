@@ -65,7 +65,7 @@ Dump ROS 2 Parameters
     FOR  ${node}  IN  @{nodes}
         ${result} =  Run Process  ros2  param  dump  ${node}  @{arguments}
         Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
-        ${node} =	Remove String  ${node}  /
+        ${node} =  Remove String  ${node}  /
         ${path} =  Join Path  ${cwd}  ${node}_params.yaml
         Create File  ${path}  ${result.stdout}
     END
