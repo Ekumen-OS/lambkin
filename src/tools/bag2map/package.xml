@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>bag2map</name>
+  <version>0.1.0</version>
+  <description>SLAM Toolbox powered map generation from bag files</description>
+
+  <maintainer email="serraramiro@ekumenlabs.com">Ramiro Serra</maintainer>
+
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>rosbag</exec_depend>
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>tf2_tools</exec_depend>
+</package>
