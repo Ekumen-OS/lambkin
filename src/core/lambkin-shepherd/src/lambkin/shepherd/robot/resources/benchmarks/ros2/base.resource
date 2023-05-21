@@ -139,7 +139,7 @@ Generates ${format} report from ${template_name} template in ${package_name} ROS
     ${package_path} =  Find ROS 2 Package  ${package_name}
     ${template_path} =  Join Path  ${package_path}  reports  ${template_name}
     Directory Should Exist  ${template_path}
-    ...  No ${template_name} template found in ${package_name} ROS package
+    ...  No ${template_name} template found in ${package_name} ROS 2 package
     Generates ${format} report from ${template_path} template
 
 ### Hooks ###
@@ -165,7 +165,7 @@ For ROS 2 system benchmark case rig bringup
     ...  See `For ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
     Variable Should Exist  ${BENCHMARK.RIG.ROS.LAUNCH.FILE}
-    ...  No ROS launch file specified for benchmark rig
+    ...  No ROS 2 launch file specified for benchmark rig
     Launch ROS 2 System  main
     ...  ${BENCHMARK.RIG.ROS.LAUNCH.FILE}
     ...  @{BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}
@@ -198,7 +198,7 @@ For ROS 2 system benchmark case rig shutdown
     [Tags]  declarative  override
     ${result} =  Shutdown ROS 2 System  main
     Should Be Equal  ${result.rc}  ${0}
-    ...  msg=ROS system had issues during benchmark
+    ...  msg=ROS 2 system had issues during benchmark
 
 After ROS 2 system benchmark case rig shutdown
     [Documentation]
@@ -208,4 +208,4 @@ After ROS 2 system benchmark case rig shutdown
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
     ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}
     Should Be Equal  ${result.rc}  ${0}
-    ...  msg=Failed to record output ROS bag
+    ...  msg=Failed to record output ROS 2 bag
