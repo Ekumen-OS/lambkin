@@ -80,9 +80,9 @@ Launch ROS 2 System
     Append To List  ${arguments}  ${launch_file}
     IF  "${package}" != "${null}"  Append To List  ${arguments}  ${package}
     Reverse List  ${arguments}
-    Set Environment Variable  OVERRIDE_LAUNCH_PROCESS_OUTPUT  log
     ${process} =  Start Managed Process  ros2  launch
     ...           @{arguments}  &{kwargs}  alias=${name}
+    ...           env:OVERRIDE_LAUNCH_PROCESS_OUTPUT=log
     Process Should Be Running  ${name}  msg=${name} ROS system is not running
     RETURN  ${process}
 
