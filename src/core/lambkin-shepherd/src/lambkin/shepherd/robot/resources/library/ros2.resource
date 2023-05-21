@@ -53,7 +53,7 @@ Get ROS 2 Node List
 Set ROS 2 Parameter
     [Documentation]  Sets a ROS 2 parameter for the given nodes.
     [Arguments]  ${name}  ${value}  @{nodes}
-    Should Not Be Empty  @{nodes}
+    Should Not Be Empty  ${nodes}
     FOR  ${node}  IN  @{nodes}
         ${result} =  Run Process  ros2  param  set  ${node}  ${name}  ${value}
         Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
