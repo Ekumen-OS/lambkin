@@ -27,9 +27,9 @@ def warn_if_ros_2_bag_is_compressed(bag_path: str) -> bool:
 
     :param bag_path: path to ROS 2 bag to be checked.
     """
-    rosbags = import_module('rosbags.rosbag2')
-    reader = rosbags.Reader(bag_path)
-    compression_mode = reader.compression_mode
+    rosbag2_py = import_module('rosbag2_py')
+    metadata = rosbag2_py.Info().read_metadata(bag_path, "")
+    compression_mode = metadata.compression_mode
     if compression_mode != "":
         logger.console(
             f'\n[!] {bag_path} has {compression_mode}'
