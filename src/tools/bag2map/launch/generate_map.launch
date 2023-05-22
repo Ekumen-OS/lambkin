@@ -1,0 +1,33 @@
+<launch>
+
+  <param name="/use_sim_time" value="true" />
+  <arg name="bag_path" doc="Full path to the .bag file to play." />
+  <arg name="odom_frame" default="odom" doc="Odom frame." />
+  <arg name="base_frame" default="base_footprint" doc="Robot's base frame." />
+  <arg name="scan_topic" default="/scan" doc="Where are lidar messages published to." />
+  <arg name="output_dir" default="/workspace"
+    doc="Full path to output directory where .pgm and .yaml files will be written to." />
+  <arg name="end_timestamp" default="0"
+    doc="Timestamp (in replay time) at which the map will be saved (in float seconds from epoch, as specified in the rosbag information.). If 0, will be saved at the bagfile's end time." />
+
+  <node pkg="slam_toolbox" type="sync_slam_toolbox_node" name="slam_toolbox"
+    output="screen" required="true">
+    <rosparam command="load" file="$(find bag2map)/config/map_generation_config.yaml" />
+    <param name="base_frame" type="string" value="$(arg base_frame)" />
+    <param name="odom_frame" type="string" value="$(arg odom_frame)" />
+    <remap from="scan" to="$(arg scan_topic)" />
+  </node>
+
+  <node pkg="rosbag" type="play" name="play_bag" output="screen"
+    args="--clock $(arg bag_path) -d 5 --keep-alive" required="true">
+    <remap from="/tf_static" to="/tf_static_replayed" />
+  </node>
+
+  <node pkg="bag2map" type="mapping_orchestrator_node" name="mapping_orchestrator" output="screen"
+    required="true">
+    <param name="output_dir" type="string" value="$(arg output_dir)" />
+    <param name="bag_path" type="string" value="$(arg bag_path)" />
+    <param name="end_timestamp" type="string" value="$(arg end_timestamp)" />
+  </node>
+
+</launch>
