@@ -61,7 +61,7 @@ def main():
         end_timestamp = bag_end_timestamp
     else:
         message = ("The provided end time is past the bag's end time."
-                            f"{end_timestamp} vs {bag_end_timestamp}")
+                   f"{end_timestamp} vs {bag_end_timestamp}")
         assert end_timestamp < bag_end_timestamp, message
 
     rospy.loginfo("Got save map service")
