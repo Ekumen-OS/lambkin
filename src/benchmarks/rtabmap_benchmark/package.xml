@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rtabmap_benchmark</name>
+  <version>0.1.0</version>
+  <description>Lambkin benchmark package for SLAM Toolbox</description>
+
+  <author email="franco.c@ekumenlabs.com">Franco Cipollone</author>
+  <maintainer email="franco.c@ekumenlabs.com">Franco Cipollone</maintainer>
+
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>lambkin-shepherd</exec_depend>
+  <exec_depend>rtabmap_ros</exec_depend>
+
+</package>

@@ -68,3 +68,14 @@ target "cartographer-ros-benchmarks" {
 
   tags = ["ekumenlabs/cartographer-ros-benchmarks:latest"]
 }
+
+target "rtabmap-benchmarks" {
+  context = "src/benchmarks/rtabmap_benchmark"
+  contexts = {
+    lambkin = "target:lambkin-ubuntu-focal"
+  }
+  args = { baseimage = "lambkin" }
+  target = "release"
+
+  tags = ["ekumenlabs/rtabmap-benchmarks:latest"]
+}
