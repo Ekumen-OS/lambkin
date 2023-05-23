@@ -92,12 +92,12 @@ Metrics
          data = lks.data.pandas.inner_join([
              lks.data.evo.stats('/tf:map.base_link', 'ape'),
              lks.data.evo.stats('/tf:map.base_link', 'rpe'),
-             lks.data.timem.summary('sync_slam_toolbox_node')
+             lks.data.timem.summary('cartographer_node')
          ], on=['case.name', 'iteration.index'])
 
          data = lks.data.pandas.rescale(data, {
-             'sync_slam_toolbox_node.summary.cpu_util': 100,
-             'sync_slam_toolbox_node.summary.peak_rss': 1 / 8e6
+             'cartographer_node.summary.cpu_util': 100,
+             'cartographer_node.summary.peak_rss': 1 / 8e6
          })
 
          data = data.melt(
@@ -107,16 +107,16 @@ Metrics
              value_vars=[
                  '/tf:map.base_link.ape.rmse',
                  '/tf:map.base_link.rpe.rmse',
-                 'sync_slam_toolbox_node.summary.cpu_util',
-                 'sync_slam_toolbox_node.summary.peak_rss'
+                 'cartographer_node.summary.cpu_util',
+                 'cartographer_node.summary.peak_rss'
              ],
          )
 
          data = data.replace({'metric': {
              '/tf:map.base_link.ape.rmse': 'APE rmse (m)',
              '/tf:map.base_link.rpe.rmse': 'RPE rmse (m)',
-             'sync_slam_toolbox_node.summary.cpu_util': 'CPU usage (%)',
-             'sync_slam_toolbox_node.summary.peak_rss': 'Peak RSS (MB)'
+             'cartographer_node.summary.cpu_util': 'CPU usage (%)',
+             'cartographer_node.summary.peak_rss': 'Peak RSS (MB)'
          }})
 
          grid = sns.catplot(
@@ -137,12 +137,12 @@ Metrics
 
          sns.lineplot(
              lks.data.pandas.rescale(
-                 lks.data.timem.history('sync_slam_toolbox_node'), {
-                     'sync_slam_toolbox_node.series.virtual_memory': 1 / 8e6
+                 lks.data.timem.history('cartographer_node'), {
+                     'cartographer_node.series.virtual_memory': 1 / 8e6
                  }
              ),
-             x='sync_slam_toolbox_node.series.time',
-             y='sync_slam_toolbox_node.series.virtual_memory',
+             x='cartographer_node.series.time',
+             y='cartographer_node.series.virtual_memory',
              hue='case.name', n_boot=20
          )
          plt.gca().set(xlabel='Time (s)', ylabel='Virtual Memory (MB)')
@@ -151,11 +151,11 @@ Metrics
 
          sns.histplot(
              lks.data.pandas.rescale(
-                 lks.data.timem.summary('sync_slam_toolbox_node'), {
-                     'sync_slam_toolbox_node.summary.cpu_util': 100,
+                 lks.data.timem.summary('cartographer_node'), {
+                     'cartographer_node.summary.cpu_util': 100,
                  }
              ),
-             x='sync_slam_toolbox_node.summary.cpu_util',
+             x='cartographer_node.summary.cpu_util',
              hue='case.name', element='step', kde=True
          )
          plt.gca().set(xlabel='CPU Usage (%)', ylabel='Iteration Count')
@@ -164,12 +164,12 @@ Metrics
 
          sns.lineplot(
              lks.data.pandas.rescale(
-                 lks.data.timem.history('sync_slam_toolbox_node'), {
-                     'sync_slam_toolbox_node.series.page_rss': 1 / 8e6
+                 lks.data.timem.history('cartographer_node'), {
+                     'cartographer_node.series.page_rss': 1 / 8e6
                  }
              ),
-             x='sync_slam_toolbox_node.series.time',
-             y='sync_slam_toolbox_node.series.page_rss',
+             x='cartographer_node.series.time',
+             y='cartographer_node.series.page_rss',
              hue='case.name', n_boot=20
          )
          plt.gca().set(xlabel='Time (s)', ylabel='RSS (MB)')
@@ -178,11 +178,11 @@ Metrics
 
          sns.histplot(
              lks.data.pandas.rescale(
-                 lks.data.timem.summary('sync_slam_toolbox_node'), {
-                     'sync_slam_toolbox_node.summary.peak_rss': 1 / 8e6
+                 lks.data.timem.summary('cartographer_node'), {
+                     'cartographer_node.summary.peak_rss': 1 / 8e6
                  }
              ),
-             x='sync_slam_toolbox_node.summary.peak_rss',
+             x='cartographer_node.summary.peak_rss',
              hue='case.name', element='step', kde=True
          )
          plt.gca().set(xlabel='Peak RSS (MB)', ylabel='Iteration Count')
