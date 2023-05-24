@@ -37,8 +37,8 @@ Basic ROS system benchmark suite
 
 Basic ROS system benchmark case
     Extends ROS system benchmark case
-    Uses data/basic.bag as input
-    Uses data/basic.launch as rig
+    Uses data/ros/basic.bag as input
+    Uses data/ros/basic.launch as rig
 
 After basic ROS system benchmark case iteration
     File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/output.bag

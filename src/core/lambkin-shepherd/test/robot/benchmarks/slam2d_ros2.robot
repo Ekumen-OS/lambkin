@@ -13,33 +13,33 @@
 # limitations under the License.
 
 *** Settings ***
-Documentation  ROS 2D SLAM system benchmark implementation tests
-Resource  lambkin/shepherd/robot/resources/benchmarks/ros/slam.resource
+Documentation  ROS 2 2D SLAM system benchmark implementation tests
+Resource  lambkin/shepherd/robot/resources/benchmarks/ros2/slam.resource
 
 Resource  testing.resource
 
-Suite Setup     Setup basic ROS 2D SLAM system benchmark suite
-Suite Teardown  Teardown basic ROS 2D SLAM system benchmark suite
+Suite Setup     Setup basic ROS 2 2D SLAM system benchmark suite
+Suite Teardown  Teardown basic ROS 2 2D SLAM system benchmark suite
 
 
 *** Test Cases ***
-ROS 2D SLAM system benchmark functionality is correct
-    Skip Unless Executable Exists  roscore
-    Run basic ROS 2D SLAM system benchmark case once
+ROS 2 2D SLAM system benchmark functionality is correct
+    Skip Unless Executable Exists  ros2
+    Run basic ROS 2 2D SLAM system benchmark case once
 
 
 *** Keywords ***
-Basic ROS 2D SLAM system benchmark suite
-    Extends ROS 2D SLAM system benchmark suite
+Basic ROS 2 2D SLAM system benchmark suite
+    Extends ROS 2 2D SLAM system benchmark suite
     Extends testing benchmark suite
 
-Basic ROS 2D SLAM system benchmark case
-    Extends ROS 2D SLAM system benchmark case
-    Uses data/ros/slam2d.launch as rig
+Basic ROS 2 2D SLAM system benchmark case
+    Extends ROS 2 2D SLAM system benchmark case
+    Uses data/ros2/slam2d.launch.xml as rig
     Tracks /tf:map.base_link trajectory
     Uses /tf:mocap_frame.mocap_device as trajectory groundtruth
     Performs trajectory corrections  align=no
     Holds 3 seconds
 
-After basic ROS 2D SLAM system benchmark case iteration
-    File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${BENCHMARK.OUTPUT.ROS.BAG}
+After basic ROS 2 2D SLAM system benchmark case iteration
+    Directory Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${BENCHMARK.OUTPUT.ROS.BAG}

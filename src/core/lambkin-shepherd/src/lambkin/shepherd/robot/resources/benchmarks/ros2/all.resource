@@ -12,14 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This subpackage hosts modules to supplement RobotFramework keywords in resource files."""
+*** Settings ***
+Documentation  Localization And Mapping Benchmarking Toolkit benchmarks
 
-import lambkin.shepherd.robot.api.evo as evo
-import lambkin.shepherd.robot.api.filesystem as filesystem
-import lambkin.shepherd.robot.api.hooks as hooks
-import lambkin.shepherd.robot.api.ros as ros
-import lambkin.shepherd.robot.api.ros2 as ros2
-
-import lambkin.shepherd.robot.api.utilities as utilities
-
-__all__ = ['evo', 'filesystem', 'hooks', 'ros', 'ros2', 'utilities']
+Resource       lambkin/shepherd/robot/resources/benchmarks/ros2/base.resource
+Resource       lambkin/shepherd/robot/resources/benchmarks/ros2/slam.resource

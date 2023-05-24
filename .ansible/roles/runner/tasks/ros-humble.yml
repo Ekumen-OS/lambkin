@@ -28,6 +28,7 @@
     name:
       - ros-humble-desktop
       - ros-humble-nav2-map-server
+      - ros-humble-topic-tools
     state: present
     update_cache: yes
 
