@@ -50,6 +50,14 @@ Get ROS 2 Node List
     @{nodes} =  Split To Lines  ${result.stdout}
     RETURN  @{nodes}
 
+Get ROS 2 Parameter
+    [Documentation]  Gets a ROS 2 parameter value from the given node.
+    [Arguments]  ${name}  ${node}
+    ${result} =  Run Process  ros2  param  get  ${node}  ${name}  --hide-type
+    Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
+    ${value} =  Evaluate  ${result.stdout}
+    RETURN  ${value}
+
 Set ROS 2 Parameter
     [Documentation]  Sets a ROS 2 parameter for the given nodes.
     [Arguments]  ${name}  ${value}  @{nodes}
@@ -71,6 +79,21 @@ Dump ROS 2 Parameters
         ${path} =  Join Path  ${cwd}  ${node}_params.yaml
         Create File  ${path}  ${result.stdout}
     END
+
+Warn If Not Using Sim Time
+    [Documentation]  Log a warning to console if one of the given ROS 2 nodes
+    ...              is not using simulation time.
+    [Arguments]  @{nodes}
+    [Tags]  imperative
+    ${return} =  Set Variable  ${True}
+    FOR  ${node}  IN  @{nodes}
+        ${use_sim_time} =  Get ROS 2 Parameter  use_sim_time  ${node}
+        IF  "${use_sim_time}" != "${True}"
+            Log To Console  ${\n}\[!] ${node} is not using sim time
+            ${return} =  Set Variable  ${False}
+        END
+    END
+    RETURN  ${return}
 
 Launch ROS 2 System
     [Documentation]  Launches a ROS 2 system via ros2 launch.

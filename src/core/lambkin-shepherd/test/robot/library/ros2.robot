@@ -40,6 +40,7 @@ ROS 2 parameters can be dumped
     Skip Unless ROS 2 Package Exists  topic_tools
     Start Process  ros2  run  topic_tools  relay  /tf
     Sleep  1s
+    Set ROS 2 Parameter  use_sim_time  false  /relay
     Dump ROS 2 Parameters  ${TEST_TEMPDIR}
     Terminate Process
     File Should Exist  ${TEST_TEMPDIR}/relay_params.yaml
@@ -48,18 +49,17 @@ ROS 2 parameters can be dumped
     ${params} =  Get From Dictionary  ${node}  ros__parameters
     Dictionary Should Contain Item  ${params}  use_sim_time  ${False}
 
-ROS 2 parameters can be set
+ROS 2 parameters can be set and obtained
     Skip Unless ROS 2 Package Exists  topic_tools
     Start Process  ros2  run  topic_tools  relay  /tf
     Sleep  1s
+    Set ROS 2 Parameter  use_sim_time  false  /relay
+    ${value} =  Get ROS 2 Parameter  use_sim_time  /relay
+    Should Not Be True  ${value}
     Set ROS 2 Parameter  use_sim_time  true  /relay
-    Dump ROS 2 Parameters  ${TEST_TEMPDIR}
+    ${value} =  Get ROS 2 Parameter  use_sim_time  /relay
+    Should Be True  ${value}
     Terminate Process
-    File Should Exist  ${TEST_TEMPDIR}/relay_params.yaml
-    ${config} =  Read YAML File  ${TEST_TEMPDIR}/relay_params.yaml
-    ${node} =  Get From Dictionary  ${config}  /relay
-    ${params} =  Get From Dictionary  ${node}  ros__parameters
-    Dictionary Should Contain Item  ${params}  use_sim_time  ${True}
 
 ROS 2 occupancy grids can be saved
     Skip Unless ROS 2 Package Exists  nav2_map_server
@@ -102,3 +102,15 @@ Uncompressed bag can be detected
     Terminate Process  PUB
     ${compressed} =  Warn If ROS 2 Bag Is Compressed  ${TEST_TEMPDIR}/empty.bag
     Should Not Be True  ${compressed}
+
+Using simulation time can be detected
+    Skip Unless ROS 2 Package Exists  topic_tools
+    Start Process  ros2  run  topic_tools  relay  /tf
+    Sleep  1s
+    Set ROS 2 Parameter  use_sim_time  false  /relay
+    ${use_sim_time} =  Warn If Not Using Sim Time  /relay
+    Should Not Be True  ${use_sim_time}
+    Set ROS 2 Parameter  use_sim_time  true  /relay
+    ${use_sim_time} =  Warn If Not Using Sim Time  /relay
+    Should Be True  ${use_sim_time}
+    Terminate Process
