@@ -10,12 +10,12 @@
     "workspaceFolder": "/workspace",
 
     "containerUser": "lambkin",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"tumit.vscode-rf-formatter",
-				"robocorp.robotframework-lsp"
-			]
-		}
-	}
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "tumit.vscode-rf-formatter",
+                "robocorp.robotframework-lsp"
+            ]
+        }
+    }
 }
