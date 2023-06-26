@@ -20,7 +20,7 @@ RUN sudo pip3 install colcon-common-extensions poetry colcon-poetry-ros
 RUN sudo sed -i '111,131d' `python3 -c "import colcon_poetry_ros.task.poetry.build as m; print(m.__file__)"`
 
 RUN --mount=type=bind,source=.,target=/tmp/repository,readonly cd /tmp/repository && sudo apt update && \
-    rosdep update && rosdep install -i -y --from-path src --skip-keys 'lambkin-shepherd cartographer_ros' && \
+    rosdep update && rosdep install -i -y --from-path src --skip-keys 'lambkin-shepherd cartographer_ros ament_cmake rosbag2_storage_default_plugins nav2_lifecycle_manager beluga_amcl launch_ros nav2_amcl' && \
     sudo rm -rf /var/lib/apt/lists/*
 
 RUN --mount=type=bind,source=.,target=/tmp/repository,readonly \
