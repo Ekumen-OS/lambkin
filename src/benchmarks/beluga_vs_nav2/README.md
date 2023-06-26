@@ -9,13 +9,13 @@ cd {LAMBKIN_ROOT_DIR}
 - Clone `beluga-datasets`
 ```sh
 cd src/benchmarks/beluga_vs_nav2
-mkdir -p playgound && cd playground
+mkdir -p playground && cd playground
 git clone git@github.com:Ekumen-OS/beluga-datasets.git
 ```
 - Open beluga_vs_nav2 `devcontainer` using either its CLI or `vscode`.
 - Build 
 ```sh
-BUILD_DOCUMENTATION=false BUILD_TESTING=false colcon build --packages-up-to multi_solution_benchmarks --symlink-install
+BUILD_DOCUMENTATION=false BUILD_TESTING=false colcon build --packages-up-to beluga_vs_nav2 --symlink-install
 source install/setup.bash
 ```
 - Cd to `playgrounds` dir, where you've downloaded `beluga-datasets`

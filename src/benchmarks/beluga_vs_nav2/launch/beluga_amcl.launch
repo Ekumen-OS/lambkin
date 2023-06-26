@@ -9,7 +9,7 @@
 
   <node pkg="beluga_amcl" exec="amcl_node" name="amcl"
       launch-prefix="$(env amcl_PREFIX)">
-    <param from="$(find-pkg-share multi_solution_benchmarks)/config/amcl_params.yml"/>
+    <param from="$(find-pkg-share beluga_vs_nav2)/config/amcl_params.yml"/>
     <param name="use_sim_time" value="true"/>
     <param name="scan_topic" value="$(var scan_topic)"/>
     <param name="base_frame_id" value="base_link"/>

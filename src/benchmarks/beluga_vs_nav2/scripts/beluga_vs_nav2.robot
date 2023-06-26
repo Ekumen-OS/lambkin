@@ -16,7 +16,7 @@
 
 
 *** Settings ***
-Documentation       Multi solution benchmark for 2D localization datasets.
+Documentation       Beluga AMCL vs Nav2 AMCL benchmarks for 2D datasets.
 
 Resource            misc.resource
 
@@ -54,11 +54,11 @@ Beluga vs Nav2 benchmark case
     Set Test Variable    $DATASET    ${dataset}
     Uses timemory-timem to sample amcl performance
     Uses ${BASE_DATASETS_PATH}/${dataset}/ROS2 at 3x as input to ROS 2 system
-    Uses ${launch_file} in multi_solution_benchmarks ROS package as rig
+    Uses ${launch_file} in beluga_vs_nav2 ROS package as rig
     Sets initial_pose_x launch argument to ${initial_pose_x}
     Sets initial_pose_y launch argument to ${initial_pose_y}
     Sets initial_pose_yaw launch argument to ${initial_pose_yaw}
     Sets yaml_filename launch argument to ${BENCHMARK.CASE.ITERATION.MAP_PATH}
     Sets scan_topic launch argument to ${scan_topic}
     Log To Console    Running case ${dataset} with launch file ${launch_file}
-    Uses 20 iterations
+    Uses 1 iterations
