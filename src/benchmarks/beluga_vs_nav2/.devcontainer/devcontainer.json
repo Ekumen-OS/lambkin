@@ -1,0 +1,21 @@
+{
+    "build": { "dockerfile": "../Dockerfile", "target": "development" },
+
+    "onCreateCommand": "sudo chown -R lambkin:lambkin .",
+
+    "mounts": [{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"}],
+
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/src/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+
+    "workspaceFolder": "/workspace",
+
+	"containerUser": "lambkin",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"tumit.vscode-rf-formatter",
+				"robocorp.robotframework-lsp"
+			]
+		}
+	}
+}

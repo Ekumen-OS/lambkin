@@ -1,0 +1,266 @@
+*** Comments ***
+# Copyright 2023 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+*** Settings ***
+Documentation
+...                 Template descriptions for Beluga vs Nav2 suite.
+
+Resource            lambkin/shepherd/robot/resources/library/filesystem.resource
+Resource            lambkin/shepherd/robot/resources/library/ros2.resource
+Resource            lambkin/shepherd/robot/resources/library/evo.resource
+Resource            lambkin/shepherd/robot/resources/benchmarks/slam.resource
+Resource            lambkin/shepherd/robot/resources/benchmarks/base.resource
+Resource            lambkin/shepherd/robot/resources/benchmarks/rusage.resource
+Resource            lambkin/shepherd/robot/resources/benchmarks/ros_base.resource
+Library             Collections
+Library             OperatingSystem
+Library             String
+
+
+*** Keywords ***
+Beluga vs Nav2 benchmark suite
+    [Documentation]
+    ...    Generic Beluga vs Nav2 suite description.
+    [Tags]    descriptive
+    Extends base benchmark suite
+    Extends ROS base benchmark suite
+
+Beluga vs Nav2 benchmark case
+    [Documentation]
+    ...    Generic Beluga vs Nav2 benchmark case description.
+    ...
+    ...    This description uses a single launch file for a benchmark case rig.
+    ...    Input data is fed via ROS 2 bag playback, output data is collected via
+    ...    ROS 2 bag recording.
+    [Tags]    descriptive
+    Extends base benchmark case
+    Extends ROS base benchmark case
+
+Uses ${bag} as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. The path to ROS 2 bag will be resolved
+    ...    relative to the benchmark suite.
+    [Tags]    declarative
+    Uses ${bag} at 1x as input to ROS 2 system
+
+Uses ${duration} of ${bag} as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. Durations are specified as time strings.
+    ...    The path to ROS 2 bag will be resolved relative to the benchmark suite.
+    [Tags]    declarative
+    Uses ${duration} of ${bag} at 1x as input to ROS 2 system
+
+Uses ${topics:/.+} data in ${bag} as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. The path to ROS 2 bag will be resolved
+    ...    relative to the benchmark suite.
+    [Tags]    declarative
+    Uses ${topics} data in ${bag} at 1x as input to ROS 2 system
+
+Uses ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. The path to ROS 2 bag will be resolved
+    ...    relative to the working directory and the benchmark suite
+    ...    parent directory.
+    [Tags]    declarative
+    Variable Should Not Exist    $BENCHMARK.INPUT.ROS.BAGS
+    ...    ROS bags already set to ${BENCHMARK.INPUT.ROS.BAGS}
+    ${paths} =    Create List
+    ${path} =    Resolve File Path or Fail    ${bag}
+    Warn If ROS 2 Bag Is Compressed    ${path}
+    Append To List    ${paths}    ${path}
+    Set Test Variable    $BENCHMARK.INPUT.ROS.BAGS    ${paths}
+    ${rate} =    Convert To Number    ${rate}
+    Set Test Variable    $BENCHMARK.INPUT.ROS.RATE    ${rate}
+    Set Test Variable    $BENCHMARK.RIG.ROS.SIMULATED    ${True}
+
+Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. The path to ROS 2 bag will be resolved
+    ...    relative to the benchmark suite.
+    [Tags]    declarative
+    ${topics} =    Split String    ${topics}
+    Set Test Variable    $BENCHMARK.INPUT.ROS.TOPICS    ${topics}
+    Uses ${bag} at ${rate}x as input to ROS 2 system
+
+Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. Durations are specified as time strings.
+    ...    The path to ROS 2 bag will be resolved relative to the benchmark suite.
+    [Tags]    declarative
+    ${duration} =    Convert Time    ${duration}
+    Set Test Variable    $BENCHMARK.INPUT.ROS.DURATION    ${duration}
+    Uses ${bag} at ${rate}x as input to ROS 2 system
+
+Uses ${duration} of ${topics:/.*} data in ${bag} as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. Durations are specified as time strings.
+    ...    The path to ROS 2 bag will be resolved relative to the benchmark suite.
+    [Tags]    declarative
+    Uses ${duration} of ${topics} data in ${bag} at 1x as input to ROS 2 system
+
+Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
+    [Documentation]
+    ...    Specifies the ROS 2 bag data that some Beluga vs Nav2 benchmark case
+    ...    will use for data input. Durations are specified as time strings.
+    ...    The path to ROS 2 bag will be resolved relative to the benchmark suite.
+    [Tags]    declarative
+    ${duration} =    Convert Time    ${duration}
+    Set Test Variable    $BENCHMARK.INPUT.ROS.DURATION    ${duration}
+    Uses ${topics} data in ${bag} at ${rate}x as input to ROS 2 system
+
+Generates ${format} report from ${template_name} template in ${package_name} ROS 2 package
+    [Documentation]
+    ...    Specifies report generation using Sphinx template projects that are
+    ...    to be found in ROS 2 package paths, under the reports subdirectory.
+    ...    See `Generates ${format} report from ${template_path} template`
+    ...    documentation for further reference.
+    [Tags]    declarative
+    ${package_path} =    Find ROS 2 Package    ${package_name}
+    ${template_path} =    Join Path    ${package_path}    share    ${package_name}    reports    ${template_name}
+
+    Directory Should Exist    ${template_path}
+    ...    No ${template_name} template found in ${package_name} ROS 2 package
+    Generates ${format} report from ${template_path} template
+
+### Hooks ###
+
+Before Beluga vs Nav2 benchmark case iteration
+    [Documentation]
+    ...    See `Before ${some} benchmark case iteration` documentation.
+    [Tags]    declarative    override
+    Set Environment Variable    ROS_LOG_DIR    ${BENCHMARK.CASE.ITERATION.PATH}/_ros
+
+Before Beluga vs Nav2 benchmark case rig bringup
+    [Documentation]
+    ...    See `Before ${some} benchmark case rig bringup` documentation.
+    [Tags]    declarative    override
+    Start recording ROS 2 bag
+    ...    ${BENCHMARK.OUTPUT.ROS.BAG}
+    ...    cwd=${BENCHMARK.CASE.ITERATION.PATH}    use-sim-time=true
+    ...    regex=/amcl_pose|/odom
+
+For Beluga vs Nav2 benchmark case rig bringup
+    [Documentation]
+    ...    See `For ${some} benchmark case rig bringup` documentation.
+    [Tags]    declarative    override
+    Variable Should Exist    ${BENCHMARK.RIG.ROS.LAUNCH.FILE}
+    ...    No ROS 2 launch file specified for benchmark rig
+    Launch ROS 2 System    main
+    ...    ${BENCHMARK.RIG.ROS.LAUNCH.FILE}
+    ...    @{BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}
+    ...    package=${BENCHMARK.RIG.ROS.LAUNCH.PACKAGE}
+
+After Beluga vs Nav2 benchmark case rig bringup
+    [Documentation]
+    ...    See `After ${some} benchmark case rig bringup` documentation.
+    [Tags]    declarative    override
+    RETURN
+
+Per Beluga vs Nav2 benchmark case iteration
+    [Documentation]
+    ...    See `Per ${some} benchmark case shutdown` documentation.
+    [Tags]    declarative    override
+    ${bags} =    Get Variable Value    $BENCHMARK.INPUT.ROS.BAGS    ${null}
+    ${package_name} =    Catenate    beluga_vs_nav2
+    ${package_path} =    Find ROS 2 Package    ${package_name}
+    ${qos_override_path} =    Join Path    ${package_path}    share    ${package_name}    config    qos_override.yaml
+    IF    "${bags}" != "${null}"
+        ${clock_rate} =    Evaluate    ${BENCHMARK.INPUT.ROS.RATE} * 100
+        ${result} =    Play ROS 2 Bag    @{BENCHMARK.INPUT.ROS.BAGS}
+        ...    topics=${BENCHMARK.INPUT.ROS.TOPICS}
+        ...    duration=${BENCHMARK.INPUT.ROS.DURATION}
+        ...    rate=${BENCHMARK.INPUT.ROS.RATE}
+        ...    clock=${clock_rate}    delay=${15}
+        ...    qos-profile-overrides-path=${qos_override_path}
+        Should Be Equal    ${result.rc}    ${0}    msg=Failed to play input ROS bags
+    END
+
+For Beluga vs Nav2 benchmark case rig shutdown
+    [Documentation]
+    ...    See `For ${some} benchmark case rig shutdown` documentation.
+    [Tags]    declarative    override
+    ${result} =    Shutdown ROS 2 System    main
+    Should Be Equal    ${result.rc}    ${0}
+    ...    msg=ROS 2 system had issues during benchmark
+
+After Beluga vs Nav2 benchmark case rig shutdown
+    [Documentation]
+    ...    See `After ${some} benchmark case rig shutdown` documentation.
+    [Tags]    declarative    override
+    ${result} =    Stop recording ROS 2 bag
+    ...    ${BENCHMARK.OUTPUT.ROS.BAG}
+    ...    cwd=${BENCHMARK.CASE.ITERATION.PATH}
+
+    Should Be Equal    ${result.rc}    ${0}    msg=Failed to record output ROS 2 bag
+
+    ${result} =    Perform trajectory analysis    bag2    ${BENCHMARK.OUTPUT.ROS.BAG}
+    ...    @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
+    ...    ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+    ...    ref=${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+    ...    ros_map_yaml=${BENCHMARK.CASE.ITERATION.MAP_PATH}
+    ...    plot_mode=xy    save_plot=all.png
+    ...    no_warnings=yes    save_as_tum=yes
+    ...    &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
+    ...    cwd=${BENCHMARK.CASE.ITERATION.PATH}
+
+    Should Be Equal    ${result.rc}    ${0}    msg=Failed to perform trajectory analysis
+    Wait Until Created    ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png    timeout=10s
+    File Should Exist    ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png
+    IF    ${IS_REFERENCE}
+        Copy File    ${BENCHMARK.CASE.ITERATION.PATH}/${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}.tum    ${BENCHMARK.ROOT}/${DATASET}_ref.tum
+        File Should Exist    ${BENCHMARK.ROOT}/${DATASET}_ref.tum
+        RETURN
+    END
+
+
+    FOR    ${trajectory}    IN    @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
+        ${stem} =    Convert To EVO Filestem    ${trajectory}    name_format=ros
+        ${result} =    Estimate RPE
+        ...    tum
+        ...    ${BENCHMARK.CASE.ITERATION.PATH}/${trajectory}.tum
+        ...    ${BENCHMARK.ROOT}/${DATASET}_ref.tum
+        ...    &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
+        ...    ros_map_yaml=${BENCHMARK.CASE.ITERATION.MAP_PATH}
+        ...    plot_mode=xy
+        ...    save_plot=all_rpe.png
+        ...    no_warnings=yes
+        ...    cwd=${BENCHMARK.CASE.ITERATION.PATH}
+        ...    save_results=${stem}.rpe.zip
+
+        Should Be Equal    ${result.rc}    ${0}    msg=Failed to perform RPE analysis
+
+        ${result} =    Estimate APE
+        ...    tum
+        ...    ${BENCHMARK.CASE.ITERATION.PATH}/${trajectory}.tum
+        ...    ${BENCHMARK.ROOT}/${DATASET}_ref.tum
+        ...    &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
+        ...    save_results=${stem}.ape.zip
+        ...    ros_map_yaml=${BENCHMARK.CASE.ITERATION.MAP_PATH}
+        ...    plot_mode=xy
+        ...    save_plot=all_ape.png
+        ...    no_warnings=yes
+        ...    cwd=${BENCHMARK.CASE.ITERATION.PATH}
+
+        Should Be Equal    ${result.rc}    ${0}    msg=Failed to perform APE analysis
+    END
