@@ -49,7 +49,7 @@ class Orchestrator:
 def main():
     rospy.init_node("mapping_orchestrator", anonymous=False)
     orchestrator = Orchestrator()
-    output_dir = rospy.get_param("~output_dir")
+    output_dir = Path(rospy.get_param("~output_dir"))
     end_timestamp = float(rospy.get_param("~end_timestamp", 0))
     bag_path = Path(rospy.get_param("~bag_path"))
     assert bag_path.is_file(
@@ -64,12 +64,12 @@ def main():
                    f"{end_timestamp} vs {bag_end_timestamp}")
         assert end_timestamp < bag_end_timestamp, message
 
-    rospy.loginfo("Got save map service")
     os.makedirs(output_dir, exist_ok=True)
 
     save_map_client = rospy.ServiceProxy("/slam_toolbox/save_map", SaveMap)
     rospy.loginfo("Waiting for save map service")
     save_map_client.wait_for_service(SAVE_MAP_SERVICE_TIMEOUT)
+    rospy.loginfo("Got save map service")
 
     rate = rospy.Rate(hz=1)
 
@@ -81,7 +81,7 @@ def main():
         if rospy.Time.now().to_time() >= end_timestamp:
             rospy.loginfo("Finished mapping, proceeding to save the map.")
             break
-    save_map_client.call(name=String(data=output_dir))
+    save_map_client.call(name=String(data=str(output_dir / "map")))
 
 
 if __name__ == '__main__':

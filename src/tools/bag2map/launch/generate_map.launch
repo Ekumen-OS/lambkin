@@ -5,7 +5,7 @@
   <arg name="odom_frame" default="odom" doc="Odom frame." />
   <arg name="base_frame" default="base_footprint" doc="Robot's base frame." />
   <arg name="scan_topic" default="/scan" doc="Where are lidar messages published to." />
-  <arg name="output_dir" default="/workspace"
+  <arg name="output_dir" default="/workspace/map/"
     doc="Full path to output directory where .pgm and .yaml files will be written to." />
   <arg name="end_timestamp" default="0"
     doc="Timestamp (in replay time) at which the map will be saved (in float seconds from epoch, as specified in the rosbag information.). If 0, will be saved at the bagfile's end time." />
@@ -19,7 +19,7 @@
   </node>
 
   <node pkg="rosbag" type="play" name="play_bag" output="screen"
-    args="--clock $(arg bag_path) -d 5 --keep-alive" required="true">
+    args="--clock $(arg bag_path) -d 5 --keep-alive --rate 4" required="true">
     <remap from="/tf_static" to="/tf_static_replayed" />
   </node>
 
