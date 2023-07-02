@@ -69,12 +69,12 @@ target "cartographer-ros-benchmarks" {
   tags = ["ekumenlabs/cartographer-ros-benchmarks:latest"]
 }
 
-target "multi-solution-benchmarks" {
-  context = "src/benchmarks/multi_solution_benchmarks"
+target "beluga-vs-nav2" {
+  context = "src/benchmarks/beluga_vs_nav2"
   contexts = {
     lambkin-ubuntu-jammy = "target:lambkin-ubuntu-jammy"
   }
   args = { baseimage = "lambkin-ubuntu-jammy" }
   target = "release"
-  tags = ["ekumenlabs/multi-solution-benchmarks:latest"]
+  tags = ["ekumenlabs/beluga-vs-nav2:latest"]
 }
