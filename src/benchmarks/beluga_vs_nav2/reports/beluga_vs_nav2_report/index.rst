@@ -187,7 +187,7 @@ Resource usage analysis
 
 .. list-table:: Resource usage plots
 
-     - .. plot::
+   * - .. plot::
 
          sns.histplot(
              lks.data.pandas.rescale(
@@ -200,7 +200,7 @@ Resource usage analysis
          )
          plt.gca().set(xlabel='CPU Usage (%)', ylabel='Iteration Count', title='Beluga AMCL CPU usage')
 
-   * - .. plot::
+     - .. plot::
 
          sns.lineplot(
              lks.data.pandas.rescale(
@@ -215,7 +215,7 @@ Resource usage analysis
          plt.gca().set(xlabel='Time (s)', ylabel='Virtual Memory (MB)', title='Beluga AMCL virtual memory')
 
 
-     - .. plot::
+   * - .. plot::
 
          sns.histplot(
              lks.data.pandas.rescale(
@@ -228,7 +228,7 @@ Resource usage analysis
          )
          plt.gca().set(xlabel='CPU Usage (%)', ylabel='Iteration Count', title='Nav2 AMCL CPU Usage')
 
-   * - .. plot::
+     - .. plot::
 
          sns.lineplot(
              lks.data.pandas.rescale(
@@ -256,7 +256,7 @@ Resource usage analysis
          )
          plt.gca().set(xlabel='Time (s)', ylabel='RSS (MB)', title='Beluga AMCL RSS')
 
-   * - .. plot::
+     - .. plot::
 
          sns.lineplot(
              lks.data.pandas.rescale(
