@@ -73,8 +73,10 @@ Dump ROS 2 Parameters
     [Tags]  imperative
     @{nodes} =  Get ROS 2 Node List
     FOR  ${node}  IN  @{nodes}
-        ${result} =  Run Process  ros2  param  dump  ${node}  @{arguments}
-        Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
+        ${result} =  Run Process  ros2  param  dump  ${node}    @{arguments}    timeout=5
+        IF    ${result.rc} != 0
+            Log To Console    Couldn't dump ROS parameters for node ${node} because of ${result.stderr}, skipping.
+        END
         ${node} =  Remove String  ${node}  /
         ${path} =  Join Path  ${cwd}  ${node}_params.yaml
         Create File  ${path}  ${result.stdout}

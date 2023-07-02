@@ -23,6 +23,7 @@ Documentation
 Resource    lambkin/shepherd/robot/resources/benchmarks/base.resource
 Resource    lambkin/shepherd/robot/resources/library/timemory.resource
 
+Library    Collections
 
 *** Keywords ***
 Generic resource usage benchmark suite
@@ -33,25 +34,32 @@ Generic resource usage benchmark suite
 
 Generic resource usage benchmark case
     [Documentation]
-    ...  Generic, single process, resource usage benchmark case description.
+    ...  Generic, multiple process, resource usage benchmark case description.
     [Tags]  descriptive
     Extends base benchmark case
 
 Uses ${profiler} to sample ${process} performance
     [Documentation]
-    ...  Specifies profiler and process to be profiled
+    ...  Specifies profiler and processes to be profiled
     ...  by some resource usage benchmark.
     ...
     ...  Note that in many cases this may not be carried out
     ...  automatically and additional steps may have be taken.
     ...  See profiling support documentation for further reference.
     [Tags]  declarative
-    Variable Should Not Exist  $BENCHMARK.RIG.PROFILER
-    ...  Rig profiler already set to ${BENCHMARK.RIG.PROFILER}
-    Variable Should Not Exist  $BENCHMARK.RIG.PROCESS
-    ...  Rig process to be profiled already set to ${BENCHMARK.RIG.PROCESS}
+    ${current_profiler}=    Get Variable Value    ${BENCHMARK.RIG.PROFILER}    ${profiler}
+    IF    $current_profiler != $profiler
+        Fatal Error    Profiler is already set to ${current_profiler}, it cannot be set to ${profiler}.
+    END
     Set Test Variable  $BENCHMARK.RIG.PROFILER  ${profiler}
-    Set Test Variable  $BENCHMARK.RIG.PROCESS  ${process}
+
+    ${processes}=    Get Variable Value    ${BENCHMARK.RIG.PROCESSES}    ${null}
+    IF    ${processes} == $null
+        @{processes}=    Create List    ${process}
+    ELSE
+        Append To List    ${processes}    ${process}
+    END
+    Set Test Variable    ${BENCHMARK.RIG.PROCESSES}    ${processes}
 
 ### Hooks ###
 
@@ -60,16 +68,20 @@ Before generic resource usage benchmark case rig bringup
     ...  See `Before ${some} benchmark rig bringup` documentation.
     [Tags]  declarative  override
     Variable Should Exist  $BENCHMARK.RIG.PROFILER  Rig profiler not set
-    Variable Should Exist  $BENCHMARK.RIG.PROCESS  Rig process not set
-    Run Keyword
-    ...  Setup ${BENCHMARK.RIG.PROFILER}  ${BENCHMARK.RIG.PROCESS}
-    ...  dir=${BENCHMARK.CASE.ITERATION.PATH}
+    Variable Should Exist  $BENCHMARK.RIG.PROCESSES  Rig processes not set
+    FOR    ${process}    IN    @{BENCHMARK.RIG.PROCESSES}
+        Run Keyword
+        ...  Setup ${BENCHMARK.RIG.PROFILER}  ${process}
+        ...  dir=${BENCHMARK.CASE.ITERATION.PATH}
+    END
 
 After generic resource usage benchmark case rig shutdown
     [Documentation]
     ...  See `After ${some} benchmark rig case shutdown` documentation.
     [Tags]  declarative  override
     Variable Should Exist  $BENCHMARK.RIG.PROFILER  Rig profiler not set
-    Variable Should Exist  $BENCHMARK.RIG.PROCESS  Rig process not set
-    Run Keyword  Wait for ${BENCHMARK.RIG.PROFILER} output
-    ...  ${BENCHMARK.RIG.PROCESS}  dir=${BENCHMARK.CASE.ITERATION.PATH}
+    Variable Should Exist  $BENCHMARK.RIG.PROCESSES  Rig processes not set
+    FOR    ${process}    IN    @{BENCHMARK.RIG.PROCESSES}
+        Run Keyword  Wait for ${BENCHMARK.RIG.PROFILER} output
+        ...  ${process}  dir=${BENCHMARK.CASE.ITERATION.PATH}
+    END
