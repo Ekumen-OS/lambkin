@@ -7,8 +7,7 @@
   <arg name="initial_pose_yaw"/>
   <arg name="scan_topic"/>
 
-  <node pkg="beluga_amcl" exec="amcl_node" name="amcl"
-      launch-prefix="$(env amcl_PREFIX)">
+  <node pkg="nav2_amcl" exec="amcl" name="nav2_amcl" launch-prefix="$(env nav2_amcl_PREFIX)">
     <param from="$(find-pkg-share beluga_vs_nav2)/config/amcl_params.yml"/>
     <param name="use_sim_time" value="true"/>
     <param name="scan_topic" value="$(var scan_topic)"/>
@@ -17,7 +16,19 @@
     <param name="initial_pose.y" value="$(var initial_pose_y)"/>
     <param name="initial_pose.z" value="0.0"/>
     <param name="initial_pose.yaw" value="$(var initial_pose_yaw)"/>
-    <remap from="pose" to="amcl_pose"/>
+    <remap from="amcl_pose" to="nav2_amcl_pose"/>
+  </node>
+
+  <node pkg="beluga_amcl" exec="amcl_node" name="beluga_amcl" launch-prefix="$(env beluga_amcl_PREFIX)">
+    <param from="$(find-pkg-share beluga_vs_nav2)/config/amcl_params.yml"/>
+    <param name="use_sim_time" value="true"/>
+    <param name="scan_topic" value="$(var scan_topic)"/>
+    <param name="base_frame_id" value="base_link"/>
+    <param name="initial_pose.x" value="$(var initial_pose_x)"/>
+    <param name="initial_pose.y" value="$(var initial_pose_y)"/>
+    <param name="initial_pose.z" value="0.0"/>
+    <param name="initial_pose.yaw" value="$(var initial_pose_yaw)"/>
+    <remap from="pose" to="beluga_amcl_pose"/>
   </node>
 
   <node pkg="nav2_map_server" exec="map_server" name="map_server">
@@ -28,8 +39,6 @@
   <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" name="lifecycle_manager">
     <param name="use_sim_time" value="true"/>
     <param name="autostart" value="true"/>
-    <param name="node_names" value="[amcl, map_server]"/>
+    <param name="node_names" value="[beluga_amcl, nav2_amcl, map_server]"/>
   </node>
-
-
 </launch>
