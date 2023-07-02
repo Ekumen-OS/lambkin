@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2022 Ekumen, Inc.
+# Copyright 2023 Ekumen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import string
 # -- Project information -----------------------------------------------------
 
 project = 'LAMBKIN Benchmark Report'
-copyright = '2022, Ekumen Inc.'
+copyright = '2023, Ekumen Inc.'
 author = 'Ekumen Inc.'
 
 version = '0.1.0'
