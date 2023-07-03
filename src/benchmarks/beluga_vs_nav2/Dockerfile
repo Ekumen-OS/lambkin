@@ -30,6 +30,7 @@ RUN apt-get update \
 
 RUN mkdir -p /workspace/ && chown -R $USERNAME:$USERNAME /workspace
 RUN mkdir -p /tmp/context && chown -R $USERNAME:$USERNAME /tmp/context
+RUN mkdir -p /opt/ros/application && chown -R $USERNAME:$USERNAME /opt/ros/application
 
 USER $USERNAME
 
@@ -42,9 +43,25 @@ RUN mkdir -p /tmp/context
 
 RUN --mount=type=bind,source=.,target=/tmp/context/src,readonly cd /tmp/context && \
     sudo apt update && rosdep update && rosdep install -i -y --from-paths src /workspace/src --skip-keys 'lambkin-shepherd flatland_server beluga_example beluga_benchmarks flatland_plugins' && \
-    sudo rm -rf /var/lib/apt/lists/*
+    sudo rm -rf /var/lib/apt/lists/* && colcon build --packages-up-to 'beluga_vs_nav2' --merge-install --install-base /opt/ros/application
+
+# TODO: Why is this needed?
+RUN chmod +x /opt/ros/application/lib/beluga_vs_nav2/scripts/*
+
 
 FROM development AS release
 
+RUN cat <<EOF > /opt/ros/application/entrypoint.bash
+# Auto-generated with Docker Buildkit
+source /opt/ros/application/setup.bash
+if [ \$# -ne 0 ]; then
+    ros2 run beluga_vs_nav2 \$@
+else
+    bash
+fi
+EOF
 
-ENTRYPOINT ["fixuid", "-q", "/bin/bash", "--login"]
+
+WORKDIR $HOME
+
+ENTRYPOINT ["fixuid", "-q", "/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
