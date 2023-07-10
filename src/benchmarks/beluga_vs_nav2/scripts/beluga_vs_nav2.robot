@@ -22,7 +22,7 @@ Resource            lambkin/shepherd/robot/resources/all.resource
 
 Suite Setup         Setup Beluga vs Nav2 benchmark suite
 Suite Teardown      Teardown Beluga vs Nav2 benchmark suite
-Test Template       Run Beluga vs Nav2 benchmark case for each ${dataset} ${scan_topic} ${initial_pose_x} ${initial_pose_y} ${initial_pose_yaw}
+Test Template       Run Beluga vs Nav2 benchmark case for each ${dataset}
 
 
 *** Variables ***
@@ -30,16 +30,16 @@ ${BASE_DATASETS_PATH}          ${EXECDIR}/beluga-datasets
 ${BENCHMARK.OUTPUT.ROS.BAG}     output_bag
 
 
-*** Test Cases ***    DATASET    SCAN_TOPIC    INITIAL_POSE_X    INITIAL_POSE_Y    INITIAL_POSE_YAW
-Hallway Localization    hallway_localization    scan_front    74.15    -8.22    2.25
-Hallway Return    hallway_return    scan_front    0.0    0.0    -0.17
+*** Test Cases ***    DATASET
+Hallway Localization    hallway_localization
+Hallway Return    hallway_return
 
 
 *** Keywords ***
 
 Set QOS Override
     ${package_path}=    Find ROS 2 Package    beluga_vs_nav2
-    ${qos_override_path}=    Join Path    ${package_path}    share    beluga_vs_nav2    config    qos_override.yaml
+    ${qos_override_path}=    Join Path    ${package_path}    share    beluga_vs_nav2    config    qos_override.yml
     Set Test Variable    $BENCHMARK.INPUT.QOS_OVERRIDE    ${qos_override_path}
     
 Beluga vs Nav2 benchmark suite
@@ -61,9 +61,6 @@ Beluga vs Nav2 benchmark case
     Uses timemory-timem to sample nav2_amcl performance
     Uses ${BASE_DATASETS_PATH}/${dataset}/ROS2 at 3x as input to ROS 2 system
     Uses beluga_vs_nav2.launch in beluga_vs_nav2 ROS package as rig
-    Sets initial_pose_x launch argument to ${initial_pose_x}
-    Sets initial_pose_y launch argument to ${initial_pose_y}
-    Sets initial_pose_yaw launch argument to ${initial_pose_yaw}
-    Sets yaml_filename launch argument to ${BENCHMARK.CASE.ITERATION.MAP_PATH}
-    Sets scan_topic launch argument to ${scan_topic}
-    Uses 15 iterations
+    Sets map_yaml_filename launch argument to ${BENCHMARK.CASE.ITERATION.MAP_PATH}
+    Sets config_filename launch argument to ${dataset}.yml
+    Uses 1 iterations

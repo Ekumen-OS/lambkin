@@ -2,7 +2,7 @@
 <package format="2">
   <name>beluga_vs_nav2</name>
   <version>1.0.0</version>
-  <description>LAMBKIN powered benchmarks for comparing beluga AMCL to Nav2 AMCL.</description>
+  <description>LAMBKIN powered benchmarks for comparing Beluga AMCL to Nav2 AMCL.</description>
 
   <maintainer email="serraramiro@ekumenlabs.com">Ramiro Serra</maintainer>
 
