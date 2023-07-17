@@ -174,8 +174,7 @@ After ROS 2 system benchmark case rig bringup
     ...  See `After ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
     @{nodes} =  Get ROS 2 Node List
-    # TODO:    This hangs sometimes. Some small refactor is needed to add a timeout.
-    # Warn If Not Using Sim Time  @{nodes}
+    Warn If Not Using Sim Time  @{nodes}
     Dump ROS 2 Parameters    ${BENCHMARK.CASE.ITERATION.PATH}
 
 Per ROS 2 system benchmark case iteration

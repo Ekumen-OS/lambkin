@@ -27,7 +27,7 @@ Environment
 
 - OS: Ubuntu 22.04 LTS
 - ROS: ROS Humble
-- Localization system:
+- Localization systems:
     *   Beluga AMCL
     *   Nav2 AMCL
 
@@ -44,7 +44,7 @@ https://google-cartographer-ros.readthedocs.io/en/latest/data.html#magazino
 Metrics
 ^^^^^^^
 
-The following metrics were selected to understand different aspects of the SLAM system
+The following metrics were selected to understand different aspects of each localization system
 under test.
 
 To estimate quality of the localization system:

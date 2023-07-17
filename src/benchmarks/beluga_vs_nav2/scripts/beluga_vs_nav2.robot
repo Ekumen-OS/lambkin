@@ -30,9 +30,9 @@ ${BASE_DATASETS_PATH}          ${EXECDIR}/beluga-datasets
 ${BENCHMARK.OUTPUT.ROS.BAG}     output_bag
 
 
-*** Test Cases ***    DATASET
-Hallway Localization    hallway_localization
-Hallway Return    hallway_return
+*** Test Cases ***        DATASET
+Hallway Localization      hallway_localization
+Hallway Return            hallway_return
 
 
 *** Keywords ***
@@ -63,4 +63,4 @@ Beluga vs Nav2 benchmark case
     Uses beluga_vs_nav2.launch in beluga_vs_nav2 ROS package as rig
     Sets map_yaml_filename launch argument to ${BENCHMARK.CASE.ITERATION.MAP_PATH}
     Sets config_filename launch argument to ${dataset}.yml
-    Uses 1 iterations
+    Uses 15 iterations

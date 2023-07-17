@@ -5,8 +5,8 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 
 install(
-  DIRECTORY
-    scripts
+  PROGRAMS
+    scripts/beluga_vs_nav2.robot
   DESTINATION lib/${PROJECT_NAME})
   
 install(

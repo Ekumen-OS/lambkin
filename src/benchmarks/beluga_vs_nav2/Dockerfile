@@ -45,10 +45,6 @@ RUN --mount=type=bind,source=.,target=/tmp/context/src,readonly cd /tmp/context 
     sudo apt update && rosdep update && rosdep install -i -y --from-paths src /workspace/src --skip-keys 'lambkin-shepherd flatland_server beluga_example beluga_benchmarks flatland_plugins' && \
     sudo rm -rf /var/lib/apt/lists/* && colcon build --packages-up-to 'beluga_vs_nav2' --merge-install --install-base /opt/ros/application
 
-# TODO: Why is this needed?
-RUN chmod +x /opt/ros/application/lib/beluga_vs_nav2/scripts/*
-
-
 FROM development AS release
 
 RUN cat <<EOF > /opt/ros/application/entrypoint.bash
