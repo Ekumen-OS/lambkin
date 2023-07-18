@@ -6,3 +6,6 @@ logs
 
 # python
 **/__pycache__
+
+# suggested logs/playground
+**/playground

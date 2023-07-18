@@ -69,34 +69,34 @@ After ROS 2 2D SLAM system benchmark case iteration
     # - https://github.com/MichaelGrupp/evo/issues/443.
     # - https://github.com/MichaelGrupp/evo/blob/v1.22.0/evo/tools/file_interface.py#L279-L280
 
-    # ${result} =  Perform trajectory analysis  bag2  ${BENCHMARK.OUTPUT.ROS.BAG}
-    # ...                                       @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
-    # ...                                       ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
-    # ...                                       ref=${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
-    # ...                                       ros_map_yaml=${BENCHMARK.OUTPUT.MAP.PATH}
-    # ...                                       plot_mode=xy  save_plot=all.png
-    # ...                                       no_warnings=yes  save_as_tum=yes
-    # ...                                       &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
-    # ...                                       cwd=${BENCHMARK.CASE.ITERATION.PATH}
-    # Should Be Equal  ${result.rc}  ${0}
-    # Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png  timeout=10s
-    # File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png
+    ${result} =  Perform trajectory analysis  bag2  ${BENCHMARK.OUTPUT.ROS.BAG}
+    ...                                       @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
+    ...                                       ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+    ...                                       ref=${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+    ...                                       ros_map_yaml=${BENCHMARK.OUTPUT.MAP.PATH}
+    ...                                       plot_mode=xy  save_plot=all.png
+    ...                                       no_warnings=yes  save_as_tum=yes
+    ...                                       &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
+    ...                                       cwd=${BENCHMARK.CASE.ITERATION.PATH}
+    Should Be Equal  ${result.rc}  ${0}
+    Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png  timeout=10s
+    File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png
 
-    # FOR  ${trajectory}  IN  @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
-    #     ${stem} =  Convert To EVO Filestem  ${trajectory}  name_format=ros
-    #     ${result} =  Estimate APE  bag2  ${BENCHMARK.OUTPUT.ROS.BAG}
-    #     ...          ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}  ${trajectory}
-    #     ...          save_plot=${stem}.ape.png  save_results=${stem}.ape.zip
-    #     ...          plot_mode=xy  no_warnings=yes  &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
-    #     ...          cwd=${BENCHMARK.CASE.ITERATION.PATH}
-    #     Should Be Equal  ${result.rc}  ${0}
-    #     Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.ape.zip  timeout=10s
-    #     File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.ape.zip
-    #     ${result} =  Estimate RPE  bag2  ${BENCHMARK.OUTPUT.ROS.BAG}  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
-    #     ...          ${trajectory}  save_plot=${stem}.rpe.png  save_results=${stem}.rpe.zip
-    #     ...          plot_mode=xy  no_warnings=yes  &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
-    #     ...          cwd=${BENCHMARK.CASE.ITERATION.PATH}
-    #     Should Be Equal  ${result.rc}  ${0}
-    #     Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.rpe.zip  10s
-    #     File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.rpe.zip
-    # END
+    FOR  ${trajectory}  IN  @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
+        ${stem} =  Convert To EVO Filestem  ${trajectory}  name_format=ros
+        ${result} =  Estimate APE  bag2  ${BENCHMARK.OUTPUT.ROS.BAG}
+        ...          ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}  ${trajectory}
+        ...          save_plot=${stem}.ape.png  save_results=${stem}.ape.zip
+        ...          plot_mode=xy  no_warnings=yes  &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
+        ...          cwd=${BENCHMARK.CASE.ITERATION.PATH}
+        Should Be Equal  ${result.rc}  ${0}
+        Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.ape.zip  timeout=10s
+        File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.ape.zip
+        ${result} =  Estimate RPE  bag2  ${BENCHMARK.OUTPUT.ROS.BAG}  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+        ...          ${trajectory}  save_plot=${stem}.rpe.png  save_results=${stem}.rpe.zip
+        ...          plot_mode=xy  no_warnings=yes  &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
+        ...          cwd=${BENCHMARK.CASE.ITERATION.PATH}
+        Should Be Equal  ${result.rc}  ${0}
+        Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.rpe.zip  10s
+        File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.rpe.zip
+    END

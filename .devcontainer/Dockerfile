@@ -19,8 +19,11 @@ RUN sudo pip3 install colcon-common-extensions poetry colcon-poetry-ros
 ## NOTE(hidmic): remove colcon-poetry-ros weird script relocation
 RUN sudo sed -i '111,131d' `python3 -c "import colcon_poetry_ros.task.poetry.build as m; print(m.__file__)"`
 
+# NOTE: Most of the keys skipped below are needed because the root devcontainer runs on ubuntu focal, and some dependencies
+# are not available in that OS version.
+# TODO: Figure out how to properly handle different ubuntu distribution packages.
 RUN --mount=type=bind,source=.,target=/tmp/repository,readonly cd /tmp/repository && sudo apt update && \
-    rosdep update && rosdep install -i -y --from-path src --skip-keys 'lambkin-shepherd cartographer_ros' && \
+    rosdep update && rosdep install -i -y --from-path src --skip-keys 'lambkin-shepherd cartographer_ros ament_cmake rosbag2_storage_default_plugins nav2_lifecycle_manager beluga_amcl launch_ros nav2_amcl' && \
     sudo rm -rf /var/lib/apt/lists/*
 
 RUN --mount=type=bind,source=.,target=/tmp/repository,readonly \

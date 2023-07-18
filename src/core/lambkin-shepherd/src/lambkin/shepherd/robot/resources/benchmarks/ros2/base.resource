@@ -137,7 +137,7 @@ Generates ${format} report from ${template_name} template in ${package_name} ROS
     ...  documentation for further reference.
     [Tags]  declarative
     ${package_path} =  Find ROS 2 Package  ${package_name}
-    ${template_path} =  Join Path  ${package_path}  reports  ${template_name}
+    ${template_path} =  Join Path  ${package_path}  share    ${package_name}    reports    ${template_name}
     Directory Should Exist  ${template_path}
     ...  No ${template_name} template found in ${package_name} ROS 2 package
     Generates ${format} report from ${template_path} template
@@ -175,20 +175,30 @@ After ROS 2 system benchmark case rig bringup
     [Tags]  declarative  override
     @{nodes} =  Get ROS 2 Node List
     Warn If Not Using Sim Time  @{nodes}
-    Dump ROS 2 Parameters  cwd=${BENCHMARK.CASE.ITERATION.PATH}
+    Dump ROS 2 Parameters    ${BENCHMARK.CASE.ITERATION.PATH}
 
 Per ROS 2 system benchmark case iteration
     [Documentation]
     ...  See `Per ${some} benchmark case shutdown` documentation.
     [Tags]  declarative  override
     ${bags} =  Get Variable Value  $BENCHMARK.INPUT.ROS.BAGS  ${null}
-    IF  "${bags}" != "${null}"
-        ${clock_rate} =  Evaluate  ${BENCHMARK.INPUT.ROS.RATE} * 100
-        ${result} =  Play ROS 2 Bag  @{BENCHMARK.INPUT.ROS.BAGS}
-        ...          topics=${BENCHMARK.INPUT.ROS.TOPICS}
-        ...          duration=${BENCHMARK.INPUT.ROS.DURATION}
-        ...          rate=${BENCHMARK.INPUT.ROS.RATE}
-        ...          clock=${clock_rate}  delay=${2}
+    ${qos_override_path} =  Get Variable Value  $BENCHMARK.INPUT.QOS_OVERRIDE  ${null}
+    IF    "${bags}" != "${null}"
+        ${clock_rate} =    Evaluate    ${BENCHMARK.INPUT.ROS.RATE} * 100
+        IF    "${qos_override_path}" != "${null}"
+            ${result} =    Play ROS 2 Bag    @{BENCHMARK.INPUT.ROS.BAGS}
+            ...    topics=${BENCHMARK.INPUT.ROS.TOPICS}
+            ...    duration=${BENCHMARK.INPUT.ROS.DURATION}
+            ...    rate=${BENCHMARK.INPUT.ROS.RATE}
+            ...    clock=${clock_rate}    delay=${15}
+            ...    qos-profile-overrides-path=${qos_override_path}
+        ELSE
+            ${result} =    Play ROS 2 Bag    @{BENCHMARK.INPUT.ROS.BAGS}
+            ...    topics=${BENCHMARK.INPUT.ROS.TOPICS}
+            ...    duration=${BENCHMARK.INPUT.ROS.DURATION}
+            ...    rate=${BENCHMARK.INPUT.ROS.RATE}
+            ...    clock=${clock_rate}    delay=${15}
+        END
         Should Be Equal  ${result.rc}  ${0}  msg=Failed to play input ROS bags
     END
 

@@ -73,27 +73,38 @@ Dump ROS 2 Parameters
     [Tags]  imperative
     @{nodes} =  Get ROS 2 Node List
     FOR  ${node}  IN  @{nodes}
-        ${result} =  Run Process  ros2  param  dump  ${node}  @{arguments}
-        Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
+        ${result} =  Run Process  ros2  param  dump  ${node}    @{arguments}    timeout=5
+        IF    ${result.rc} != 0
+            Log To Console    Couldn't dump ROS parameters for node ${node} because of ${result.stderr}, skipping.
+        END
         ${node} =  Remove String  ${node}  /
         ${path} =  Join Path  ${cwd}  ${node}_params.yaml
         Create File  ${path}  ${result.stdout}
     END
 
 Warn If Not Using Sim Time
-    [Documentation]  Log a warning to console if one of the given ROS 2 nodes
-    ...              is not using simulation time.
-    [Arguments]  @{nodes}
-    [Tags]  imperative
-    ${return} =  Set Variable  ${True}
-    FOR  ${node}  IN  @{nodes}
-        ${use_sim_time} =  Get ROS 2 Parameter  use_sim_time  ${node}
-        IF  "${use_sim_time}" != "${True}"
-            Log To Console  ${\n}\[!] ${node} is not using sim time
-            ${return} =  Set Variable  ${False}
+    [Documentation]    Log a warning to console if one of the given ROS 2 nodes
+    ...    is not using simulation time.
+    [Tags]    imperative
+    [Arguments]    @{nodes}
+    ${return} =    Set Variable    ${True}
+    # NOTE: Get ROS2 parameter hangs sometimes for some automatically created nodes. The timeout ensure we soft-fail in those cases, and print to console.
+    FOR    ${node}    IN    @{nodes}
+        TRY
+            ${use_sim_time} =    Run Keyword with Timeout
+            ...    Get ROS 2 Parameter
+            ...    use_sim_time
+            ...    ${node}
+            ...    timeout=5s
+            IF    "${use_sim_time}" != "${True}"
+                Log To Console    ${\n}\[!] ${node} is not using sim time
+                ${return} =    Set Variable    ${False}
+            END
+        EXCEPT
+            Log To Console    Couldn't get ROS params for node: ${node} in 5s, skipping.
         END
     END
-    RETURN  ${return}
+    RETURN    ${return}
 
 Launch ROS 2 System
     [Documentation]  Launches a ROS 2 system via ros2 launch.
