@@ -1,0 +1,29 @@
+---
+- name: Setup a slam toolbox benchmarks
+  hosts: localhost
+  connection: local
+  vars:
+    ansible_bender:
+      base_image: "docker.io/osrf/ros:noetic-desktop-full-focal"
+
+      working_container:
+        volumes:
+          # TODO: Find a way to replace it
+          - "/home/erasmo/Projects/lambkin/src/benchmarks/slam_toolbox_benchmarks:/tmp/ws/src/package"
+
+      target_image:
+        name: ekumenlabs/slam-toolbox-benchmarks:latest
+
+  tasks:
+    - name: Install ros-noetic-pointcloud-to-laserscan
+      ansible.builtin.apt:
+        name: ros-noetic-pointcloud-to-laserscan
+        state: present
+
+    - name: Run rosdep install
+      ansible.builtin.command: "rosdep install -i -y --from-path src --skip-keys 'lambkin-shepherd'"
+      args:
+        chdir: /tmp/ws
+
+    - name: Remove APT lists
+      ansible.builtin.command: sudo rm -rf /var/lib/apt/lists/*
