@@ -117,7 +117,7 @@ def variations(
     if target_cases is None:
         target_cases = cases()
     target_cases = enforce_nonempty(target_cases, 'no target cases')
-
+    assert target_cases is not None
     for root_path, root_metadata in target_cases:
         variations_path = root_path / 'variations'
         if not variations_path.exists():
@@ -142,7 +142,7 @@ def iterations(
         target_variations = variations()
     target_variations = enforce_nonempty(
         target_variations, 'no target cases')
-
+    assert target_variations is not None
     for root_path, root_metadata in target_variations:
         iterations_path = root_path / 'iterations'
         if not iterations_path.exists():
