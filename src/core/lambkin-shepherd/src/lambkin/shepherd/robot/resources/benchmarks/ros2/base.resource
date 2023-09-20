@@ -157,6 +157,7 @@ Before ROS 2 system benchmark case rig bringup
     Start recording ROS 2 bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
     ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}  all=yes  use-sim-time=true
+    Start ROS 2 Daemon
 
 For ROS 2 system benchmark case rig bringup
     [Documentation]
@@ -173,9 +174,8 @@ After ROS 2 system benchmark case rig bringup
     [Documentation]
     ...  See `After ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
-    @{nodes} =  Get ROS 2 Node List
-    Warn If Not Using Sim Time  @{nodes}
-    Dump ROS 2 Parameters    ${BENCHMARK.CASE.ITERATION.PATH}
+    Warn If ROS 2 Nodes Are Not Using Sim Time
+    Dump ROS 2 Parameters  cwd=${BENCHMARK.CASE.ITERATION.PATH}
 
 Per ROS 2 system benchmark case iteration
     [Documentation]
@@ -214,6 +214,7 @@ After ROS 2 system benchmark case rig shutdown
     [Documentation]
     ...  See `After ${some} benchmark case rig shutdown` documentation.
     [Tags]  declarative  override
+    Stop ROS 2 Daemon
     ${result} =  Stop recording ROS 2 bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
     ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}

@@ -24,6 +24,7 @@ Suite Teardown  Teardown basic ROS 2 2D SLAM system benchmark suite
 
 *** Test Cases ***
 ROS 2 2D SLAM system benchmark functionality is correct
+    Skip  evo lacks TF support in ROS 2
     Skip Unless Executable Exists  ros2
     Run basic ROS 2 2D SLAM system benchmark case once
 
