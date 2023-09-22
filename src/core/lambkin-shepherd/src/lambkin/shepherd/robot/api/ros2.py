@@ -107,6 +107,36 @@ def dump_ros_2_parameters(
             yaml.dump(output, f, default_flow_style=False)
 
 
+@keyword('Set ROS 2 Parameter')
+def set_ros_2_parameter(
+    name: str, value: Any, *node_names: str, **kwargs: Any
+) -> None:
+    """
+    Set a ROS 2 parameter on a set of nodes.
+
+    :param name: name of the parameter.
+    :param value: value of the parameter.
+    :param node_names: names of the nodes to target.
+      All nodes known will be targeted if none is specified.
+    """
+    ros2cli = import_module('ros2cli.node.strategy')
+    ros2param = import_module('ros2param.api')
+    rcl_interfaces = import_module('rcl_interfaces.msg')
+    parameter = rcl_interfaces.Parameter(name=name)
+    parameter.value = ros2param.get_parameter_value(string_value=str(value))
+    with ros2cli.NodeStrategy(Namespace(**kwargs)) as node:
+        known_node_names = list_nodes_with_parameters(node=node)
+        if not node_names:
+            node_names = tuple(known_node_names)
+        for node_name in node_names:
+            response = ros2param.call_set_parameters(
+                node=node, node_name=node_name, parameters=[parameter])
+            result = response.results[0]
+            assert result.successful, (
+                "failed to set parameter on "
+                f"{node_name} due to {result.reason}")
+
+
 @keyword('Warn If ROS 2 Nodes Are Not Using Sim Time')
 def warn_if_ros_2_nodes_are_not_using_sim_time(*node_names: str, **kwargs: Any) -> bool:
     """Log a warning to console if a given ROS 2 node is not using simulation time."""

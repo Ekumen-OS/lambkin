@@ -192,7 +192,10 @@ After ROS 2 system benchmark case rig bringup
     [Documentation]
     ...  See `After ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
-    Warn If ROS 2 Nodes Are Not Using Sim Time
+    IF  ${BENCHMARK.RIG.ROS.SIMULATED}
+        Set ROS 2 Parameter  use_sim_time  ${BENCHMARK.RIG.ROS.SIMULATED}
+        Warn If ROS 2 Nodes Are Not Using Sim Time
+    END
     Dump ROS 2 Parameters  cwd=${BENCHMARK.CASE.ITERATION.PATH}
 
 Per ROS 2 system benchmark case iteration
