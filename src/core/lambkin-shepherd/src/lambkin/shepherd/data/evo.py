@@ -22,9 +22,10 @@ from collections.abc import Mapping
 from typing import Iterable, Optional, Protocol, Tuple, Union
 
 import numpy as np
-import pandas
+import pandas as pd
 
 from lambkin.shepherd.data import access
+from lambkin.shepherd.data import pandas
 from lambkin.shepherd.data.access import Locations
 from lambkin.shepherd.utilities import enforce_nonempty, safe_merge
 
@@ -38,12 +39,13 @@ def _to_evo_filestem(name: str, name_format: str) -> str:
     return os.path.splitext(os.path.basename(name))[0]
 
 
+@pandas.cache
 def stats(
     trajectory_name: str, metric_name: str, *,
     target_iterations: Optional[Locations] = None,
     trajectory_name_format: str = 'ros',
     normalization: Optional[str] = 'wide'
-) -> Union[Iterable[Tuple[Mapping, Mapping]], pandas.DataFrame]:
+) -> Union[Iterable[Tuple[Mapping, Mapping]], pd.DataFrame]:
     """
     Yield trajectory metric statistics per benchmark case iteration, as reported by ``evo``.
 
@@ -83,28 +85,29 @@ def stats(
     if normalization is not None:
         if normalization == 'wide':
             normalized_metric_name = f'{trajectory_name}.{metric_name}'
-            return pandas.json_normalize([
+            return pd.json_normalize([
                 safe_merge(metadata, {
                     normalized_metric_name: statistics
                 }) for metadata, statistics in _denormalized_impl()
-            ], sep='.').reset_index(drop=True)
+            ], sep='.').reset_index(drop=True).infer_objects()
         if normalization == 'long':
-            return pandas.json_normalize([
+            return pd.json_normalize([
                 safe_merge(metadata, {
                     'trajectory': {'name': trajectory_name},
                     'metric': {'name': metric_name, **statistics}
                 }) for metadata, statistics in _denormalized_impl()
-            ], sep='.').reset_index(drop=True)
+            ], sep='.').reset_index(drop=True).infer_objects()
         raise ValueError(f'unknown normalization style: {normalization}')
     return _denormalized_impl()
 
 
+@pandas.cache
 def series(
     trajectory_name: str, metric_name: str, *,
     target_iterations: Optional[Locations] = None,
     trajectory_name_format: str = 'ros',
     normalization: Optional[str] = 'wide'
-) -> Union[Iterable[Tuple[Mapping, np.ndarray, np.ndarray]], pandas.DataFrame]:
+) -> Union[Iterable[Tuple[Mapping, np.ndarray, np.ndarray]], pd.DataFrame]:
     """
     Yield trajectory metric timeseries per benchmark case iteration, as reported by ``evo``.
 
@@ -147,16 +150,16 @@ def series(
     if normalization is not None:
         if normalization == 'wide':
             normalized_metric_name = f'{trajectory_name}.{metric_name}'
-            df = pandas.json_normalize([
+            df = pd.json_normalize([
                 safe_merge(metadata, {normalized_metric_name: {
                     'series': {'time': time, 'value': value}
                 }}) for metadata, time, value in _denormalized_impl()
             ], sep='.')
             return df.explode(list(df.columns[
                 df.columns.str.startswith(normalized_metric_name)
-            ])).reset_index(drop=True)
+            ])).reset_index(drop=True).infer_objects()
         if normalization == 'long':
-            df = pandas.json_normalize([
+            df = pd.json_normalize([
                 safe_merge(metadata, {
                     'trajectory': {'name': trajectory_name},
                     'metric': {
@@ -168,7 +171,7 @@ def series(
             ], sep='.')
             return df.explode(list(df.columns[
                 df.columns.str.startswith('metric.series')
-            ])).reset_index(drop=True)
+            ])).reset_index(drop=True).infer_objects()
         raise ValueError(f'unknown normalization style: {normalization}')
     return _denormalized_impl()
 
@@ -221,11 +224,12 @@ def _to_dict(trajectory: SomeTrajectoryType) -> Mapping:
         'roll': roll, 'pitch': pitch, 'yaw': yaw}
 
 
+@pandas.cache
 def trajectory(
     trajectory_name: str, *, target_iterations: Optional[Locations] = None,
     trajectory_name_format: str = 'ros', trajectory_file_format: str = 'tum',
     normalization: Optional[str] = 'long'
-) -> Union[Iterable[Tuple[Mapping, SomeTrajectoryType]], pandas.DataFrame]:
+) -> Union[Iterable[Tuple[Mapping, SomeTrajectoryType]], pd.DataFrame]:
     """
     Yield a trajectory per benchmark case iteration, as reported by ``evo``.
 
@@ -274,22 +278,22 @@ def trajectory(
 
     if normalization is not None:
         if normalization == 'wide':
-            df = pandas.json_normalize([
+            df = pd.json_normalize([
                 safe_merge(metadata, {
                     trajectory_name: _to_dict(trajectory)
                 }) for metadata, trajectory in _denormalized_impl()
             ], sep='.')
             return df.explode(list(df.columns[
                 df.columns.str.startswith(trajectory_name)
-            ])).reset_index(drop=True)
+            ])).reset_index(drop=True).infer_objects()
         if normalization == 'long':
-            df = pandas.json_normalize([
+            df = pd.json_normalize([
                 safe_merge(metadata, {'trajectory': {
                     'name': trajectory_name, **_to_dict(trajectory)
                 }}) for metadata, trajectory in _denormalized_impl()
             ], sep='.')
             return df.explode(list(df.columns[
                 df.columns.str.startswith('trajectory') & (df.columns != 'trajectory.name')
-            ])).reset_index(drop=True)
+            ])).reset_index(drop=True).infer_objects()
         raise ValueError(f'unknown normalization style: {normalization}')
     return _denormalized_impl()

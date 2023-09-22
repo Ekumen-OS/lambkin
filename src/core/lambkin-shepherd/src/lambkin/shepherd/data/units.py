@@ -14,6 +14,7 @@
 
 """This module provides py:mod:`pint` powered physical units."""
 
+import functools
 import pint
 
 Quantity = pint.Quantity
@@ -22,3 +23,11 @@ DEFAULT_REGISTRY = ureg = pint.UnitRegistry(preprocessors=[
     lambda s: s.replace('%', ' percent ')
 ])
 DEFAULT_REGISTRY.define('percent = 0.01 = %')
+
+
+@functools.lru_cache
+def base_unit_scale(unit: str) -> float:
+    """Get SI unit scale factor."""
+    if not unit:
+        return 1.0
+    return ureg.Quantity(unit).to_base_units().magnitude

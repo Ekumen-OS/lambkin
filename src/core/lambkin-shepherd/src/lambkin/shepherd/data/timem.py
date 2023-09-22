@@ -21,11 +21,12 @@ from collections.abc import Mapping
 from typing import Any, Dict, Iterable, NamedTuple, Optional, Union
 
 from lambkin.shepherd.data import access
+from lambkin.shepherd.data import pandas
 from lambkin.shepherd.data.access import Locations
-from lambkin.shepherd.data.units import ureg
+from lambkin.shepherd.data.units import base_unit_scale
 from lambkin.shepherd.utilities import enforce_nonempty, safe_merge
 
-import pandas
+import pandas as pd
 
 
 def _parse_metric_data(
@@ -40,17 +41,11 @@ def _parse_metric_data(
     """
     if isinstance(data['value'], dict):
         return {
-            f'{basename}.{suffix}': ureg.Quantity(
-                data['value'][suffix],
-                data['unit_repr'][suffix]
-            ).to_base_units().magnitude
-            for suffix in data['value'].keys()
+            f'{basename}.{suffix}': (
+                data['value'][suffix] * base_unit_scale(data['unit_repr'][suffix])
+            ) for suffix in data['value'].keys()
         }
-    return {
-        basename: ureg.Quantity(
-            data['value'], data['unit_repr']
-        ).to_base_units().magnitude
-    }
+    return {basename: data['value'] * base_unit_scale(data['unit_repr'])}
 
 
 Measurement = NamedTuple('Measurement', [
@@ -59,11 +54,12 @@ Measurement = NamedTuple('Measurement', [
 ])
 
 
+@pandas.cache
 def history(
     process_name: str, *metric_names: str,
     target_iterations: Optional[Locations] = None,
     normalization: Optional[str] = 'wide'
-) -> Union[Iterable[Measurement], pandas.DataFrame]:
+) -> Union[Iterable[Measurement], pd.DataFrame]:
     """
     Yield process performance records per benchmark iteration as reported by ``timem``.
 
@@ -118,13 +114,13 @@ def history(
 
     if normalization is not None:
         if normalization == 'wide':
-            return pandas.json_normalize([
+            return pd.json_normalize([
                 safe_merge(metadata, {
                     process_name: {'series': record}
                 }) for metadata, record in _denormalized_impl()
             ], sep='.')
         if normalization == 'long':
-            return pandas.json_normalize([
+            return pd.json_normalize([
                 safe_merge(metadata, {
                     'process': {'name': process_name, 'series': record},
                 }) for metadata, record in _denormalized_impl()
@@ -133,11 +129,12 @@ def history(
     return _denormalized_impl()
 
 
+@pandas.cache
 def summary(
     process_name: str, *metric_names: str,
     target_iterations: Optional[Locations] = None,
     normalization: Optional[str] = 'wide'
-) -> Union[Iterable[Measurement], pandas.DataFrame]:
+) -> Union[Iterable[Measurement], pd.DataFrame]:
     """
     Yield process performance summary per benchmark case iteration, as reported by ``timem``.
 
@@ -181,13 +178,13 @@ def summary(
 
     if normalization is not None:
         if normalization == 'wide':
-            return pandas.json_normalize([
+            return pd.json_normalize([
                 safe_merge(metadata, {
                     process_name: {'summary': values}
                 }) for metadata, values in _denormalized_impl()
             ], sep='.')
         if normalization == 'long':
-            return pandas.json_normalize([
+            return pd.json_normalize([
                 safe_merge(metadata, {'process': {
                     'name': process_name,
                     'summary': values
