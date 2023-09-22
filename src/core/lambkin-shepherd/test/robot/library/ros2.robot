@@ -28,8 +28,11 @@ Library   String
 *** Test Cases ***
 ROS 2 package can be found
     Skip Unless Executable Exists  ros2
-    ${path} =  Find ROS 2 Package  launch
-    Directory Should Exist  ${path}
+    ${prefix} =  Find ROS 2 Package  launch
+    Directory Should Exist  ${prefix}
+    ${share_path} =  Find ROS 2 Package  launch  share=yes
+    Should Be Equal  ${share_path}  ${prefix}/share/launch
+    Directory Should Exist  ${share_path}
 
 Missing ROS 2 package is handled gracefully
     Skip Unless Executable Exists  ros2

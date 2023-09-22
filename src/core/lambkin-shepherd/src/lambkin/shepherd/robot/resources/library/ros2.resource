@@ -25,9 +25,10 @@ Library           lambkin.shepherd.robot.api.ros2
 *** Keywords ***
 Find ROS 2 Package
     [Documentation]  Finds a ROS 2 package path.
-    [Arguments]  ${package_name}
+    [Arguments]  ${package_name}  &{kwargs}
     [Tags]  imperative
-    ${result} =  Run Process  ros2  pkg  prefix  ${package_name}
+    ${options} =  Convert To Command Line Options  &{kwargs}
+    ${result} =  Run Process  ros2  pkg  prefix  @{options}  ${package_name}
     IF  ${result.rc} != 0  RETURN  ${None}
     RETURN  ${result.stdout}
 
