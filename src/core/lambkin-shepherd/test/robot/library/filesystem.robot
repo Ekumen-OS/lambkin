@@ -45,7 +45,7 @@ JSON file is correctly written
     ...  foo=bar  num=${0}  indent=${None}
     File Should Exist  ${TEST_TEMPDIR}/test.json
     ${content} =  Get File  ${TEST_TEMPDIR}/test.json
-    Should Be Equal  "${content}"  "{\"foo\": \"bar\", \"num\": 0}"
+    Should Be Equal  "${content}"  "{\"foo\": \"bar\", \"num\": 0}\n"
 
 YAML file is correctly read
     Create File  ${TEST_TEMPDIR}/test.yaml  {foo: bar, num: 0}
