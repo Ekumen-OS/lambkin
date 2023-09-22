@@ -147,6 +147,12 @@ Generates ${format} report from ${template_name} template in ${package_name} ROS
 
 ### Hooks ###
 
+For ROS system benchmark suite setup
+    [Documentation]
+    ...  See `For ${some} benchmark suite setup` documentation.
+    [Tags]  declarative  override
+    Set Suite Variable  $BENCHMARK.OUTPUT.ROS.BAG  output.bag
+
 Before ROS system benchmark case iteration
     [Documentation]
     ...  See `Before ${some} benchmark case iteration` documentation.
@@ -161,7 +167,8 @@ Before ROS system benchmark case rig bringup
     Set ROS Parameter  use_sim_time  ${BENCHMARK.RIG.ROS.SIMULATED}
     Start recording ROS bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
-    ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}  all=yes
+    ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}
+    ...  all=yes
 
 For ROS system benchmark case rig bringup
     [Documentation]

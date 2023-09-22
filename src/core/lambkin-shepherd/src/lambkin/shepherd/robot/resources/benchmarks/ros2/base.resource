@@ -144,6 +144,12 @@ Generates ${format} report from ${template_name} template in ${package_name} ROS
 
 ### Hooks ###
 
+For ROS 2 system benchmark suite setup
+    [Documentation]
+    ...  See `For ${some} benchmark suite setup` documentation.
+    [Tags]  declarative  override
+    Set Suite Variable  $BENCHMARK.OUTPUT.ROS.BAG  output_bag
+
 Before ROS 2 system benchmark case iteration
     [Documentation]
     ...  See `Before ${some} benchmark case iteration` documentation.
@@ -154,10 +160,11 @@ Before ROS 2 system benchmark case rig bringup
     [Documentation]
     ...  See `Before ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
+    Start ROS 2 Daemon
     Start recording ROS 2 bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
-    ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}  all=yes  use-sim-time=true
-    Start ROS 2 Daemon
+    ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}
+    ...  all=yes  use-sim-time=true
 
 For ROS 2 system benchmark case rig bringup
     [Documentation]
