@@ -64,34 +64,39 @@ After ROS 2D SLAM system benchmark case iteration
     ...                            ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
     ...                            Ground truth trajectory already tracked
 
-    ${result} =  Perform trajectory analysis  bag  ${BENCHMARK.OUTPUT.ROS.BAG}
-    ...                                       @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
-    ...                                       ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
-    ...                                       ref=${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
-    ...                                       ros_map_yaml=${BENCHMARK.OUTPUT.MAP.PATH}
-    ...                                       plot_mode=xy  save_plot=all.png
-    ...                                       no_warnings=yes  save_as_tum=yes
-    ...                                       &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
-    ...                                       cwd=${BENCHMARK.CASE.ITERATION.PATH}
-    Should Be Equal  ${result.rc}  ${0}
-    Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png  timeout=10s
-    File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/all_trajectories.png
+    ${result} =  Manipulate Trajectories  bag  ${BENCHMARK.OUTPUT.ROS.BAG}
+    ...                                   @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
+    ...                                   no_warnings=yes  save_as_tum=yes
+    ...                                   cwd=${BENCHMARK.CASE.ITERATION.PATH}
+    Should Be Equal  ${result.rc}  ${0}  msg=${result.stderr}
 
+    @{trajectories} =  Create List
     FOR  ${trajectory}  IN  @{BENCHMARK.OUTPUT.SLAM.TRAJECTORIES}
-        ${stem} =  Convert To EVO Filestem  ${trajectory}  name_format=ros
-        ${result} =  Estimate APE  bag  ${BENCHMARK.OUTPUT.ROS.BAG}
-        ...          ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}  ${trajectory}
-        ...          save_plot=${stem}.ape.png  save_results=${stem}.ape.zip
-        ...          plot_mode=xy  no_warnings=yes  &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
-        ...          cwd=${BENCHMARK.CASE.ITERATION.PATH}
-        Should Be Equal  ${result.rc}  ${0}
-        Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.ape.zip  timeout=10s
-        File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.ape.zip
-        ${result} =  Estimate RPE  bag  ${BENCHMARK.OUTPUT.ROS.BAG}  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
-        ...          ${trajectory}  save_plot=${stem}.rpe.png  save_results=${stem}.rpe.zip
-        ...          plot_mode=xy  no_warnings=yes  &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}
-        ...          cwd=${BENCHMARK.CASE.ITERATION.PATH}
-        Should Be Equal  ${result.rc}  ${0}
-        Wait Until Created  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.rpe.zip  10s
-        File Should Exist  ${BENCHMARK.CASE.ITERATION.PATH}/${stem}.rpe.zip
+        ${filestem} =  Convert To EVO Filestem  ${trajectory}  name_format=ros
+        Append To List  ${trajectories}  ${filestem}.tum
     END
+
+    IF  ${BENCHMARK.OUTPUT.SLAM.USE_GROUNDTRUTH_FROM_FILE}
+        ${groundtruth_format} =  Infer Trajectory File Format  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+        IF  "${groundtruth_format}" != "tum"
+            ${result} =  Manipulate Trajectories
+            ...    ${groundtruth_format}  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+            ...    no_warnings=yes  save_as_tum=yes  cwd=${BENCHMARK.CASE.ITERATION.PATH}
+            Should Be Equal  ${result.rc}  ${0}  msg=${result.stderr}
+            ${filestem} =  Convert To EVO Filestem  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}  name_format=path
+            ${groundtruth} =  Set Variable  ${filestem}.tum
+        ELSE
+            ${groundtruth} =  Set Variable  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+        END
+    ELSE
+        ${result} =  Manipulate Trajectories
+        ...    bag  ${BENCHMARK.OUTPUT.ROS.BAG}  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
+        ...    no_warnings=yes  save_as_tum=yes  cwd=${BENCHMARK.CASE.ITERATION.PATH}
+        Should Be Equal  ${result.rc}  ${0}  msg=${result.stderr}
+        ${filestem} =  Convert To EVO Filestem  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}  name_format=ros
+        ${groundtruth} =  Set Variable  ${filestem}.tum
+    END
+
+    Perform TUM Trajectory Analysis
+    ...    @{trajectories}  ref=${groundtruth}  map=${BENCHMARK.OUTPUT.MAP.PATH}
+    ...    &{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}  cwd=${BENCHMARK.CASE.ITERATION.PATH}

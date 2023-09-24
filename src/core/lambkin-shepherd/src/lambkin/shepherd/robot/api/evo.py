@@ -14,6 +14,8 @@
 
 """This module supplements RobotFramework ``evo`` library resource."""
 
+import os.path
+
 from robot.api.deco import keyword
 
 
@@ -27,3 +29,9 @@ def convert_to_evo_filestem(name: str, name_format: str) -> str:
     """
     from lambkin.shepherd.data.evo import _to_evo_filestem
     return _to_evo_filestem(name, name_format)
+
+
+@keyword('Infer Trajectory File Format')
+def infer_trajectory_file_format(path: str) -> str:
+    """Infer format for trajectory file at `path`."""
+    return os.path.splitext(path)[1].lstrip('.')
