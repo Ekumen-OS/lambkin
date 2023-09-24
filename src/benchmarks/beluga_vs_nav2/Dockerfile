@@ -16,36 +16,25 @@
 ARG baseimage=ekumenlabs/lambkin:ubuntu-jammy
 FROM ${baseimage} AS development
 
-
-
 USER root
-# Fix for rviz black screen
-RUN apt-get update \
-  && apt-get install --no-install-recommends -y \
-    software-properties-common \
-  && add-apt-repository -y ppa:kisak/kisak-mesa \
-  && apt-get install --no-install-recommends -y \
-    libegl-mesa0 libglx-mesa0 \
-  && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /workspace/src && chown -R $USERNAME:$USERNAME /workspace
 
-RUN mkdir -p /workspace/ && chown -R $USERNAME:$USERNAME /workspace
-RUN mkdir -p /tmp/context && chown -R $USERNAME:$USERNAME /tmp/context
-RUN mkdir -p /opt/ros/application && chown -R $USERNAME:$USERNAME /opt/ros/application
+RUN apt-get update && apt upgrade -y && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
+RUN git -C /workspace/src clone https://github.com/Ekumen-OS/beluga
 
-# TODO: Pin to release.
-RUN cd /workspace && git clone https://github.com/Ekumen-OS/beluga && mkdir -p src && mv beluga/* src/
+RUN --mount=type=bind,source=.,target=/workspace/src/beluga_vs_nav2,readonly cd /workspace && sudo apt update && rosdep update && \
+    rosdep install -i -y --from-paths src --skip-keys 'lambkin-shepherd flatland_server flatland_plugins' && \
+    sudo rm -rf /var/lib/apt/lists/*
 
-
-RUN sudo apt update && sudo apt upgrade -y
-RUN mkdir -p /tmp/context
-
-RUN --mount=type=bind,source=.,target=/tmp/context/src,readonly cd /tmp/context && \
-    sudo apt update && rosdep update && rosdep install -i -y --from-paths src /workspace/src --skip-keys 'lambkin-shepherd flatland_server beluga_example beluga_benchmarks flatland_plugins' && \
-    sudo rm -rf /var/lib/apt/lists/* && colcon build --packages-up-to 'beluga_vs_nav2' --merge-install --install-base /opt/ros/application
+RUN sudo pip install sphinxcontrib.datatemplates sphinxcontrib-repl
 
 FROM development AS release
+
+USER root
+RUN --mount=type=bind,source=.,target=/workspace/src/package,readonly cd /workspace && \
+    colcon build --packages-up-to beluga_vs_nav2 --merge-install --install-base /opt/ros/application
 
 RUN cat <<EOF > /opt/ros/application/entrypoint.bash
 # Auto-generated with Docker Buildkit
@@ -57,7 +46,7 @@ else
 fi
 EOF
 
-
+USER $USERNAME
 WORKDIR $HOME
 
 ENTRYPOINT ["fixuid", "-q", "/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
