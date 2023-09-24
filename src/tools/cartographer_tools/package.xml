@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>cartographer_tools</name>
+  <version>0.1.0</version>
+  <description>Convenient tools to work with Cartographer</description>
+
+  <maintainer email="michel@ekumenlabs.com">Michel Hidalgo</maintainer>
+
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>cartographer</depend>
+  <depend>cartographer_ros</depend>
+  <depend>libboost-iostreams-dev</depend>
+  <depend>libgflags-dev</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
