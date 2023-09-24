@@ -83,7 +83,7 @@ Compressed bagfiles can be detected
     Skip Unless Executables Exist  roscore  rostopic  rosbag
     Bring Up ROS Core
     Start Managed Process  rostopic  pub  -r  10  /foo  std_msgs/String  bar
-    ${result} =  Run Managed Process  rosbag  record
+    Run Managed Process  rosbag  record
     ...  -O  ${TEST_TEMPDIR}/empty.bag  --duration  2  --lz4  -a
     ${compressed} =  Warn If Bagfile Is Compressed  ${TEST_TEMPDIR}/empty.bag
     Should Be True  ${compressed}

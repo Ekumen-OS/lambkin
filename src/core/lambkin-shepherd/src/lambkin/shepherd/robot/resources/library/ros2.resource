@@ -49,6 +49,7 @@ Get ROS 2 Node List
     ${result} =  Run Managed Process  ros2  node  list  @{options}
     Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
     @{nodes} =  Split To Lines  ${result.stdout}
+    RETURN  @{nodes}
 
 Get ROS 2 Parameter
     [Documentation]  Gets a ROS 2 parameter value from the given node.
