@@ -12,6 +12,14 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+-- A Cartographer configuration suitable for offline mapping with mobile robots
+-- operating indoors, in narrow or mid-sized spaces, on a single (planar) floor.
+--
+-- Odometry and a single laser scanner is assumed available. Laser scan range
+-- is reduced to a conservative figure for accuracy with typical devices.
+-- The emphasis is on accuracy: long and frequent global optimization rounds
+-- are encouraged.
+
 include "map_builder.lua"
 include "trajectory_builder.lua"
 
