@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "lambkin-clerk"
+version = "0.1.0"
+description = "Cross-platform system introspection APIs"
+license = "Apache-2.0"
+authors = ["Michel Hidalgo <michel@ekumenlabs.com>"]
+maintainers = ["Michel Hidalgo <michel@ekumenlabs.com>"]
+readme = "README.md"
+packages = [{ include = "lambkin", from = "src" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Robot Framework :: Library",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Other",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering"
+]
+
+[tool.poetry.dependencies]
+beautifulsoup4 = "^4.0"
+python = "<3.12,>=3.8.2"
+Pint = "^0.20.0"
+psutil = "^5.9"
+requests = "^2.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+mypy = "^1.1.1"
+flake8 = "^6.0.0"
+flake8-docstrings = "^1.7.0"
+types-requests = "^2.31.0.0"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "*"
+sphinx-rtd-theme = "*"
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
