@@ -14,9 +14,10 @@
 
 """This module supplements RobotFramework filesystem library resource."""
 
+import json
 import os
 import shutil
-from typing import Optional
+from typing import Any, Optional
 
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
@@ -67,3 +68,15 @@ def resolve_file_path_or_fail(input_: str) -> Optional[str]:
     if output is None:
         BuiltIn().fail(f'no {input_} file was found')
     return output
+
+
+@keyword('Write JSON File')
+def write_json_file(path: str, indent: Optional[int] = 2, **variables: Any):
+    """
+    Write a JSON file using keyword arguments as key-value pairs.
+
+    Objects that are JSON serializable will be stringified to their
+    representation (i.e. ``repr(obj)``).
+    """
+    with open(path, 'w') as f:
+        json.dump(variables, f, indent=indent, default=repr)

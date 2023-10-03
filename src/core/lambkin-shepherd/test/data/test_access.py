@@ -20,6 +20,7 @@ from lambkin.shepherd.data.access import benchmark
 from lambkin.shepherd.data.access import current_path
 from lambkin.shepherd.data.access import metadata
 
+from lambkin.shepherd.data.access import suite
 from lambkin.shepherd.data.access import cases
 from lambkin.shepherd.data.access import variations
 from lambkin.shepherd.data.access import iterations
@@ -84,7 +85,8 @@ def testing_data_path(tmp_path_factory):
                     'iterations': [{None}] * 2
                 }]
             }
-        }
+        },
+        'metadata.json': json.dumps({'variables': {'p': ['a', 'b']}})
     }, path)
 
 
@@ -92,6 +94,10 @@ def testing_data_path(tmp_path_factory):
 def testing_benchmark(testing_data_path):
     with benchmark(testing_data_path):
         yield
+
+
+def test_suite_access(testing_benchmark):
+    assert suite() == Location(current_path(), {'variables': {'p': ['a', 'b']}})
 
 
 def test_cases_access(testing_benchmark):
