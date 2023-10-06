@@ -1,0 +1,64 @@
+# Copyright 2023 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Install Spack dependencies
+  ansible.builtin.package:
+    name:
+      - build-essential
+      - ca-certificates
+      - coreutils
+      - curl
+      - environment-modules
+      - gfortran
+      - git
+      - gpg
+      - lsb-release
+      - python3
+      - python3-distutils
+      - python3-venv
+      - unzip
+      - zip
+
+- name: Install Spack
+  ansible.builtin.git:
+    repo: https://github.com/spack/spack.git
+    dest: /opt/spack
+    depth: 1
+
+- name: Configure Spack
+  ansible.builtin.copy:
+    content: |
+      config:
+        build_jobs: 2
+    dest: /opt/spack/etc/spack/config.yaml
+
+- name: Setup Spack shell support
+  ansible.builtin.copy:
+    content: |
+      {{ "#" }} Auto-generated with Ansible {{ ansible_version.full }}
+      {{ "#" }} to {{ ansible_play_name | lower }}
+      SPACK_SKIP_MODULES= . /opt/spack/share/spack/setup-env.sh
+
+      if [ -e /etc/spack.specs ]; then
+        spack load --only package `cat /etc/spack.specs`
+      fi
+    dest: /etc/profile.d/spack.sh
+
+- name: Environment setup
+  ansible.builtin.shell:
+    cmd: source /etc/profile.d/spack.sh
+  args:
+    executable: /bin/bash
+

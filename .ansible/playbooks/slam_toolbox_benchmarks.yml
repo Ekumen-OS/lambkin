@@ -8,13 +8,18 @@
 
       working_container:
         volumes:
-          # TODO: Find a way to replace it
           - "/home/erasmo/Projects/lambkin/src/benchmarks/slam_toolbox_benchmarks:/tmp/ws/src/package"
 
       target_image:
         name: ekumenlabs/slam-toolbox-benchmarks:latest
 
   tasks:
+    - name: Install core dependencies
+      ansible.builtin.include_tasks: inventory/core/tasks/main.yml
+
+    - name: Install runner components
+      ansible.builtin.include_tasks: inventory/runner/tasks/main.yml
+
     - name: Install ros-noetic-pointcloud-to-laserscan
       ansible.builtin.apt:
         name: ros-noetic-pointcloud-to-laserscan
@@ -24,6 +29,3 @@
       ansible.builtin.command: "rosdep install -i -y --from-path src --skip-keys 'lambkin-shepherd'"
       args:
         chdir: /tmp/ws
-
-    - name: Remove APT lists
-      ansible.builtin.command: sudo rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,20 @@
+---
+- name: Lambkin ubuntu focal
+  hosts: localhost
+  connection: local
+
+  vars:
+    ansible_bender:
+      base_image: "docker.io/osrf/ros:noetic-desktop-full-focal"
+      target_image:
+        name: ekumenlabs/lambkin:ubuntu-focal
+        volumes:
+          - "{{ playbook_dir }}:/opt"
+          - "{{ playbook_dir }}:/etc"
+
+  tasks:
+    - name: Install core dependencies
+      ansible.builtin.include_tasks: inventory/core/tasks/main.yml
+
+    - name: Install runner components
+      ansible.builtin.include_tasks: inventory/runner/tasks/main.yml

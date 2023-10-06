@@ -1,0 +1,83 @@
+---
+- name: Setup beluga vs nav2
+  hosts: localhost
+  connection: local
+  vars:
+    ansible_bender:
+      base_image: "docker.io/osrf/ros:noetic-desktop-full-focal"
+
+      working_container:
+        volumes:
+          - "/home/erasmo/Projects/lambkin/src/benchmarks/beluga_vs_nav2:/tmp/context/src"
+
+      target_image:
+        name: ekumenlabs/beluga-vs-nav2:latest
+
+  tasks:
+    - name: Install core dependencies
+      ansible.builtin.include_tasks: inventory/core/tasks/main.yml
+
+    - name: Install runner components
+      ansible.builtin.include_tasks: inventory/runner/tasks/main.yml
+
+    - name: Add the Kisak Mesa PPA
+      ansible.builtin.apt_repository:
+        repo: ppa:kisak/kisak-mesa
+        state: present
+
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - software-properties-common
+          - libegl-mesa0
+          - libglx-mesa0
+        state: present
+
+    - name: Create and set ownership for /workspace
+      ansible.builtin.file:
+        path: /workspace/
+        state: directory
+        recurse: true
+
+    - name: Create and set ownership for /tmp/context
+      ansible.builtin.file:
+        path: /tmp/context/
+        state: directory
+        recurse: true
+
+    - name: Create and set ownership for /opt/ros/application
+      ansible.builtin.file:
+        path: /opt/ros/application/
+        state: directory
+        recurse: true
+
+    - name: Clone Beluga repository
+      ansible.builtin.git:
+        repo: https://github.com/Ekumen-OS/beluga
+        dest: /workspace/src/beluga
+        version: main
+
+    # - name: Move contents of 'beluga' to 'src'
+    #   ansible.builtin.command: mv /workspace/beluga/* /workspace/src/
+    #   args:
+    #     chdir: /workspace
+
+    - name: Update and upgrade apt packages
+      ansible.builtin.apt:
+        upgrade: yes
+        update_cache: yes
+
+    - name: Update ROS
+      ansible.builtin.command: rosdep update
+
+    - name: Install ROS dependencies and build
+      ansible.builtin.command: |
+        rosdep install -i -y --from-paths src /workspace/src --skip-keys lambkin-shepherd flatland_server beluga_example beluga_benchmarks flatland_plugins
+      args:
+        chdir: /tmp/context
+
+    - name: Install ROS dependencies and build
+      ansible.builtin.command: |
+        colcon build 'beluga_vs_nav2' /opt/ros/application
+      args:
+        chdir: /tmp/context

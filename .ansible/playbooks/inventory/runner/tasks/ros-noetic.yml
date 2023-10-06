@@ -1,0 +1,60 @@
+# Copyright 2023 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Add packages.ros.org apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://packages.ros.org/ros/ubuntu {{ ansible_distribution_release }} main"
+    filename: ros1-latest.list
+    state: present
+
+- name: Add packages.ros.org apt keys
+  ansible.builtin.apt_key:
+    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc
+    state: present
+
+- name: Install ROS Noetic desktop
+  ansible.builtin.apt:
+    name:
+      - ros-noetic-desktop
+      - ros-noetic-map-server
+    state: present
+
+- name: Environment setup
+  ansible.builtin.shell:
+    cmd: source /opt/ros/noetic/setup.bash
+  args:
+    executable: /bin/bash
+
+- name: Setup ROS Noetic shell support
+  ansible.builtin.copy:
+    content: |
+      {{ "#" }} Auto-generated with Ansible {{ ansible_version.full }}
+      {{ "#" }} to {{ ansible_play_name | lower }}
+      . /opt/ros/noetic/setup.sh
+    dest: /etc/profile.d/ros.sh
+
+# See https://github.com/ros/ros_comm/issues/2311
+# - name: Find roslaunch.nodeprocess module file
+#   ansible.builtin.shell:
+#     cmd: python3 -c 'import roslaunch.nodeprocess as m; print(m.__file__)'
+#   register: module_lookup
+#   args:
+#     executable: /bin/bash
+
+# - name: Patch roslaunch for stderr logging
+#   ansible.builtin.replace:
+#     path: "{{ module_lookup.stdout }}"
+#     regexp: "if is_child_mode\\(\\):"
+#     replace: "if True:"
