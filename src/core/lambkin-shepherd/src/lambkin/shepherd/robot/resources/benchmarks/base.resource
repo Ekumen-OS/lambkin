@@ -101,9 +101,9 @@ For base benchmark suite teardown
     [Tags]  declarative  override
     ${reporting} =  Get Variable Value  $BENCHMARK.REPORT.TEMPLATE
     IF  "${reporting}" != "${null}"
-        Build Sphinx Documentation
-        ...  ${BENCHMARK.REPORT.PATH}  ${BENCHMARK.REPORT.TEMPLATE}
-        ...  builder=${BENCHMARK.REPORT.FORMAT}
+        Remove Directory  ${BENCHMARK.REPORT.PATH}  recursive=yes
+        Copy Directory  ${BENCHMARK.REPORT.TEMPLATE}  ${BENCHMARK.REPORT.PATH}
+        Build Sphinx Documentation  builder=${BENCHMARK.REPORT.FORMAT}  cwd=${BENCHMARK.REPORT.PATH}
     END
 
 Before base benchmark case execution
