@@ -14,7 +14,7 @@
 
 ---
 include_components:
-  - lambkin-shepherd
+  - lambkin
   - latex
   - ros-noetic
   - timemory

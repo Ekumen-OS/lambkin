@@ -13,8 +13,22 @@
 # limitations under the License.
 
 ---
-- name: Install lambkin package in full
+- name: Install lambkin-shepherd in full
   ansible.builtin.pip:
     name: "{{ repository_path }}/src/core/lambkin-shepherd[full]"
     state: latest
     executable: pip3
+
+- name: Install lambkin-clerk
+  ansible.builtin.pip:
+    name: "{{ repository_path }}/src/core/lambkin-clerk"
+    state: latest
+    executable: pip3
+
+- name: Install lambkin-clerk dependencies
+  ansible.builtin.apt:
+    name:
+      - cpuinfo
+      - util-linux
+    state: present
+    update_cache: yes
