@@ -111,7 +111,7 @@ Before base benchmark case execution
     ...  See `Before ${some} benchmark case execution` documentation.
     [Tags]  declarative  override
 
-    Skip If  ${BENCHMARK.SUITE.SKIP}
+    Skip If  ${BENCHMARK.SUITE.SKIP}  msg=\.\.\.skipping entire case
     ${message} =  Set Variable  \.\.\.running ${BENCHMARK.CASE.TYPE} benchmark case
     ${parameters} =  Get Variable Value  $BENCHMARK.CASE.PARAMETERS  &{EMPTY}
     IF  ${parameters} != &{EMPTY}
