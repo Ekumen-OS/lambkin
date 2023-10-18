@@ -207,7 +207,7 @@ def _to_dict(trajectory: SomeTrajectoryType) -> Mapping:
     roll = np.arctan2(
         2 * (qw * qx + qy * qz),
         1 - 2 * (qx**2 + qy**2))
-    pitch = -np.pi/2 + 2 * np.arctan2(
+    pitch = -np.pi / 2 + 2 * np.arctan2(
         np.sqrt(1 + 2 * (qw * qy - qx * qz)),
         np.sqrt(1 - 2 * (qw * qy - qx * qz)))
     yaw = np.arctan2(
