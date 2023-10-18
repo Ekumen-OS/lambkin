@@ -24,6 +24,7 @@ from typing import Any, Callable, Dict, Iterable, List, Union
 
 import numpy as np
 import pandas as pd
+import tables as tb
 
 from lambkin.shepherd.data import access
 from lambkin.shepherd.utilities import fqn
@@ -106,11 +107,13 @@ def cache(func: Callable[..., Any]) -> Callable[..., Any]:
 
         path = cache_storage_path()
         path.parent.mkdir(exist_ok=True)
-        with pd.HDFStore(path) as store:
-            if cache_key in store:
-                return store.get(cache_key)
-            rvalue = func(*args, **kwargs)
-            if isinstance(rvalue, pd.DataFrame):
-                store.put(cache_key, rvalue)
-            return rvalue
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', tb.NaturalNameWarning)
+            with pd.HDFStore(path) as store:
+                if cache_key in store:
+                    return store.get(cache_key)
+                rvalue = func(*args, **kwargs)
+                if isinstance(rvalue, pd.DataFrame):
+                    store.put(cache_key, rvalue)
+                return rvalue
     return __wrapper
