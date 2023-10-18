@@ -102,7 +102,7 @@ def cache(func: Callable[..., Any]) -> Callable[..., Any]:
             return func(*args, **kwargs)
 
         func_key = fqn(func).replace('.', '_')
-        cache_key = f'{func_key}_{uid}'
+        cache_key = f'{func_key}@{uid}'
 
         path = cache_storage_path()
         path.parent.mkdir(exist_ok=True)
