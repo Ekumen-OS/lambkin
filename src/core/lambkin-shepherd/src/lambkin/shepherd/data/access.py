@@ -101,7 +101,7 @@ def cases(
     if not cases_path.exists():
         raise ValueError(f'no cases found in {benchmark_path}')
     for path in cases_path.glob('*'):
-        yield Location(path, {'case': metadata(path, root=path)})
+        yield Location(path, {'case': metadata(path, root=str(path))})
 
 
 def variations(

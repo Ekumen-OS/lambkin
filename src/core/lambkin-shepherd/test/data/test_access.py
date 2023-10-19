@@ -98,12 +98,12 @@ def test_cases_access(testing_benchmark):
     assert sorted(cases(), key=lambda loc: loc.path) == [
         Location(
             current_path() / 'cases' / 'bar', {'case': {
-                'name': 'Bar', 'root': current_path() / 'cases' / 'bar'
+                'name': 'Bar', 'root': str(current_path() / 'cases' / 'bar')
             }}
         ),
         Location(
             current_path() / 'cases' / 'foo', {'case': {
-                'name': 'Foo', 'root': current_path() / 'cases' / 'foo'
+                'name': 'Foo', 'root': str(current_path() / 'cases' / 'foo')
             }}
         )
     ]
@@ -115,13 +115,13 @@ def test_variations_access(testing_benchmark):
 
     assert sorted(variations(), key=lambda loc: loc.path) == [
         Location(bar_path / 'variations' / '0', {
-            'case': {'name': 'Bar', 'root': bar_path},
+            'case': {'name': 'Bar', 'root': str(bar_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'a'}
             }
         }),
         Location(foo_path / 'variations' / '0', {
-            'case': {'name': 'Foo', 'root': foo_path},
+            'case': {'name': 'Foo', 'root': str(foo_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'b'}
             }
@@ -137,25 +137,25 @@ def test_iterations_access(testing_benchmark):
 
     assert sorted(iterations(), key=lambda loc: loc.path) == [
         Location(bar_vpath / 'iterations' / '0', {
-            'case': {'name': 'Bar', 'root': bar_path},
+            'case': {'name': 'Bar', 'root': str(bar_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'a'}
             }, 'iteration': {'index': 0}
         }),
         Location(bar_vpath / 'iterations' / '1', {
-            'case': {'name': 'Bar', 'root': bar_path},
+            'case': {'name': 'Bar', 'root': str(bar_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'a'}
             }, 'iteration': {'index': 1}
         }),
         Location(foo_vpath / 'iterations' / '0', {
-            'case': {'name': 'Foo', 'root': foo_path},
+            'case': {'name': 'Foo', 'root': str(foo_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'b'}
             }, 'iteration': {'index': 0}
         }),
         Location(foo_vpath / 'iterations' / '1', {
-            'case': {'name': 'Foo', 'root': foo_path},
+            'case': {'name': 'Foo', 'root': str(foo_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'b'}
             }, 'iteration': {'index': 1}
@@ -172,13 +172,13 @@ def test_filtered_access(testing_benchmark):
         v.metadata['variation']['parameters']['p'] == 'b'
     ), key=lambda loc: loc.path) == [
         Location(foo_vpath / 'iterations' / '0', {
-            'case': {'name': 'Foo', 'root': foo_path},
+            'case': {'name': 'Foo', 'root': str(foo_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'b'}
             }, 'iteration': {'index': 0}
         }),
         Location(foo_vpath / 'iterations' / '1', {
-            'case': {'name': 'Foo', 'root': foo_path},
+            'case': {'name': 'Foo', 'root': str(foo_path)},
             'variation': {
                 'index': 0, 'parameters': {'p': 'b'}
             }, 'iteration': {'index': 1}

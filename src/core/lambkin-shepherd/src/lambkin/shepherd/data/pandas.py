@@ -15,11 +15,19 @@
 """This module provides additional APIs specific to pandas for convenience."""
 
 import collections
+import functools
+import hashlib
+import pickle
+import warnings
 
-from typing import Dict, Iterable, List, Union
+from typing import Any, Callable, Dict, Iterable, List, Union
 
 import numpy as np
 import pandas as pd
+import tables as tb
+
+from lambkin.shepherd.data import access
+from lambkin.shepherd.utilities import fqn
 
 
 def inner_join(
@@ -68,3 +76,44 @@ def rescale(
     output_dataframe[list(scale_factors.keys())] *= \
         np.array(list(scale_factors.values()))
     return output_dataframe
+
+
+def cache_storage_path():
+    """Return the path to the current benchmark cache storage."""
+    return access.current_path() / '.cache' / 'storage.h5'
+
+
+def cache(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Decorate a function to cache `pandas.DataFrame` return values.
+
+    Return values other than data frames are ignored. Caching can be
+    disabled for a function call by passing `nocache=True`.
+
+    :param func: a function that may return a data frame.
+    """
+    @functools.wraps(func)
+    def __wrapper(*args: Any, nocache: bool = False, **kwargs: Any) -> Any:
+        if nocache:
+            return func(*args, **kwargs)
+        try:
+            uid = hashlib.sha1(pickle.dumps((args, kwargs))).hexdigest()
+        except (TypeError, AttributeError):
+            warnings.warn('unhashable arguments, cannot cache')
+            return func(*args, **kwargs)
+
+        func_key = fqn(func).replace('.', '_')
+        cache_key = f'{func_key}@{uid}'
+
+        path = cache_storage_path()
+        path.parent.mkdir(exist_ok=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', tb.NaturalNameWarning)
+            with pd.HDFStore(path) as store:
+                if cache_key in store:
+                    return store.get(cache_key)
+                rvalue = func(*args, **kwargs)
+                if isinstance(rvalue, pd.DataFrame):
+                    store.put(cache_key, rvalue)
+                return rvalue
+    return __wrapper

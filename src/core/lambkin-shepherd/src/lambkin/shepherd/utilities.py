@@ -21,7 +21,7 @@ import os
 import yaml
 
 from collections.abc import Mapping
-from typing import Any, Iterable, Tuple
+from typing import Any, Iterable, Optional, Tuple
 
 
 class deepdict(dict):
@@ -139,3 +139,14 @@ def environment(**envvars):
         yield
     finally:
         os.environ = environ
+
+
+def fqn(obj: Any) -> Optional[str]:
+    """Compute the fully qualified name of a given object, if any."""
+    if not hasattr(obj, '__qualname__'):
+        return None
+    name = obj.__qualname__
+    if not hasattr(obj, '__module__'):
+        return name
+    module = obj.__module__
+    return f'{module}.{name}'
