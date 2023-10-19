@@ -20,7 +20,7 @@ target "lambkin-ubuntu-focal-dev" {
   contexts = {
     baseimage = "docker-image://osrf/ros:noetic-desktop-full-focal"
   }
-  args = { configuration = "{'exclude_components': ['lambkin-shepherd']}" }
+  args = { configuration = "{'exclude_components': ['lambkin']}" }
   tags = ["ekumenlabs/lambkin:ubuntu-focal-dev"]
 }
 
@@ -43,7 +43,7 @@ target "lambkin-ubuntu-jammy" {
   contexts = {
     baseimage = "docker-image://osrf/ros:humble-desktop-full-jammy"
   }
-  args = { configuration = "{'include_components': ['ros-humble', 'lambkin-shepherd', 'latex', 'timemory']}" }
+  args = { configuration = "{'include_components': ['ros-humble', 'lambkin', 'latex', 'timemory']}" }
   tags = ["ekumenlabs/lambkin:ubuntu-jammy"]
 }
 

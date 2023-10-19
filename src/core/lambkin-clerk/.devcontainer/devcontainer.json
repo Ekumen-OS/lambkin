@@ -1,0 +1,7 @@
+{
+    "image": "ekumenlabs/lambkin:ubuntu-focal-dev",
+
+    "postCreateCommand": "sudo pip3 install -r requirements.txt",
+
+    "remoteUser": "lambkin"
+}

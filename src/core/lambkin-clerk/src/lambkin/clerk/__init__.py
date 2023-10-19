@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-include_components:
-  - lambkin
-  - latex
-  - ros-noetic
-  - timemory
+"""This package eases system introspection for benchmark contextualization."""
 
-exclude_components: []
+import lambkin.clerk.hardware as hardware
+import lambkin.clerk.os as os
+import lambkin.clerk.ros2 as ros2
+
+__all__ = ['hardware', 'os', 'ros2']
