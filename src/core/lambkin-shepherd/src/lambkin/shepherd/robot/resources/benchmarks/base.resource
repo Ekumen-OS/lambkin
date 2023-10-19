@@ -30,6 +30,7 @@ Resource   lambkin/shepherd/robot/resources/library/sphinx.resource
 *** Variables ***
 ${BENCHMARK.SOURCE}  ${SUITE_SOURCE}
 ${BENCHMARK.ROOT}      ${OUTPUT_DIR}
+${BENCHMARK.SUITE.SKIP}     ${False}
 ${BENCHMARK.CASE.DELAY}      ${null}
 ${BENCHMARK.CASE.ITERATIONS}    ${1}
 
@@ -86,7 +87,6 @@ For base benchmark suite setup
     Set Environment Variable  BENCHMARK_SOURCE  ${BENCHMARK.SOURCE}
     ${path} =  Join Path  ${BENCHMARK.ROOT}  cases
     Set Suite Variable  $BENCHMARK.CASE.PATH  ${path}
-    Reset Directory  ${path}
 
 Before base benchmark suite teardown
     [Documentation]
@@ -111,16 +111,16 @@ Before base benchmark case execution
     ...  See `Before ${some} benchmark case execution` documentation.
     [Tags]  declarative  override
 
-    Log To Console  message=
+    Skip If  ${BENCHMARK.SUITE.SKIP}  msg=\.\.\.skipping entire case
+    ${message} =  Set Variable  \.\.\.running ${BENCHMARK.CASE.TYPE} benchmark case
     ${parameters} =  Get Variable Value  $BENCHMARK.CASE.PARAMETERS  &{EMPTY}
     IF  ${parameters} != &{EMPTY}
-        Log To Console  ...running ${BENCHMARK.CASE.TYPE} benchmark case for
+        ${message} =  Set Variable  ${message} for
         FOR  ${name}  ${value}  IN  &{BENCHMARK.CASE.PARAMETERS}
-            Log To Console  message=\ \ \ \ ${name} \= ${value}
+            ${message} =  Set Variable  ${message}${\n}\ \ \ \ ${name}\ \=\ ${value}
         END
-    ELSE
-        Log To Console  ...running ${BENCHMARK.CASE.TYPE} benchmark case
     END
+    Log To Console  ${\n}${message}
 
     ${now} =  Get Current Date
 

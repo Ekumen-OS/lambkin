@@ -28,6 +28,8 @@ def robot(args):
     if '-d' not in args.remaining_args and \
        '--outputdir' not in args.remaining_args:
         args.remaining_args.extend(['-d', args.file.stem])
+    if args.skip_all:
+        args.remaining_args.extend(['-v', 'BENCHMARK.SUITE.SKIP:True'])
     path_to_executable = shutil.which('robot')
     args = [path_to_executable] + args.remaining_args + [args.file]
     os.execv(path_to_executable, args)
@@ -44,6 +46,9 @@ def main(argv=None):
     robot_subparser.add_argument(
         '-f', '--file', type=pathlib.PurePath, required=True,
         help='Path to robot file, useful in shebang lines.')
+    robot_subparser.add_argument(
+        '--skip-all', action='store_true', default=False,
+        help='Whether to skip all benchmark work (and e.g. only report)')
     robot_subparser.set_defaults(subcommand=robot)
 
     args, unknown = parser.parse_known_args(argv)
