@@ -25,6 +25,11 @@ Library   Collections
 Library   String
 
 
+*** Variables ***
+&{BENCHMARK.OUTPUT.SLAM.CORRECTIONS}  &{EMPTY}
+${BENCHMARK.OUTPUT.SLAM.USE_GROUNDTRUTH_FROM_FILE}  ${False}
+
+
 *** Keywords ***
 SLAM system benchmark suite
     [Documentation]  Generic SLAM system benchmark suite description.
@@ -76,4 +81,20 @@ Uses ${trajectory} as trajectory groundtruth
     [Tags]  declarative
     Variable Should Not Exist  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH
     ...  Ground truth trajectory is already set to ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
-    Set Test Variable  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH  ${trajectory}
+    ${trajectory_path} =  Resolve File Path  ${trajectory}
+    IF  $trajectory_path != $null
+        Set Test Variable  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH  ${trajectory_path}
+        Set Test Variable  $BENCHMARK.OUTPUT.SLAM.USE_GROUNDTRUTH_FROM_FILE  ${True}
+    ELSE
+        Set Test Variable  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH  ${trajectory}
+    END
+
+### Hooks ###
+
+Before SLAM system benchmark case rig shutdown
+    [Documentation]
+    ...  See `Before ${some} benchmark case rig shutdown` documentation.
+    [Tags]  declarative  override
+    IF  ${BENCHMARK.OUTPUT.SLAM.USE_GROUNDTRUTH_FROM_FILE}
+        Copy File  ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}  ${BENCHMARK.CASE.ITERATION.PATH}/.
+    END

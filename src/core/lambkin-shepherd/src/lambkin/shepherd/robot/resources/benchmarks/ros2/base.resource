@@ -188,6 +188,13 @@ For ROS 2 system benchmark case rig bringup
     ...  @{BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}
     ...  package=${BENCHMARK.RIG.ROS.LAUNCH.PACKAGE}
 
+On ROS 2 system benchmark case rig bringup
+    [Documentation]
+    ...  See `On ${some} benchmark case rig bringup` documentation.
+    [Tags]  declarative  override
+    # NOTE(hidmic): wait for system to start
+    Sleep  1s
+
 After ROS 2 system benchmark case rig bringup
     [Documentation]
     ...  See `After ${some} benchmark case rig bringup` documentation.

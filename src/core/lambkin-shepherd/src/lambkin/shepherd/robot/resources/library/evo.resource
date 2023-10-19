@@ -23,7 +23,7 @@ Library   lambkin.shepherd.robot.api.evo
 
 
 *** Keywords ***
-Perform trajectory analysis
+Manipulate trajectories
     [Documentation]  Invokes evo_traj with arguments and options.
     [Arguments]  @{args}  ${cwd}=.  &{kwargs}
     [Tags]  imperative
@@ -46,3 +46,30 @@ Estimate RPE
     ${options} =  Convert To Command Line Options  &{kwargs}
     ${result} =  Run Managed Process  evo_rpe  @{args}  @{options}  cwd=${cwd}
     RETURN  ${result}
+
+Perform TUM Trajectory Analysis
+    [Documentation]  Performs basic trajectory analysis on a set of TUM formatted trajectories.
+    [Arguments]  @{trajectories}  ${ref}  ${map}  ${cwd}=.  &{kwargs}
+    [Tags]  imperative
+    ${result} =  Manipulate Trajectories  tum  @{trajectories}  ref=${ref}  ros_map_yaml=${map}
+    ...                                   plot_mode=xy  save_plot=all.png  no_warnings=yes
+    ...                                   cwd=${cwd}  &{kwargs}
+    Should Be Equal  ${result.rc}  ${0}  msg=${result.stderr}
+    Wait Until Created  ${cwd}/all_trajectories.png  timeout=10s
+    File Should Exist  ${cwd}/all_trajectories.png
+
+    FOR  ${trajectory}  IN  @{trajectories}
+        ${filestem} =  Convert To EVO Filestem  ${trajectory}  name_format=path
+        ${result} =  Estimate APE  tum  ${ref}  ${trajectory}  save_results=${filestem}.ape.zip
+        ...          save_plot=${filestem}.ape.png  plot_mode=xy  no_warnings=yes  cwd=${cwd}
+        ...          &{kwargs}
+        Should Be Equal  ${result.rc}  ${0}  msg=${result.stderr}
+        Wait Until Created  ${cwd}/${filestem}.ape.zip  timeout=10s
+        File Should Exist  ${cwd}/${filestem}.ape.zip
+        ${result} =  Estimate RPE  tum  ${ref}  ${trajectory}  save_results=${filestem}.rpe.zip
+        ...          save_plot=${filestem}.rpe.png  plot_mode=xy  no_warnings=yes  cwd=${cwd}
+        ...          &{kwargs}
+        Should Be Equal  ${result.rc}  ${0}  msg=${result.stderr}
+        Wait Until Created  ${cwd}/${filestem}.rpe.zip  10s
+        File Should Exist  ${cwd}/${filestem}.rpe.zip
+    END
