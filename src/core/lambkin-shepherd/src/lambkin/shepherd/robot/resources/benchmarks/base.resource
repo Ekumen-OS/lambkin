@@ -20,6 +20,7 @@ Documentation
 ...    for all benchmarks, from report generation to consistent filesystem
 ...    layouts, and thus are likely to be extended by most (if not all).
 
+Library    Collections
 Library    DateTime
 
 Resource   lambkin/shepherd/robot/resources/library/core.resource
@@ -87,6 +88,16 @@ For base benchmark suite setup
     Set Environment Variable  BENCHMARK_SOURCE  ${BENCHMARK.SOURCE}
     ${path} =  Join Path  ${BENCHMARK.ROOT}  cases
     Set Suite Variable  $BENCHMARK.CASE.PATH  ${path}
+
+After base benchmark suite setup
+    [Documentation]
+    ...  See `After ${some} benchmark suite setup` documentation.
+    [Tags]  declarative  override
+    ${now} =  Get Current Date
+    ${variables} =  Get Variables  no_decoration=yes
+    ${variables} =  Convert To Dictionary  ${variables}
+    ${path} =  Join Path  ${BENCHMARK.ROOT}  metadata.json
+    Write JSON File  ${path}  variables=${variables}  starttime=${now}
 
 Before base benchmark suite teardown
     [Documentation]

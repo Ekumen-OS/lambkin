@@ -85,11 +85,24 @@ class Location(NamedTuple):
 Locations = Iterable[Location]
 
 
+def suite(benchmark_path: Optional[pathlib.Path] = None) -> Location:
+    """
+    Yield output data for a benchmark suite.
+
+    :param benchmark_path: path to the the target benchmark.
+        If not provided, it defaults to the current `root()`.
+    :returns: suite data location.
+    """
+    if benchmark_path is None:
+        benchmark_path = current_path()
+    return Location(benchmark_path, metadata(benchmark_path))
+
+
 def cases(
     benchmark_path: Optional[pathlib.Path] = None
 ) -> Iterable[Location]:
     """
-    Iterate over output data for each case in a benchmark.
+    Iterate over output data for each case in a benchmark suite.
 
     :param benchmark_path: path to the the target benchmark.
         If not provided, it defaults to the current `root()`.
@@ -108,7 +121,7 @@ def variations(
     target_cases: Optional[Iterable[Location]] = None
 ) -> Iterable[Location]:
     """
-    Iterate over output data for each variation of each case in a benchmark.
+    Iterate over output data for each variation of each case in a benchmark suite.
 
     :param target_cases: locations of benchmark cases to target. If not provided,
       it defaults to all locations returned by py:func:`lambkin.data.access.cases()`.
@@ -132,7 +145,7 @@ def iterations(
     target_variations: Optional[Iterable[Location]] = None
 ) -> Iterable[Location]:
     """
-    Iterate over output data for each iteration in each variation of each case in a benchmark.
+    Iterate over output data for each iteration in each variation of each case in a benchmark suite.
 
     :param target_variations: locations of benchmark case variations to target. If not provided,
       it defaults to all locations as returned by py:func:`lambkin.data.access.variations()`.
