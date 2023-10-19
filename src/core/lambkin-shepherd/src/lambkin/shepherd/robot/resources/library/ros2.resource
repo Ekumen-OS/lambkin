@@ -25,9 +25,10 @@ Library           lambkin.shepherd.robot.api.ros2
 *** Keywords ***
 Find ROS 2 Package
     [Documentation]  Finds a ROS 2 package path.
-    [Arguments]  ${package_name}
+    [Arguments]  ${package_name}  &{kwargs}
     [Tags]  imperative
-    ${result} =  Run Process  ros2  pkg  prefix  ${package_name}
+    ${options} =  Convert To Command Line Options  &{kwargs}
+    ${result} =  Run Process  ros2  pkg  prefix  @{options}  ${package_name}
     IF  ${result.rc} != 0  RETURN  ${None}
     RETURN  ${result.stdout}
 
@@ -58,53 +59,21 @@ Get ROS 2 Parameter
     ${value} =  Evaluate  ${result.stdout}
     RETURN  ${value}
 
-Set ROS 2 Parameter
-    [Documentation]  Sets a ROS 2 parameter for the given nodes.
-    [Arguments]  ${name}  ${value}  @{nodes}
-    Should Not Be Empty  ${nodes}
-    FOR  ${node}  IN  @{nodes}
-        ${result} =  Run Process  ros2  param  set  ${node}  ${name}  ${value}
-        Should Be Equal As Integers  ${result.rc}  0  msg=${result.stderr}
-    END
-
-Dump ROS 2 Parameters
-    [Documentation]  Writes ROS 2 parameters from each node to a given directory.
-    [Arguments]  ${cwd}=.  @{arguments}
+Start ROS 2 Daemon
+    [Documentation]  Stars the ROS 2 daemon.
+    [Arguments]  &{kwargs}
     [Tags]  imperative
-    @{nodes} =  Get ROS 2 Node List
-    FOR  ${node}  IN  @{nodes}
-        ${result} =  Run Process  ros2  param  dump  ${node}    @{arguments}    timeout=5
-        IF    ${result.rc} != 0
-            Log To Console    Couldn't dump ROS parameters for node ${node} because of ${result.stderr}, skipping.
-        END
-        ${node} =  Remove String  ${node}  /
-        ${path} =  Join Path  ${cwd}  ${node}_params.yaml
-        Create File  ${path}  ${result.stdout}
-    END
+    ${options} =  Convert To Command Line Options  &{kwargs}
+    ${result} =  Run Managed Process  ros2  daemon  start  @{options}
+    RETURN  ${result}
 
-Warn If Not Using Sim Time
-    [Documentation]    Log a warning to console if one of the given ROS 2 nodes
-    ...    is not using simulation time.
-    [Tags]    imperative
-    [Arguments]    @{nodes}
-    ${return} =    Set Variable    ${True}
-    # NOTE: Get ROS2 parameter hangs sometimes for some automatically created nodes. The timeout ensure we soft-fail in those cases, and print to console.
-    FOR    ${node}    IN    @{nodes}
-        TRY
-            ${use_sim_time} =    Run Keyword with Timeout
-            ...    Get ROS 2 Parameter
-            ...    use_sim_time
-            ...    ${node}
-            ...    timeout=5s
-            IF    "${use_sim_time}" != "${True}"
-                Log To Console    ${\n}\[!] ${node} is not using sim time
-                ${return} =    Set Variable    ${False}
-            END
-        EXCEPT
-            Log To Console    Couldn't get ROS params for node: ${node} in 5s, skipping.
-        END
-    END
-    RETURN    ${return}
+Stop ROS 2 Daemon
+    [Documentation]  Stops the ROS 2 daemon.
+    [Arguments]  &{kwargs}
+    [Tags]  imperative
+    ${options} =  Convert To Command Line Options  &{kwargs}
+    ${result} =  Run Managed Process  ros2  daemon  stop  @{options}
+    RETURN  ${result}
 
 Launch ROS 2 System
     [Documentation]  Launches a ROS 2 system via ros2 launch.

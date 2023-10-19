@@ -243,7 +243,10 @@ def test_wide_normalized_evo_trajectory():
         '/tf:map.base_link.qx',
         '/tf:map.base_link.qy',
         '/tf:map.base_link.qz',
-        '/tf:map.base_link.qw'
+        '/tf:map.base_link.qw',
+        '/tf:map.base_link.roll',
+        '/tf:map.base_link.pitch',
+        '/tf:map.base_link.yaw'
     ])
     assert df['case.name'].eq('Foo').all()
     scenarios = df['variation.parameters.scenario']
@@ -283,7 +286,10 @@ def test_long_normalized_evo_trajectory():
         'trajectory.qx',
         'trajectory.qy',
         'trajectory.qz',
-        'trajectory.qw'
+        'trajectory.qw',
+        'trajectory.roll',
+        'trajectory.pitch',
+        'trajectory.yaw'
     ])
     assert df['case.name'].eq('Foo').all()
     scenarios = df['variation.parameters.scenario']

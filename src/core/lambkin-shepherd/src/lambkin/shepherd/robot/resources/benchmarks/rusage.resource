@@ -25,6 +25,7 @@ Resource    lambkin/shepherd/robot/resources/library/timemory.resource
 
 Library    Collections
 
+
 *** Keywords ***
 Generic resource usage benchmark suite
     [Documentation]
@@ -53,12 +54,8 @@ Uses ${profiler} to sample ${process} performance
     END
     Set Test Variable  $BENCHMARK.RIG.PROFILER  ${profiler}
 
-    ${processes}=    Get Variable Value    ${BENCHMARK.RIG.PROCESSES}    ${null}
-    IF    ${processes} == $null
-        @{processes}=    Create List    ${process}
-    ELSE
-        Append To List    ${processes}    ${process}
-    END
+    ${processes}=    Get Variable Value    ${BENCHMARK.RIG.PROCESSES}    @{EMPTY}
+    Append To List    ${processes}    ${process}
     Set Test Variable    ${BENCHMARK.RIG.PROCESSES}    ${processes}
 
 ### Hooks ###

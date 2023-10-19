@@ -28,8 +28,11 @@ Library   String
 *** Test Cases ***
 ROS 2 package can be found
     Skip Unless Executable Exists  ros2
-    ${path} =  Find ROS 2 Package  launch
-    Directory Should Exist  ${path}
+    ${prefix} =  Find ROS 2 Package  launch
+    Directory Should Exist  ${prefix}
+    ${share_path} =  Find ROS 2 Package  launch  share=yes
+    Should Be Equal  ${share_path}  ${prefix}/share/launch
+    Directory Should Exist  ${share_path}
 
 Missing ROS 2 package is handled gracefully
     Skip Unless Executable Exists  ros2
@@ -41,10 +44,10 @@ ROS 2 parameters can be dumped
     Start Process  ros2  run  topic_tools  relay  /tf
     Sleep  1s
     Set ROS 2 Parameter  use_sim_time  false  /relay
-    Dump ROS 2 Parameters  ${TEST_TEMPDIR}
+    Dump ROS 2 Parameters  ${TEST_TEMPDIR}/params.yaml
     Terminate Process
-    File Should Exist  ${TEST_TEMPDIR}/relay_params.yaml
-    ${config} =  Read YAML File  ${TEST_TEMPDIR}/relay_params.yaml
+    File Should Exist  ${TEST_TEMPDIR}/params.yaml
+    ${config} =  Read YAML File  ${TEST_TEMPDIR}/params.yaml
     ${node} =  Get From Dictionary  ${config}  /relay
     ${params} =  Get From Dictionary  ${node}  ros__parameters
     Dictionary Should Contain Item  ${params}  use_sim_time  ${False}
@@ -108,9 +111,9 @@ Using simulation time can be detected
     Start Process  ros2  run  topic_tools  relay  /tf
     Sleep  1s
     Set ROS 2 Parameter  use_sim_time  false  /relay
-    ${use_sim_time} =  Warn If Not Using Sim Time  /relay
+    ${use_sim_time} =  Warn If ROS 2 Nodes Are Not Using Sim Time  /relay
     Should Not Be True  ${use_sim_time}
     Set ROS 2 Parameter  use_sim_time  true  /relay
-    ${use_sim_time} =  Warn If Not Using Sim Time  /relay
+    ${use_sim_time} =  Warn If ROS 2 Nodes Are Not Using Sim Time  /relay
     Should Be True  ${use_sim_time}
     Terminate Process

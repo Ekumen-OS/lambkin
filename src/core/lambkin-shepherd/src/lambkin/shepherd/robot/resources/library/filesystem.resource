@@ -54,7 +54,7 @@ Write JSON File
     [Arguments]  ${path}  ${indent}=${2}  &{dict}
     [Tags]  imperative
     ${content} =  json.dumps  ${dict}  indent=${indent}
-    Create File  ${path}  ${content}
+    Create File  ${path}  ${content}${\n}
 
 Read YAML File
     [Documentation]  Reads a YAML file as a dictionary.

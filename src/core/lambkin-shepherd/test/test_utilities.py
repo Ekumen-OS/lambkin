@@ -14,8 +14,45 @@
 
 import pytest
 
+from lambkin.shepherd.utilities import deepdict
+from lambkin.shepherd.utilities import enforce_nonempty
+from lambkin.shepherd.utilities import peek_iterable
 from lambkin.shepherd.utilities import safe_merge
 from lambkin.shepherd.utilities import snake_case
+
+
+def test_deepdict():
+    d = deepdict()
+    d['a'] = None
+    d['b', 'x'] = 1
+    d['b', 'y'] = 2
+    assert 'a' in d
+    assert 'b' in d
+    assert 'c' not in d
+    assert ['b', 'x'] in d
+    assert ['b', 'z'] not in d
+    assert d['b'] == {'x': 1, 'y': 2}
+    assert d == {'a': None, 'b': {'x': 1, 'y': 2}}
+
+
+def test_enforce_empty():
+    with pytest.raises(ValueError):
+        enforce_nonempty([])
+    enforce_nonempty([None])
+
+
+def test_peek_iterable():
+    item, iterable = peek_iterable([])
+    assert item is StopIteration
+    assert list(iterable) == []
+
+    item, iterable = peek_iterable([1])
+    assert item == 1
+    assert list(iterable) == [1]
+
+    item, iterable = peek_iterable([1, 2])
+    assert item == 1
+    assert list(iterable) == [1, 2]
 
 
 def test_snake_case():

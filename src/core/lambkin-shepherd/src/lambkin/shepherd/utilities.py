@@ -18,9 +18,59 @@ import contextlib
 import itertools
 import re
 import os
+import yaml
 
 from collections.abc import Mapping
 from typing import Any, Iterable, Tuple
+
+
+class deepdict(dict):
+    """
+    A `dict` with support for indexing arbitrarily nested values.
+
+    Use `d[a, b, ...]` or `d[k]` with `k` a list for nested indexing.
+    When setting values, intermediate mappings will be created to satisfy
+    the request.
+    """
+
+    def __contains__(self, key: Any) -> bool:
+        """Check if an item `key` exists."""
+        if isinstance(key, (tuple, list)):
+            if len(key) == 0:
+                raise KeyError('no keys')
+            if len(key) > 1:
+                return super().__contains__(key[0]) and (
+                    key[1:] in super().__getitem__(key[0]))
+            key = key[0]
+        return super().__contains__(key)
+
+    def __getitem__(self, key: Any) -> Any:
+        """Get an item at `key`."""
+        if isinstance(key, (tuple, list)):
+            if len(key) == 0:
+                raise KeyError('no keys')
+            if len(key) > 1:
+                nested = super().__getitem__(key[0])
+                return nested[key[1:]]
+            key = key[0]
+        return super().__getitem__(key)
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        """Set an item at `key`."""
+        if isinstance(key, (tuple, list)):
+            if len(key) == 0:
+                raise KeyError('no keys')
+            if len(key) > 1:
+                if not super().__contains__(key[0]):
+                    super().__setitem__(key[0], type(self)())
+                nested = super().__getitem__(key[0])
+                nested[key[1:]] = value
+                return
+            key = key[0]
+        super().__setitem__(key, value)
+
+
+yaml.add_representer(deepdict, lambda dumper, data: dumper.represent_dict(data))
 
 
 def safe_merge(base: Mapping, head: Mapping) -> Mapping:

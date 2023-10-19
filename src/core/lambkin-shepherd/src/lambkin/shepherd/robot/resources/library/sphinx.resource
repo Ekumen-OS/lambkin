@@ -21,8 +21,8 @@ Resource         lambkin/shepherd/robot/resources/library/process.resource
 *** Keywords ***
 Build Sphinx Documentation
     [Documentation]  Invokes sphinx-build on input to build on output.
-    [Arguments]  ${output}=build  ${input}=.  ${builder}=latexpdf
+    [Arguments]  ${output}=build  ${input}=.  ${builder}=latexpdf  &{kwargs}
     [Tags]  imperative
     ${result} =  Run Managed Process
-    ...  sphinx-build  -M  ${builder}  ${input}  ${output}  -W
+    ...  sphinx-build  -M  ${builder}  ${input}  ${output}  &{kwargs}
     RETURN  ${result}

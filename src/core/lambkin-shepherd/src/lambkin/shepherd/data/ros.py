@@ -60,7 +60,7 @@ def messages(
         target_iterations = access.iterations()
     target_iterations = enforce_nonempty(
         target_iterations, 'no target iterations')
-
+    assert target_iterations is not None
     for path, metadata in target_iterations:
         bag_path = path / bag_name
         if not bag_path.exists():
@@ -99,7 +99,7 @@ def occupancy_grids(
         target_iterations = access.iterations()
     target_iterations = enforce_nonempty(
         target_iterations, 'no target iterations')
-
+    assert target_iterations is not None
     for path, metadata in target_iterations:
         map_metadata_path = path / f'{map_name}.yaml'
         if not map_metadata_path.exists():

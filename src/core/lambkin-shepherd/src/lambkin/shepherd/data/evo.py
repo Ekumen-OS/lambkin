@@ -39,8 +39,8 @@ def _to_evo_filestem(name: str, name_format: str) -> str:
 
 
 def stats(
-    trajectory_name: str, metric_name: str,
-    target_iterations: Optional[Locations] = None, /,
+    trajectory_name: str, metric_name: str, *,
+    target_iterations: Optional[Locations] = None,
     trajectory_name_format: str = 'ros',
     normalization: Optional[str] = 'wide'
 ) -> Union[Iterable[Tuple[Mapping, Mapping]], pandas.DataFrame]:
@@ -100,8 +100,8 @@ def stats(
 
 
 def series(
-    trajectory_name: str, metric_name: str,
-    target_iterations: Optional[Locations] = None, /,
+    trajectory_name: str, metric_name: str, *,
+    target_iterations: Optional[Locations] = None,
     trajectory_name_format: str = 'ros',
     normalization: Optional[str] = 'wide'
 ) -> Union[Iterable[Tuple[Mapping, np.ndarray, np.ndarray]], pandas.DataFrame]:
@@ -197,21 +197,32 @@ def _to_dict(trajectory: SomeTrajectoryType) -> Mapping:
     else:
         time = time_since_epoch = np.full_like(
             trajectory.positions_xyz[:, 0], np.nan)
+    x = trajectory.positions_xyz[:, 0]
+    y = trajectory.positions_xyz[:, 1]
+    z = trajectory.positions_xyz[:, 2]
+    qw = trajectory.orientations_quat_wxyz[:, 0]
+    qx = trajectory.orientations_quat_wxyz[:, 1]
+    qy = trajectory.orientations_quat_wxyz[:, 2]
+    qz = trajectory.orientations_quat_wxyz[:, 3]
+    roll = np.arctan2(
+        2 * (qw * qx + qy * qz),
+        1 - 2 * (qx**2 + qy**2))
+    pitch = -np.pi / 2 + 2 * np.arctan2(
+        np.sqrt(1 + 2 * (qw * qy - qx * qz)),
+        np.sqrt(1 - 2 * (qw * qy - qx * qz)))
+    yaw = np.arctan2(
+        2 * (qw * qz + qx * qy),
+        1 - 2 * (qy**2 + qz**2))
     return {
         'time': time,
         'time_since_epoch': time_since_epoch,
-        'x': trajectory.positions_xyz[:, 0],
-        'y': trajectory.positions_xyz[:, 1],
-        'z': trajectory.positions_xyz[:, 2],
-        'qw': trajectory.orientations_quat_wxyz[:, 0],
-        'qx': trajectory.orientations_quat_wxyz[:, 1],
-        'qy': trajectory.orientations_quat_wxyz[:, 2],
-        'qz': trajectory.orientations_quat_wxyz[:, 3]
-    }
+        'x': x, 'y': y, 'z': z,
+        'qw': qw, 'qx': qx, 'qy': qy, 'qz': qz,
+        'roll': roll, 'pitch': pitch, 'yaw': yaw}
 
 
 def trajectory(
-    trajectory_name: str, target_iterations: Optional[Locations] = None, /,
+    trajectory_name: str, *, target_iterations: Optional[Locations] = None,
     trajectory_name_format: str = 'ros', trajectory_file_format: str = 'tum',
     normalization: Optional[str] = 'long'
 ) -> Union[Iterable[Tuple[Mapping, SomeTrajectoryType]], pandas.DataFrame]:

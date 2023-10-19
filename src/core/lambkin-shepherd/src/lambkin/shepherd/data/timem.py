@@ -60,8 +60,8 @@ Measurement = NamedTuple('Measurement', [
 
 
 def history(
-    process_name: str,
-    target_iterations: Optional[Locations] = None, /,
+    process_name: str, *metric_names: str,
+    target_iterations: Optional[Locations] = None,
     normalization: Optional[str] = 'wide'
 ) -> Union[Iterable[Measurement], pandas.DataFrame]:
     """
@@ -71,6 +71,8 @@ def history(
     benchmarks' documentation on how to do this.
 
     :param process_name: name of the process of interest.
+    :param metric_names: performance metric names to return.
+      If none is provided, all available metrics will be returned.
     :param target_iterations: locations of benchmark case iterations
       to target. If not provided, it defaults to all locations as
       returned by py:func:`lambkin.data.access.iterations()`.
@@ -110,7 +112,8 @@ def history(
                     time_since_epoch=time_since_epoch
                 )
                 for metric_name, metric_data in sample.items():
-                    values.update(_parse_metric_data(metric_name, metric_data))
+                    if not metric_names or metric_name in metric_names:
+                        values.update(_parse_metric_data(metric_name, metric_data))
                 yield Measurement(metadata, values)
 
     if normalization is not None:
@@ -131,8 +134,8 @@ def history(
 
 
 def summary(
-    process_name: str,
-    target_iterations: Optional[Locations] = None, /,
+    process_name: str, *metric_names: str,
+    target_iterations: Optional[Locations] = None,
     normalization: Optional[str] = 'wide'
 ) -> Union[Iterable[Measurement], pandas.DataFrame]:
     """
@@ -142,6 +145,8 @@ def summary(
     benchmarks' documentation on how to do this.
 
     :param process_name: name of the process of interest.
+    :param metric_names: performance metric names to return.
+      If none is provided, all available metrics will be returned.
     :param target_iterations: locations of benchmark case iterations
       to target. If not provided, it defaults to all locations as
       returned by py:func:`lambkin.data.access.iterations()`.
@@ -170,7 +175,8 @@ def summary(
                 del data['history']
             values = {}
             for metric_name, metric_data in data.items():
-                values.update(_parse_metric_data(metric_name, metric_data))
+                if not metric_names or metric_name in metric_names:
+                    values.update(_parse_metric_data(metric_name, metric_data))
             yield Measurement(metadata, values)
 
     if normalization is not None:

@@ -129,6 +129,17 @@ Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as inpu
     Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
     Uses ${topics} data in ${bag} at ${rate}x as input to ROS 2 system
 
+Configures QoS overrides from ${qos_overrides_path} for input to ROS 2 system
+    [Documentation]
+    ...  Specifies the QoS overrides from a YAML file that some ROS 2 system
+    ...  benchmark case will use for ROS 2 bag data input. The path to the
+    ...  QoS overrides file will be resolved relative to the benchmark suite.
+    [Tags]  declarative
+    Variable Should Not Exist  $BENCHMARK.INPUT.ROS.QOS_OVERRIDES
+    ...  QoS overrides already set to ${$BENCHMARK.INPUT.ROS.QOS_OVERRIDES}
+    ${path} =  Resolve File Path or Fail  ${qos_overrides_path}
+    Set Test Variable  $BENCHMARK.INPUT.ROS.QOS_OVERRIDES  ${path}
+
 Generates ${format} report from ${template_name} template in ${package_name} ROS 2 package
     [Documentation]
     ...  Specifies report generation using Sphinx template projects that are
@@ -144,6 +155,12 @@ Generates ${format} report from ${template_name} template in ${package_name} ROS
 
 ### Hooks ###
 
+For ROS 2 system benchmark suite setup
+    [Documentation]
+    ...  See `For ${some} benchmark suite setup` documentation.
+    [Tags]  declarative  override
+    Set Suite Variable  $BENCHMARK.OUTPUT.ROS.BAG  output_bag
+
 Before ROS 2 system benchmark case iteration
     [Documentation]
     ...  See `Before ${some} benchmark case iteration` documentation.
@@ -154,9 +171,11 @@ Before ROS 2 system benchmark case rig bringup
     [Documentation]
     ...  See `Before ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
+    Start ROS 2 Daemon
     Start recording ROS 2 bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
-    ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}  all=yes  use-sim-time=true
+    ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}
+    ...  all=yes  use-sim-time=true
 
 For ROS 2 system benchmark case rig bringup
     [Documentation]
@@ -173,33 +192,30 @@ After ROS 2 system benchmark case rig bringup
     [Documentation]
     ...  See `After ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
-    @{nodes} =  Get ROS 2 Node List
-    Warn If Not Using Sim Time  @{nodes}
-    Dump ROS 2 Parameters    ${BENCHMARK.CASE.ITERATION.PATH}
+    IF  ${BENCHMARK.RIG.ROS.SIMULATED}
+        Set ROS 2 Parameter  use_sim_time  ${BENCHMARK.RIG.ROS.SIMULATED}
+        Warn If ROS 2 Nodes Are Not Using Sim Time
+    END
+    Dump ROS 2 Parameters  cwd=${BENCHMARK.CASE.ITERATION.PATH}
 
 Per ROS 2 system benchmark case iteration
     [Documentation]
     ...  See `Per ${some} benchmark case shutdown` documentation.
     [Tags]  declarative  override
-    ${bags} =  Get Variable Value  $BENCHMARK.INPUT.ROS.BAGS  ${null}
-    ${qos_override_path} =  Get Variable Value  $BENCHMARK.INPUT.QOS_OVERRIDE  ${null}
-    IF    "${bags}" != "${null}"
-        ${clock_rate} =    Evaluate    ${BENCHMARK.INPUT.ROS.RATE} * 100
-        IF    "${qos_override_path}" != "${null}"
-            ${result} =    Play ROS 2 Bag    @{BENCHMARK.INPUT.ROS.BAGS}
-            ...    topics=${BENCHMARK.INPUT.ROS.TOPICS}
-            ...    duration=${BENCHMARK.INPUT.ROS.DURATION}
-            ...    rate=${BENCHMARK.INPUT.ROS.RATE}
-            ...    clock=${clock_rate}    delay=${15}
-            ...    qos-profile-overrides-path=${qos_override_path}
-        ELSE
-            ${result} =    Play ROS 2 Bag    @{BENCHMARK.INPUT.ROS.BAGS}
-            ...    topics=${BENCHMARK.INPUT.ROS.TOPICS}
-            ...    duration=${BENCHMARK.INPUT.ROS.DURATION}
-            ...    rate=${BENCHMARK.INPUT.ROS.RATE}
-            ...    clock=${clock_rate}    delay=${15}
+    ${bags} =  Get Variable Value  $BENCHMARK.INPUT.ROS.BAGS
+    IF  "${bags}" != "${null}"
+        ${clock_rate} =  Evaluate  ${BENCHMARK.INPUT.ROS.RATE} * 100
+        ${arguments} =  Create Dictionary
+        ...    topics=${BENCHMARK.INPUT.ROS.TOPICS}
+        ...    duration=${BENCHMARK.INPUT.ROS.DURATION}
+        ...    rate=${BENCHMARK.INPUT.ROS.RATE}
+        ...    clock=${clock_rate}  delay=${3}
+        ${qos_overrides_path} =  Get Variable Value  $BENCHMARK.INPUT.ROS.QOS_OVERRIDES
+        IF    "${qos_overrides_path}" != "${null}"
+            Set To Dictionary  ${arguments}  qos-profile-overrides-path=${qos_overrides_path}
         END
-        Should Be Equal  ${result.rc}  ${0}  msg=Failed to play input ROS bags
+        ${result} =  Play ROS 2 Bag  @{BENCHMARK.INPUT.ROS.BAGS}  &{arguments}
+        Should Be Equal  ${result.rc}  ${0}  msg=Failed to play input ROS 2 bags
     END
 
 For ROS 2 system benchmark case rig shutdown
@@ -214,6 +230,7 @@ After ROS 2 system benchmark case rig shutdown
     [Documentation]
     ...  See `After ${some} benchmark case rig shutdown` documentation.
     [Tags]  declarative  override
+    Stop ROS 2 Daemon
     ${result} =  Stop recording ROS 2 bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
     ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}
