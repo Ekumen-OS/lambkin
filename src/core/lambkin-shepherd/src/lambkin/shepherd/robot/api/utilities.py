@@ -14,10 +14,15 @@
 
 """This module supplements RobotFramework utilites library resource."""
 
-from robot.api.deco import keyword
-from robot.utils.robottypes import TRUE_STRINGS, FALSE_STRINGS
+from dataclasses import dataclass
 
-from typing import List
+from robot.api.deco import keyword
+from robot.libraries.BuiltIn import BuiltIn
+from robot.utils.robottypes import TRUE_STRINGS, FALSE_STRINGS
+from robot.utils.normalizing import NormalizedDict
+from robot.variables.variables import Variables
+
+from typing import Any, List
 
 
 @keyword('Convert To Snake Case')
@@ -60,3 +65,43 @@ def convert_to_command_line_options(**kwargs) -> List[str]:
         else:
             options.append(str(value))
     return options
+
+
+@dataclass
+class Closure:
+    """Scope abstractions at a given level in a RobotFramework call stack."""
+
+    scope: Variables
+    mutated: NormalizedDict
+
+
+@keyword('Get Current Closure')
+def get_current_closure() -> Closure:
+    """Get the current closure."""
+    variables = BuiltIn()._variables
+    variables_set = variables._variables_set
+    return Closure(
+        scope=variables._scopes[-1],
+        mutated=variables_set._scopes[-1])
+
+
+@keyword('Set Non Local Variable')
+def set_nonlocal_variable(closure: Closure, name: Any, *values: Any) -> None:
+    """Set a nonlocal variable on a given closure."""
+    # NOTE(hidmic): RobotFramework code down at this level makes no sense (you can see that at
+    # https://github.com/robotframework/robotframework/blob/master/src/robot/variables/scopes.py).
+    # Here we do the best we can to support variables in all scopes up to a given level, as if
+    # closures were a thing in RobotFramework.
+    builtin = BuiltIn()
+    name = builtin._get_var_name(name)
+    value = builtin._get_var_value(name, values)
+    variables = builtin._variables
+    for scope in reversed(variables._scopes):
+        scope[name] = value
+        if scope is closure.scope:
+            break
+    variables_set = variables._variables_set
+    for scope in reversed(variables_set._scopes):
+        scope[name] = value
+        if scope is closure.mutated:
+            break
