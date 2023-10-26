@@ -48,15 +48,15 @@ Uses ${profiler} to sample ${process} performance
     ...  automatically and additional steps may have be taken.
     ...  See profiling support documentation for further reference.
     [Tags]  declarative
-    ${current_profiler}=    Get Variable Value    ${BENCHMARK.RIG.PROFILER}    ${profiler}
-    IF    $current_profiler != $profiler
-        Fatal Error    Profiler is already set to ${current_profiler}, it cannot be set to ${profiler}.
+    ${current_profiler} =  Get Variable Value  $BENCHMARK.RIG.PROFILER  ${profiler}
+    IF  $current_profiler != $profiler
+        Fatal Error  Profiler is already set to ${current_profiler}, it cannot be set to ${profiler}.
     END
-    Set Test Variable  $BENCHMARK.RIG.PROFILER  ${profiler}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.RIG.PROFILER  ${profiler}
 
-    ${processes}=    Get Variable Value    ${BENCHMARK.RIG.PROCESSES}    @{EMPTY}
-    Append To List    ${processes}    ${process}
-    Set Test Variable    ${BENCHMARK.RIG.PROCESSES}    ${processes}
+    ${processes} =  Get Variable Value  $BENCHMARK.RIG.PROCESSES  @{EMPTY}
+    Append To List  ${processes}  ${process}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.RIG.PROCESSES  ${processes}
 
 ### Hooks ###
 

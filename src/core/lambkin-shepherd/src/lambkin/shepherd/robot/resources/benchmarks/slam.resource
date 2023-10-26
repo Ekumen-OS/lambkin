@@ -51,7 +51,7 @@ Tracks ${trajectory} trajectory
     List Should Not Contain Value
     ...  ${list}  ${trajectory}  msg=${trajectory} is already tracked
     Append To List  ${list}  ${trajectory}
-    Set Test Variable  @BENCHMARK.OUTPUT.SLAM.TRAJECTORIES  @{list}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  @BENCHMARK.OUTPUT.SLAM.TRAJECTORIES  @{list}
 
 Tracks ${trajectories} trajectories
     [Documentation]
@@ -71,7 +71,7 @@ Performs trajectory corrections
     ...  documentation for reference on trajectory corrections.
     [Arguments]  &{kwargs}
     [Tags]  declarative
-    Set Test Variable  &BENCHMARK.OUTPUT.SLAM.CORRECTIONS  &{kwargs}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.OUTPUT.SLAM.CORRECTIONS  ${kwargs}
 
 Uses ${trajectory} as trajectory groundtruth
     [Documentation]
@@ -83,10 +83,10 @@ Uses ${trajectory} as trajectory groundtruth
     ...  Ground truth trajectory is already set to ${BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH}
     ${trajectory_path} =  Resolve File Path  ${trajectory}
     IF  $trajectory_path != $null
-        Set Test Variable  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH  ${trajectory_path}
-        Set Test Variable  $BENCHMARK.OUTPUT.SLAM.USE_GROUNDTRUTH_FROM_FILE  ${True}
+        Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH  ${trajectory_path}
+        Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.OUTPUT.SLAM.USE_GROUNDTRUTH_FROM_FILE  ${True}
     ELSE
-        Set Test Variable  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH  ${trajectory}
+        Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.OUTPUT.SLAM.GROUNDTRUTH  ${trajectory}
     END
 
 ### Hooks ###

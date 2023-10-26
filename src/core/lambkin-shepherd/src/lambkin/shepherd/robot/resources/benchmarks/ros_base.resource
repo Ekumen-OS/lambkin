@@ -41,7 +41,7 @@ Uses ${launch_file} as rig
     Variable Should Not Exist  $BENCHMARK.RIG.ROS.LAUNCH.FILE
     ...  ROS launch file already set to ${BENCHMARK.RIG.ROS.LAUNCH_FILE}
     ${launch_file} =  Resolve File Path or Fail  ${launch_file}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
 
 Uses ${launch_file} in ${package_name} ROS package as rig
     [Documentation]
@@ -49,8 +49,8 @@ Uses ${launch_file} in ${package_name} ROS package as rig
     [Tags]  declarative
     Variable Should Not Exist  $BENCHMARK.RIG.ROS.LAUNCH.FILE
     ...  ROS launch file already set to ${BENCHMARK.RIG.ROS.LAUNCH_FILE}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.PACKAGE  ${package_name}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.RIG.ROS.LAUNCH.PACKAGE  ${package_name}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.RIG.ROS.LAUNCH.FILE  ${launch_file}
 
 Sets ${name} launch argument to ${value}
     [Documentation]
@@ -58,4 +58,4 @@ Sets ${name} launch argument to ${value}
     [Tags]  declarative
     ${args} =  Set Variable  ${BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS}
     Append To List  ${args}  ${name}:=${value}
-    Set Test Variable  $BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS  ${args}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.RIG.ROS.LAUNCH.ARGUMENTS  ${args}

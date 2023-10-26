@@ -86,10 +86,10 @@ Uses ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     ${path} =  Resolve File Path or Fail  ${bag}
     Warn If ROS 2 Bag Is Compressed  ${path}
     Append To List  ${paths}  ${path}
-    Set Test Variable  $BENCHMARK.INPUT.ROS.BAGS  ${paths}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.INPUT.ROS.BAGS  ${paths}
     ${rate} =  Convert To Number  ${rate}
-    Set Test Variable  $BENCHMARK.INPUT.ROS.RATE  ${rate}
-    Set Test Variable  $BENCHMARK.RIG.ROS.SIMULATED  ${True}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.INPUT.ROS.RATE  ${rate}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.RIG.ROS.SIMULATED  ${True}
 
 Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     [Documentation]
@@ -98,7 +98,7 @@ Uses ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 syst
     ...  relative to the benchmark suite.
     [Tags]  declarative
     ${topics} =  Split String  ${topics}
-    Set Test Variable  $BENCHMARK.INPUT.ROS.TOPICS  ${topics}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.INPUT.ROS.TOPICS  ${topics}
     Uses ${bag} at ${rate}x as input to ROS 2 system
 
 Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
@@ -108,7 +108,7 @@ Uses ${duration} of ${bag} at ${rate:(\d*\.)?\d+}x as input to ROS 2 system
     ...  The path to ROS 2 bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
     ${duration} =  Convert Time  ${duration}
-    Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
     Uses ${bag} at ${rate}x as input to ROS 2 system
 
 Uses ${duration} of ${topics:/.*} data in ${bag} as input to ROS 2 system
@@ -126,7 +126,7 @@ Uses ${duration} of ${topics:/.*} data in ${bag} at ${rate:(\d*\.)?\d+}x as inpu
     ...  The path to ROS 2 bag will be resolved relative to the benchmark suite.
     [Tags]  declarative
     ${duration} =  Convert Time  ${duration}
-    Set Test Variable  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.INPUT.ROS.DURATION  ${duration}
     Uses ${topics} data in ${bag} at ${rate}x as input to ROS 2 system
 
 Configures QoS overrides from ${qos_overrides_path} for input to ROS 2 system
@@ -138,7 +138,7 @@ Configures QoS overrides from ${qos_overrides_path} for input to ROS 2 system
     Variable Should Not Exist  $BENCHMARK.INPUT.ROS.QOS_OVERRIDES
     ...  QoS overrides already set to ${$BENCHMARK.INPUT.ROS.QOS_OVERRIDES}
     ${path} =  Resolve File Path or Fail  ${qos_overrides_path}
-    Set Test Variable  $BENCHMARK.INPUT.ROS.QOS_OVERRIDES  ${path}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.INPUT.ROS.QOS_OVERRIDES  ${path}
 
 Generates ${format} report from ${template_name} template in ${package_name} ROS 2 package
     [Documentation]
