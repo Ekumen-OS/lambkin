@@ -26,7 +26,7 @@ Test Template       Run Beluga vs Nav2 benchmark case for each ${dataset} ${lase
 
 
 *** Variables ***
-@{NUM_PARTICLES}       250  300  400  500  750  1000  2000  5000  10000  20000  50000  100000  200000
+@{NUM_PARTICLES}       250  300  400  500  750  1000  2000  3000  4000  5000
 @{LASER_MODELS}        beam  likelihood_field
 @{EXECUTION_POLICIES}  seq  par
 
@@ -49,7 +49,7 @@ Beluga vs Nav2 benchmark case
     Extends ROS 2 2D SLAM system benchmark case
     # Setup benchmark inputs
     ${dataset_path} =  Set Variable  ${EXECDIR}/beluga-datasets/${dataset}
-    Uses ${dataset_path}/ROS2/${dataset}_bag at 2x as input to ROS 2 system
+    Uses ${dataset_path}/ROS2/${dataset}_bag as input to ROS 2 system
     ${package_share_path} =  Find ROS 2 Package  beluga_vs_nav2  share=yes
     ${qos_override_path} =  Join Path  ${package_share_path}  config  qos_override.yml
     Configures QoS overrides from ${qos_override_path} for input to ROS 2 system

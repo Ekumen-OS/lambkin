@@ -3,6 +3,7 @@
     import lambkin.shepherd.data as lks
     import pandas as pd
     import seaborn as sns
+    import numpy as np
     from matplotlib import pyplot as plt
     sns.set_theme(style='darkgrid')
 
@@ -97,7 +98,7 @@ Results
 Nominal setup
 ^^^^^^^^^^^^^
 
-In the following, for a nominal setup this report assumes :math:`N = 2000` particles, a likelihood field sensor model, and a sequential (i.e. single-threaded) execution policy.
+In the following, for a nominal setup this report assumes :math:`N = 2000` particles (fixed), a likelihood field sensor model, and a sequential (i.e. single-threaded) execution policy.
 
 .. repl-quiet::
 
@@ -116,7 +117,7 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
         lks.evo.series('/nav2_amcl/pose', 'ape', target_iterations=nominal_case, normalization='long'),
         lks.evo.series('/beluga_amcl/pose', 'rpe', target_iterations=nominal_case, normalization='long'),
         lks.evo.series('/nav2_amcl/pose', 'rpe', target_iterations=nominal_case, normalization='long')
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     data = data.replace({'metric.name': {'ape': 'APE', 'rpe': 'RPE'}})
 
@@ -129,7 +130,6 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
     grid.set_titles('{row_name} @ {col_name}')
     grid.set_axis_labels('Error (m)')
     grid._legend.set_title('Trajectory')
-
     grid.tight_layout()
 
     plt.show()
@@ -140,7 +140,7 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
     data = pd.concat([
         lks.evo.series('/beluga_amcl/pose', 'ape', target_iterations=nominal_case, normalization='long'),
         lks.evo.series('/nav2_amcl/pose', 'ape', target_iterations=nominal_case, normalization='long')
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     grid = sns.relplot(
         data=data,
@@ -148,12 +148,14 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
         y='metric.series.value',
         hue='trajectory.name',
         col='variation.parameters.dataset',
-        kind='line', n_boot=20
+        kind='line', n_boot=20,
+        facet_kws=dict(sharex='col')
     )
     grid.figure.suptitle('Absolute Pose Error (APE) over time')
     grid.set_axis_labels('Time (s)', 'APE (m)')
     grid.set_titles('{col_name} dataset')
     grid._legend.set_title('Trajectory')
+    grid.set(ylim=(0, None))
     grid.tight_layout()
 
     plt.show()
@@ -164,7 +166,7 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
     data = pd.concat([
         lks.evo.series('/beluga_amcl/pose', 'rpe', target_iterations=nominal_case, normalization='long'),
         lks.evo.series('/nav2_amcl/pose', 'rpe', target_iterations=nominal_case, normalization='long')
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     grid = sns.relplot(
         data=data,
@@ -172,12 +174,14 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
         y='metric.series.value',
         hue='trajectory.name',
         col='variation.parameters.dataset',
-        kind='line', n_boot=20
+        kind='line', n_boot=20,
+        facet_kws=dict(sharex='col')
     )
     grid.figure.suptitle('Relative Pose Error (RPE) over time')
     grid.set_axis_labels('Time (s)', 'RPE (m)')
     grid.set_titles('{col_name} dataset')
     grid._legend.set_title('Trajectory')
+    grid.set(ylim=(0, None))
     grid.tight_layout()
 
     plt.show()
@@ -191,7 +195,7 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
             trajectory_name_format='path', trajectory_file_format='tum'),
         lks.evo.trajectory('/beluga_amcl/pose', target_iterations=nominal_case),
         lks.evo.trajectory('/nav2_amcl/pose', target_iterations=nominal_case)
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     grid = sns.relplot(
       data=data,
@@ -217,7 +221,9 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
             trajectory_name_format='path', trajectory_file_format='tum'),
         lks.evo.trajectory('/beluga_amcl/pose', target_iterations=nominal_case),
         lks.evo.trajectory('/nav2_amcl/pose', target_iterations=nominal_case)
-    ]).sample(frac=0.25).sort_index()
+    ])
+
+    data['trajectory.yaw'] = np.degrees(data['trajectory.yaw'])
 
     data = pd.melt(
         data,
@@ -227,7 +233,7 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
     )
 
     data = data.replace({'trajectory.coordinate.name': {
-        'trajectory.x': 'x (m)', 'trajectory.y': 'y (m)', 'trajectory.yaw': 'yaw (rad)'
+        'trajectory.x': 'x (m)', 'trajectory.y': 'y (m)', 'trajectory.yaw': 'yaw (deg)'
     }})
 
     grid = sns.relplot(
@@ -256,14 +262,14 @@ In the following, for a nominal setup this report assumes :math:`N = 2000` parti
 Setup sweep
 ^^^^^^^^^^^
 
-In the following, this report sweeps over parameterizations to compare the resulting performance.
+In the following, this report sweeps over parameterizations to compare the resulting performance. Error bars represent bootstrapped 95% confidence intervals.
 
 .. repl-quiet::
 
     data = pd.concat([
         lks.evo.series('/beluga_amcl/pose', 'ape', normalization='long'),
         lks.evo.series('/nav2_amcl/pose', 'ape', normalization='long')
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     data['trajectory.qualified_name'] = data.apply(
         lambda row: '{} ({}, {})'.format(
@@ -273,19 +279,33 @@ In the following, this report sweeps over parameterizations to compare the resul
             if 'beluga' in row['trajectory.name'] else 'seq'
         ), axis=1
     )
+
+    data['variation.parameters.num_particles'] = pd.to_numeric(
+        data['variation.parameters.num_particles']
+    )
+
+    data = data.sort_values([
+        'variation.parameters.dataset'
+        'trajectory.qualified_name',
+        'variation.parameters.num_particles'
+    ])
+
     grid = sns.relplot(
         data=data, y='metric.series.value',
         x='variation.parameters.num_particles',
         hue='trajectory.qualified_name',
         row='variation.parameters.dataset',
-        kind='line', n_boot=20,
-        height=4, aspect=2.5,
+        marker='o', kind='line', n_boot=20,
+        height=4, aspect=2.5, err_style='bars',
         facet_kws=dict(sharey=False)
     )
+    xticks = np.sort(np.unique(data['variation.parameters.num_particles']))
+    grid.set_xticks(xticks, labels=list(map(str, xticks)))
     grid.figure.suptitle('Absolute Pose Error (APE) with particle filter size')
     grid.set_axis_labels('Particle count', 'Error (m)')
     grid.set_titles('{row_name} dataset')
     grid._legend.set_title('Trajectory')
+    grid.set(ylim=(0, None))
     grid.tight_layout()
 
     plt.show()
@@ -296,7 +316,7 @@ In the following, this report sweeps over parameterizations to compare the resul
     data = pd.concat([
         lks.evo.series('/beluga_amcl/pose', 'rpe', normalization='long'),
         lks.evo.series('/nav2_amcl/pose', 'rpe', normalization='long')
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     data['trajectory.qualified_name'] = data.apply(
         lambda row: '{} ({}, {})'.format(
@@ -306,19 +326,33 @@ In the following, this report sweeps over parameterizations to compare the resul
             if 'beluga' in row['trajectory.name'] else 'seq'
         ), axis=1
     )
+
+    data['variation.parameters.num_particles'] = pd.to_numeric(
+        data['variation.parameters.num_particles']
+    )
+
+    data = data.sort_values([
+        'variation.parameters.dataset'
+        'trajectory.qualified_name',
+        'variation.parameters.num_particles'
+    ])
+
     grid = sns.relplot(
         data=data, y='metric.series.value',
         x='variation.parameters.num_particles',
         hue='trajectory.qualified_name',
         row='variation.parameters.dataset',
-        kind='line', n_boot=20,
-        height=4, aspect=2.5,
+        marker='o', kind='line', n_boot=20,
+        height=4, aspect=2.5, err_style='bars',
         facet_kws=dict(sharey=False)
     )
+    xticks = np.sort(np.unique(data['variation.parameters.num_particles']))
+    grid.set_xticks(xticks, labels=list(map(str, xticks)))
     grid.figure.suptitle('Relative Pose Error (RPE) with particle filter size')
     grid.set_axis_labels('Particle count', 'Error (m)')
     grid.set_titles('{row_name} dataset')
     grid._legend.set_title('Trajectory')
+    grid.set(ylim=(0, None))
     grid.tight_layout()
 
     plt.show()
@@ -329,7 +363,7 @@ In the following, this report sweeps over parameterizations to compare the resul
     data = pd.concat([
         lks.timem.summary('beluga_amcl', 'cpu_util', normalization='long'),
         lks.timem.summary('nav2_amcl', 'cpu_util', normalization='long')
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     data = lks.pandas.rescale(data, {'process.summary.cpu_util': 100})
     data['process.qualified_name'] = data.apply(
@@ -340,19 +374,33 @@ In the following, this report sweeps over parameterizations to compare the resul
             if 'beluga' in row['process.name'] else 'seq'
         ), axis=1
     )
+
+    data['variation.parameters.num_particles'] = pd.to_numeric(
+        data['variation.parameters.num_particles']
+    )
+
+    data = data.sort_values([
+        'variation.parameters.dataset'
+        'process.qualified_name',
+        'variation.parameters.num_particles'
+    ])
+
     grid = sns.relplot(
         data=data, y='process.summary.cpu_util',
         x='variation.parameters.num_particles',
         hue='process.qualified_name',
         row='variation.parameters.dataset',
-        kind='line', n_boot=20,
-        height=4, aspect=2.5,
+        marker='o', kind='line', n_boot=20,
+        height=4, aspect=2.5, err_style='bars',
         facet_kws=dict(sharey=False)
     )
+    xticks = np.sort(np.unique(data['variation.parameters.num_particles']))
+    grid.set_xticks(xticks, labels=list(map(str, xticks)))
     grid.figure.suptitle('CPU usage with particle filter size')
     grid.set_axis_labels('Particle count', 'Usage (%)')
     grid.set_titles('{row_name} dataset')
     grid._legend.set_title('Process')
+    grid.set(ylim=(0, None))
     grid.tight_layout()
 
     plt.show()
@@ -363,7 +411,7 @@ In the following, this report sweeps over parameterizations to compare the resul
     data = pd.concat([
         lks.timem.summary('beluga_amcl', 'peak_rss', normalization='long'),
         lks.timem.summary('nav2_amcl', 'peak_rss', normalization='long')
-    ]).sample(frac=0.25).sort_index()
+    ])
 
     data = lks.pandas.rescale(data, {'process.summary.peak_rss': 1 / 8e6})
     data['process.qualified_name'] = data.apply(
@@ -375,19 +423,32 @@ In the following, this report sweeps over parameterizations to compare the resul
         ), axis=1
     )
 
+    data['variation.parameters.num_particles'] = pd.to_numeric(
+        data['variation.parameters.num_particles']
+    )
+
+    data = data.sort_values([
+        'variation.parameters.dataset'
+        'process.qualified_name',
+        'variation.parameters.num_particles'
+    ])
+
     grid = sns.relplot(
         data=data, y='process.summary.peak_rss',
         x='variation.parameters.num_particles',
         hue='process.qualified_name',
         row='variation.parameters.dataset',
-        kind='line', n_boot=20,
-        height=4, aspect=2.5,
+        kind='line', marker='o', n_boot=20,
+        height=4, aspect=2.5, err_style='bars',
         facet_kws=dict(sharey=False)
     )
+    xticks = np.sort(np.unique(data['variation.parameters.num_particles']))
+    grid.set_xticks(xticks, labels=list(map(str, xticks)))
     grid.figure.suptitle('Peak RSS with particle filter size')
     grid.set_axis_labels('Particle count', 'Memory (MB)')
     grid.set_titles('{row_name} dataset')
     grid._legend.set_title('Process')
+    grid.set(ylim=(0, None))
     grid.tight_layout()
 
     plt.show()

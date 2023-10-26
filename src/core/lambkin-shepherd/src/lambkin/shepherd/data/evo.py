@@ -207,15 +207,15 @@ def _to_dict(trajectory: SomeTrajectoryType) -> Mapping:
     qx = trajectory.orientations_quat_wxyz[:, 1]
     qy = trajectory.orientations_quat_wxyz[:, 2]
     qz = trajectory.orientations_quat_wxyz[:, 3]
-    roll = np.arctan2(
+    roll = np.unwrap(np.arctan2(
         2 * (qw * qx + qy * qz),
-        1 - 2 * (qx**2 + qy**2))
-    pitch = -np.pi / 2 + 2 * np.arctan2(
+        1 - 2 * (qx**2 + qy**2)))
+    pitch = np.unwrap(-np.pi / 2 + 2 * np.arctan2(
         np.sqrt(1 + 2 * (qw * qy - qx * qz)),
-        np.sqrt(1 - 2 * (qw * qy - qx * qz)))
-    yaw = np.arctan2(
+        np.sqrt(1 - 2 * (qw * qy - qx * qz))))
+    yaw = np.unwrap(np.arctan2(
         2 * (qw * qz + qx * qy),
-        1 - 2 * (qy**2 + qz**2))
+        1 - 2 * (qy**2 + qz**2)))
     return {
         'time': time,
         'time_since_epoch': time_since_epoch,

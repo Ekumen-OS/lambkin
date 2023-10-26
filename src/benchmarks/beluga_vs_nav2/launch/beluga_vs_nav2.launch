@@ -1,6 +1,5 @@
 <launch>
   <arg name="map_filename"/>
-  <!-- <arg name="location_params_filename"/> -->
   <arg name="num_particles" default="1000"/>
   <arg name="laser_model_type" default="beam"/>
   <arg name="execution_policy" default="seq"/>

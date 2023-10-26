@@ -66,6 +66,5 @@ latex_documents = [
     (master_doc, 'report.tex', project, author, 'manual'),
 ]
 
-
 def setup(app):
     app.add_config_value('sysroot', os.path.relpath('/', app.srcdir), rebuild=False)

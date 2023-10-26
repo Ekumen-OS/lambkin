@@ -22,7 +22,9 @@ RUN mkdir -p /workspace/src && chown -R $USERNAME:$USERNAME /workspace
 RUN apt-get update && apt upgrade -y && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
-RUN git -C /workspace/src clone https://github.com/Ekumen-OS/beluga
+RUN cd /workspace/src && git clone https://github.com/Ekumen-OS/beluga
+RUN cd /workspace/src && git clone --depth 1 --no-checkout https://github.com/ros-planning/navigation2.git && \
+    cd navigation2 && git sparse-checkout set nav2_amcl && git checkout
 
 RUN --mount=type=bind,source=.,target=/workspace/src/beluga_vs_nav2,readonly cd /workspace && sudo apt update && rosdep update && \
     rosdep install -i -y --from-paths src --skip-keys 'lambkin-shepherd flatland_server flatland_plugins' && \
