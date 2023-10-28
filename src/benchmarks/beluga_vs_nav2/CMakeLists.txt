@@ -6,7 +6,8 @@ find_package(ament_cmake_python REQUIRED)
 
 install(
   PROGRAMS
-    scripts/beluga_vs_nav2.robot
+    scripts/nominal.robot
+    scripts/swept.robot
   DESTINATION lib/${PROJECT_NAME})
   
 install(

@@ -1,6 +1,7 @@
 <launch>
   <arg name="map_filename"/>
-  <arg name="num_particles" default="1000"/>
+  <arg name="max_particles" default="2000"/>
+  <arg name="min_particles" default="500"/>
   <arg name="laser_model_type" default="beam"/>
   <arg name="execution_policy" default="seq"/>
   <arg name="use_sim_time" default="false"/>
@@ -10,8 +11,8 @@
   <node pkg="nav2_amcl" exec="amcl" name="nav2_amcl" launch-prefix="$(env nav2_amcl_PREFIX '')">
     <param from="$(find-pkg-share beluga_vs_nav2)/params/amcl.yaml"/>
     <param name="laser_model_type" value="$(var laser_model_type)"/>
-    <param name="max_particles" value="$(var num_particles)"/>
-    <param name="min_particles" value="$(var num_particles)"/>
+    <param name="max_particles" value="$(var max_particles)"/>
+    <param name="min_particles" value="$(var min_particles)"/>
     <remap from="amcl_pose" to="/nav2_amcl/pose"/>
     <remap from="particle_cloud" to="/nav2_amcl/particle_cloud"/>
   </node>
@@ -19,8 +20,8 @@
   <node pkg="beluga_amcl" exec="amcl_node" name="beluga_amcl" launch-prefix="$(env beluga_amcl_PREFIX '')">
     <param from="$(find-pkg-share beluga_vs_nav2)/params/amcl.yaml"/>
     <param name="laser_model_type" value="$(var laser_model_type)"/>
-    <param name="max_particles" value="$(var num_particles)"/>
-    <param name="min_particles" value="$(var num_particles)"/>
+    <param name="max_particles" value="$(var max_particles)"/>
+    <param name="min_particles" value="$(var min_particles)"/>
     <param name="execution_policy" value="$(var execution_policy)"/>
     <remap from="pose" to="/beluga_amcl/pose"/>
     <remap from="particle_cloud" to="/beluga_amcl/particle_cloud"/>
