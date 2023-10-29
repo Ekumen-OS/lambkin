@@ -63,13 +63,13 @@ Uses ${count} iterations
     ${count} =  Convert To Integer  ${count}
     Should Be True  ${count} > 0
     ...  Number of iterations must be a positive number (got ${count}).
-    Set Test Variable  $BENCHMARK.CASE.ITERATIONS  ${count}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.ITERATIONS  ${count}
 
 Holds ${delay}
     [Documentation]  States the number of iterations for a benchmark case.
     [Tags]  declarative
     ${delay} =  Convert Time  ${delay}
-    Set Test Variable  $BENCHMARK.CASE.DELAY  ${delay}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.DELAY  ${delay}
 
 ### Hooks ###
 
@@ -147,7 +147,7 @@ Before base benchmark case execution
 
     ${variation} =  Convert To String  ${BENCHMARK.CASE.VARIATION}
     ${root} =  Join Path  ${root}  variations  ${variation}
-    Set Test Variable  $BENCHMARK.CASE.VARIATION.PATH  ${root}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.VARIATION.PATH  ${root}
     Reset Directory  ${root}
 
     ${path} =  Join Path  ${root}  metadata.json
@@ -165,7 +165,7 @@ Before base benchmark case iteration
     ${iteration} =  Convert To String  ${BENCHMARK.CASE.ITERATION}
     ${path} =  Join Path
     ...  ${BENCHMARK.CASE.VARIATION.PATH}  iterations  ${iteration}
-    Set Test Variable  $BENCHMARK.CASE.ITERATION.PATH  ${path}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.ITERATION.PATH  ${path}
     Reset Directory  ${path}
 
     ${path} =  Join Path  ${BENCHMARK.CASE.ITERATION.PATH}  metadata.json

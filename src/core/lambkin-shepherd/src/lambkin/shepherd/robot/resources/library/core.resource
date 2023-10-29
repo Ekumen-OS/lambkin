@@ -64,7 +64,7 @@ Extends ${some} benchmark case
         Configure ${some} benchmark case hooks
 
         ${extensions} =  Get Variable Value  $BENCHMARK.CASE.EXTENSIONS  @{EMPTY}
-        Set Test Variable  @BENCHMARK.CASE.EXTENSIONS  ${some}  @{extensions}
+        Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  @BENCHMARK.CASE.EXTENSIONS  ${some}  @{extensions}
     END
 
 Setup ${some} benchmark suite
@@ -98,7 +98,7 @@ Execute ${some} benchmark case
     Run Keywords Registered On Current Test  To be run before benchmark case execution
     ${iterations} =  Get Variable Value  $BENCHMARK.CASE.ITERATIONS  1
     FOR  ${iteration}  IN RANGE  1  ${iterations} + 1
-        Set Test Variable  $BENCHMARK.CASE.ITERATION  ${iteration}
+        Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.ITERATION  ${iteration}
         Run Keywords Registered On Current Test  To be run before benchmark case iteration
         Run Keywords Registered On Current Test  To be run before benchmark case rig bringup
         Run Keywords Registered On Current Test  To be run for benchmark case rig bringup
@@ -125,13 +125,7 @@ Run ${some} benchmark case for ${parameterization}
     Flush Traceback  # split tracebacks for data driven benchmarks
     ${parameters} =  Extract Template Arguments
     ...  Run ${some} benchmark case for ${parameterization}
-    Set Test Variable  $BENCHMARK.CASE.PARAMETERS  ${parameters}
-    FOR  ${name}  ${value}  IN  &{parameters}
-        # robocop: disable=non-local-variables-should-be-uppercase
-        Set Test Variable  $${name}  ${value}
-    END
-    Run ${some} benchmark case once
-    Set Test Variable  $BENCHMARK.CASE.PARAMETERS  &{EMPTY}
+    Run ${some} benchmark case once  &{parameters}
 
 Run ${some} benchmark case once
     [Documentation]
@@ -141,13 +135,23 @@ Run ${some} benchmark case once
     ...  tracked as a separate variation (starting from 0).
     ...  Configuration only takes place on first run for a
     ...  given scope.
+    [Arguments]  &{parameters}
     [Teardown]  Terminate All Processes
     [Tags]  imperative
+    ${scope} =  Get Current Closure
+    Set Variable In Parent Scope  $BENCHMARK.CASE.SCOPE  ${scope}
     Increment Variable In Parent Scope  $BENCHMARK.CASE.VARIATION  ${0}
-    IF  ${BENCHMARK.CASE.VARIATION} == ${1}
-        Set Test Variable  $BENCHMARK.CASE.TYPE  ${some}
-        Set Test Variable  $BENCHMARK.CASE.NAME  ${TEST_NAME}
-        Configure ${some} benchmark case
-        Configure ${some} benchmark case hooks
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.NAME  ${TEST_NAME}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.TYPE  ${some}
+    Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.CASE.PARAMETERS  ${parameters}
+    FOR  ${name}  ${value}  IN  &{parameters}
+        # robocop: disable=non-local-variables-should-be-uppercase
+        Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $${name}  ${value}
     END
-    Execute ${some} benchmark case
+    Configure ${some} benchmark case
+    Configure ${some} benchmark case hooks
+    TRY
+        Execute ${some} benchmark case
+    FINALLY
+        Clear ${some} benchmark case hooks
+    END

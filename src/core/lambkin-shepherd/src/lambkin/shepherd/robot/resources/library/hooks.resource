@@ -74,6 +74,24 @@ Configure ${some} benchmark case hooks
     Register Keyword On Current Test  To be run after benchmark case execution
     ...                               After ${some} benchmark case execution
 
+Clear ${some} benchmark case hooks
+    [Documentation]  Clears previously registered hooks for some benchmark case.
+    [Tags]  imperative
+    Should Be In Test Scope  Cannot clear ${some} benchmark case hooks outside a test.
+    Clear Keywords Registered On Current Test  To be run before benchmark case execution
+    Clear Keywords Registered On Current Test  To be run before benchmark case iteration
+    Clear Keywords Registered On Current Test  To be run before benchmark case rig bringup
+    Clear Keywords Registered On Current Test  To be run for benchmark case rig bringup
+    Clear Keywords Registered On Current Test  To be run on benchmark case rig bringup
+    Clear Keywords Registered On Current Test  To be run after benchmark case rig bringup
+    Clear Keywords Registered On Current Test  To be run per benchmark case iteration
+    Clear Keywords Registered On Current Test  To be run before benchmark case rig shutdown
+    Clear Keywords Registered On Current Test  To be run for benchmark case rig shutdown
+    Clear Keywords Registered On Current Test  To be run on benchmark case rig shutdown
+    Clear Keywords Registered On Current Test  To be run after benchmark case rig shutdown
+    Clear Keywords Registered On Current Test  To be run after benchmark case iteration
+    Clear Keywords Registered On Current Test  To be run after benchmark case execution
+
 ### Stubs ###
 
 Before ${some} benchmark suite setup

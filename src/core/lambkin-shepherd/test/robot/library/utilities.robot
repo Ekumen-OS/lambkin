@@ -48,3 +48,20 @@ Can increment variables
     Variable Should Exist  $COUNTER
     Should Be Equal As Integers  ${prevalue}  0
     Should Be Equal As Integers  ${COUNTER}  1
+
+Can set nonlocal variables
+    Variable Should Not Exist  $READY
+    Use Isolated Non Local Variables
+    Variable Should Not Exist  $READY
+
+
+*** Keywords ***
+Configure Closure
+    [Arguments]  ${closure}
+    Set Non Local Variable  ${closure}  $READY  ${True}
+    Should Be True  ${READY}
+
+Use Isolated Non Local Variables
+    ${closure} =  Get Current Closure
+    Configure Closure  ${closure}
+    Should Be True  ${READY}
