@@ -12,6 +12,7 @@ install(
 install(
   DIRECTORY
     config
+    params
     launch
     reports
   DESTINATION share/${PROJECT_NAME})

@@ -17,7 +17,8 @@
 # Configuration file for the Sphinx documentation builder.
 
 import os
-import string
+
+import ament_index_python
 
 # -- Project information -----------------------------------------------------
 
@@ -31,7 +32,8 @@ release = '0.1.0-alpha'
 # -- General configuration ---------------------------------------------------
 
 extensions = [
-    'matplotlib.sphinxext.plot_directive'
+    'sphinxcontrib.datatemplates',
+    'sphinxcontrib.repl'
 ]
 
 # The suffix(es) of source filenames.
@@ -50,19 +52,12 @@ exclude_patterns = ['build']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
-# Code that should be executed before each plot.
-plot_pre_code = """
-import lambkin.shepherd as lks
-import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
-"""
-
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_elements = {
     'papersize': 'a4paper',
     'pointsize': '10pt',
+    'extraclassoptions': 'openany,oneside'
 }
 
 # Grouping the document tree into LaTeX files.
@@ -71,8 +66,5 @@ latex_documents = [
     (master_doc, 'report.tex', project, author, 'manual'),
 ]
 
-def interpolate(app, docname, source):
-    source[0] = string.Template(source[0]).substitute({})
-
 def setup(app):
-    app.connect('source-read', interpolate)
+    app.add_config_value('sysroot', os.path.relpath('/', app.srcdir), rebuild=False)
