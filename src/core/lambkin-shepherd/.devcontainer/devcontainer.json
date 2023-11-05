@@ -1,5 +1,5 @@
 {
-    "image": "ekumenlabs/lambkin:ubuntu-focal-dev",
+    "image": "ekumenlabs/lambkin:ubuntu-jammy-dev",
 
     "postCreateCommand": "sudo pip3 install -r requirements.txt",
 
