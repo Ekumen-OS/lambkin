@@ -30,7 +30,7 @@ RUN --mount=type=bind,source=.,target=/workspace/src/beluga_vs_nav2,readonly cd 
     rosdep install -i -y --from-paths src --skip-keys 'lambkin-shepherd flatland_server flatland_plugins' && \
     sudo rm -rf /var/lib/apt/lists/*
 
-RUN sudo pip install sphinxcontrib.datatemplates sphinxcontrib-repl
+RUN sudo pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
 
 FROM development AS release
 
