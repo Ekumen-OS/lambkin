@@ -14,6 +14,7 @@
 
 """This module provides APIs to access ROS output in benchmarks."""
 
+import array
 import warnings
 
 from importlib import import_module
@@ -32,9 +33,9 @@ import yaml
 
 def messages(
     topic_names: Optional[Union[Iterable[str], str]] = None,
-    target_iterations: Optional[Iterable[Location]] = None, /,
+    target_iterations: Optional[Iterable[Location]] = None,
     bag_name: str = 'output.bag'
-) -> Iterable[Tuple[Mapping, Any]]:
+) -> Iterable[Tuple[Mapping, Tuple[str, Any, Any]]]:
     """
     Yield ROS messages for the given topics per benchmark iteration.
 
@@ -49,7 +50,7 @@ def messages(
       ROS based benchmarks by default.
     :returns: an iterable over tuples of benchmark iteration metadata, as a semi-structured
       mapping, and ROS bag record ie. a py:mod:`rosbag` specific tuple type bearing topic name,
-      message timestamp, and message instance.
+      message instance, and message timestamp.
     """
     if topic_names is not None:
         if isinstance(topic_names, str):
@@ -61,12 +62,12 @@ def messages(
     target_iterations = enforce_nonempty(
         target_iterations, 'no target iterations')
     assert target_iterations is not None
+    rosbag = import_module('rosbag')
     for path, metadata in target_iterations:
         bag_path = path / bag_name
         if not bag_path.exists():
             warnings.warn(f'{bag_path} is missing')
             continue
-        rosbag = import_module('rosbag')
         with rosbag.Bag(bag_path, 'r') as bag:
             for record in bag.read_messages(topic_names):
                 yield metadata, record
@@ -84,14 +85,11 @@ def occupancy_grids(
     """
     Yield ROS occupancy grid maps per benchmark iteration.
 
-    A ROS bag must have been recorded during benchmarks. This will be the case
-    whenever working with ROS 2D SLAM style benchmarks.
-
-    :param map_name: ROS map files' basename. By default, it matches the name used
-      in ROS 2D SLAM style benchmarks by default.
-    :param target_iterations: locations of benchmark case iterations to target.
-      If not provided, it defaults to all locations as returned by
-      py:func:`lambkin.data.access.iterations()`.
+    :param map_name: ROS map files' basename. By default, it matches
+      the name used in ROS 2D SLAM style benchmarks by default.
+    :param target_iterations: locations of benchmark case iterations
+      to target. If not provided, it defaults to all locations as
+      returned by py:func:`lambkin.data.access.iterations()`.
     :returns: an iterable over tuples of benchmark iteration metadata,
       as a semi-structured mapping, and an occupancy grid.
     """
@@ -121,8 +119,8 @@ def occupancy_grids(
             grid.info.origin.position.x = map_metadata['origin'][0]
             grid.info.origin.position.y = map_metadata['origin'][1]
             grid.info.origin.position.z = map_metadata['origin'][2]
-            grid.data = (
+            grid.data = array.array('b', (
                 np.asarray(map_image) * 100. / 255
-            ).flatten().astype(np.uint8)
+            ).flatten().astype(int))
 
             yield metadata, grid

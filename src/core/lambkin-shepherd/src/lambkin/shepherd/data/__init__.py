@@ -18,6 +18,7 @@ import lambkin.shepherd.data.access as access
 import lambkin.shepherd.data.evo as evo
 import lambkin.shepherd.data.pandas as pandas
 import lambkin.shepherd.data.ros as ros
+import lambkin.shepherd.data.ros2 as ros2
 import lambkin.shepherd.data.timem as timem
 
-__all__ = ['access', 'evo', 'pandas', 'ros', 'timem']
+__all__ = ['access', 'evo', 'pandas', 'ros', 'ros2', 'timem']
