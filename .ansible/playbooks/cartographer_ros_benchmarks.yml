@@ -7,7 +7,8 @@
 
       working_container:
         volumes:
-          - "/home/erasmo/Projects/lambkin/src/benchmarks/cartographer_ros_benchmarks:/tmp/cartographer_ros_benchmarks"
+          - "/home/erasmo/Projects/Ekumen/lambkin/src/benchmarks/cartographer_ros_benchmarks:/tmp/cartographer_ros_benchmarks"
+          - "/home/erasmo/Projects/Ekumen/lambkin/src/benchmarks/cartographer_ros_benchmarks:/tmp/ws/src/package/cartographer_ros_benchmarks"
 
       target_image:
         name: ekumenlabs/beluga-vs-nav2:latest
@@ -15,7 +16,7 @@
   tasks:
     - name: Install core dependencies
       ansible.builtin.include_tasks: inventory/core/tasks/main.yml
-
+    
     - name: Install runner components
       ansible.builtin.include_tasks: inventory/runner/tasks/main.yml
 
@@ -50,40 +51,24 @@
 
     - name: Set up Abseil
       ansible.builtin.command: |
-        sudo src/cartographer/scripts/install_abseil.sh &&
-        rosdep update &&
+        sudo src/cartographer/scripts/install_abseil.sh && \
+        rosdep update && \
         rosdep install -y -i --from-paths src --skip-keys libabsl-dev
       args:
         chdir: /tmp/ws/
-
-    - name: Clean up APT cache
-      ansible.builtin.apt:
-        autoclean: true
+    
+    - name: chmod
+      ansible.builtin.command: chmod +x ./opt/ros/{{ ansible_env.ROS_DISTRO }}/setup.bash
 
     - name: Run catkin_make_isolated
-      ansible.builtin.command: catkin_make_isolated --install-space /opt/ros/{{ ansible_env.ROS_DISTRO }}-extras --install --merge
+      ansible.builtin.command: |
+        ./opt/ros/{{ ansible_env.ROS_DISTRO }}/setup.bash && \
+        catkin_make_isolated --install-space /opt/ros/{{ ansible_env.ROS_DISTRO }}-extras --install --merge
 
     - name: Append ROS setup to /etc/profile.d/ros.sh
       lineinfile:
         path: /etc/profile.d/ros.sh
         line: '. /opt/ros/{{ ansible_env.ROS_DISTRO }}-extras/setup.sh'
-
-    - name: Remove existing /tmp/ws directory
-      file:
-        path: /tmp/ws
-        state: absent
-
-    - name: Create /tmp/ws directory
-      file:
-        path: /tmp/ws
-        state: directory
-        mode: '0755'
-
-    - name: Copy package to /tmp/ws/src
-      ansible.builtin.copy:
-        src: /tmp/cartographer_ros_benchmarks
-        dest: /tmp/ws/src/package
-        mode: '0755'
 
     - name: Update APT cache
       ansible.builtin.apt:
@@ -91,18 +76,18 @@
 
     - name: Update ROS dependencies database
       ansible.builtin.command: rosdep update
+      args:
+        chdir: /tmp/ws/src
+
 
     - name: Install ROS dependencies
       ansible.builtin.command: rosdep install -i -y --from-path /tmp/ws/src --skip-keys 'lambkin-shepherd'
+      args:
+        chdir: /tmp/ws/src
 
     - name: Clean up APT cache
       ansible.builtin.apt:
         autoclean: true
-
-    - name: Remove /tmp/ws directory
-      ansible.builtin.file:
-        path: /tmp/ws
-        state: absent
 
     - name: Name
       ansible.builtin.command:

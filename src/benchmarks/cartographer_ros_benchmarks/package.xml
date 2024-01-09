@@ -12,6 +12,6 @@
   <buildtool_depend>catkin</buildtool_depend>
   <exec_depend>lambkin-shepherd</exec_depend>
   <exec_depend>pointcloud_to_laserscan</exec_depend>
-  <exec_depend>cartographer_ros</exec_depend>
+  <!-- <exec_depend>cartographer_ros</exec_depend> -->
   <exec_depend>tf2_tools</exec_depend>
 </package>

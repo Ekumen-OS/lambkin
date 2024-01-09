@@ -20,6 +20,7 @@
     - sed
     - tar
     state: present
+    update_cache: True
   when: package_manager.stdout == "apt-get"
   tags:
   - basic_dependencies
@@ -62,6 +63,7 @@
     - uuid-dev
     - zlib1g-dev
     state: present
+    update_cache: True
   when: package_manager.stdout == "apt-get"
   tags:
   - python_build_dependencies
@@ -73,3 +75,6 @@
   when: package_manager.stdout == "unknown"
   tags:
   - unknown_package_manager
+
+# - name: Install colcon
+#   ansible.builtin.include_tasks: "colcon.yml"

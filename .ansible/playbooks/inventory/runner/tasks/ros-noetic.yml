@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
 - name: Add packages.ros.org apt repository
   ansible.builtin.apt_repository:
     repo: "deb http://packages.ros.org/ros/ubuntu {{ ansible_distribution_release }} main"
-    filename: ros1-latest.list
+    filename: ros
     state: present
+    update_cache: True
 
 - name: Add packages.ros.org apt keys
   ansible.builtin.apt_key:
@@ -27,8 +27,8 @@
 - name: Install ROS Noetic desktop
   ansible.builtin.apt:
     name:
-      - ros-noetic-desktop
-      - ros-noetic-map-server
+    - ros-noetic-desktop
+    - ros-noetic-map-server
     state: present
 
 - name: Environment setup
@@ -44,6 +44,12 @@
       {{ "#" }} to {{ ansible_play_name | lower }}
       . /opt/ros/noetic/setup.sh
     dest: /etc/profile.d/ros.sh
+
+- name: Setup noetic setup.bash
+  ansible.builtin.command: chmod +x ./opt/ros/noetic/setup.bash
+
+- name: Execute setup.bash
+  ansible.builtin.command: ./opt/ros/noetic/setup.bash
 
 # See https://github.com/ros/ros_comm/issues/2311
 # - name: Find roslaunch.nodeprocess module file

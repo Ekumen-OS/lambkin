@@ -8,7 +8,7 @@
 
       working_container:
         volumes:
-          - "/home/erasmo/Projects/lambkin/src/benchmarks/beluga_vs_nav2:/tmp/context/src"
+          - "/home/erasmo/Projects/Ekumen/lambkin/src/benchmarks/beluga_vs_nav2:/workspace/src/package/beluga_vs_nav2"
 
       target_image:
         name: ekumenlabs/beluga-vs-nav2:latest
@@ -33,51 +33,51 @@
           - libglx-mesa0
         state: present
 
-    - name: Create and set ownership for /workspace
-      ansible.builtin.file:
-        path: /workspace/
-        state: directory
-        recurse: true
-
-    - name: Create and set ownership for /tmp/context
-      ansible.builtin.file:
-        path: /tmp/context/
-        state: directory
-        recurse: true
-
-    - name: Create and set ownership for /opt/ros/application
-      ansible.builtin.file:
-        path: /opt/ros/application/
-        state: directory
-        recurse: true
-
     - name: Clone Beluga repository
       ansible.builtin.git:
         repo: https://github.com/Ekumen-OS/beluga
         dest: /workspace/src/beluga
         version: main
 
-    # - name: Move contents of 'beluga' to 'src'
-    #   ansible.builtin.command: mv /workspace/beluga/* /workspace/src/
-    #   args:
-    #     chdir: /workspace
+    - name: Clone navigation2 repository
+      ansible.builtin.git:
+        repo: https://github.com/ros-planning/navigation2.git
+        dest: /workspace/src/navigation2
+        depth: 1
+
+    - name: Set up sparse-checkout for nav2_amcl in navigation2 repository
+      ansible.builtin.command: git sparse-checkout set nav2_amcl && git checkout
+      args:
+        chdir: /workspace/src/navigation2
 
     - name: Update and upgrade apt packages
       ansible.builtin.apt:
-        upgrade: yes
         update_cache: yes
+        upgrade: yes
 
-    - name: Update ROS
+    - name: Update ROS dependencies
       ansible.builtin.command: rosdep update
+      args:
+        chdir: /workspace
 
     - name: Install ROS dependencies and build
-      ansible.builtin.command: |
-        rosdep install -i -y --from-paths src /workspace/src --skip-keys lambkin-shepherd flatland_server beluga_example beluga_benchmarks flatland_plugins
+      ansible.builtin.command: rosdep install -i -y --from-paths src --skip-keys 'lambkin-shepherd flatland_server beluga_example beluga_benchmarks flatland_plugins'
       args:
-        chdir: /tmp/context
+        chdir: /workspace
 
-    - name: Install ROS dependencies and build
-      ansible.builtin.command: |
-        colcon build 'beluga_vs_nav2' /opt/ros/application
+    - name: Colcon build
+      ansible.builtin.command: colcon build --packages-up-to 'beluga_vs_nav2' --merge-install --install-base /opt/ros/application
       args:
-        chdir: /tmp/context
+        chdir: /workspace
+    
+    - name: Insert content into entrypoint.bash
+      blockinfile:
+        path: /opt/ros/application/entrypoint.bash
+        block: |
+          # Auto-generated with Docker Buildkit
+          source /opt/ros/application/setup.bash
+          if [ $# -ne 0 ]; then
+              ros2 run beluga_vs_nav2 $@
+          else
+              bash
+          fi

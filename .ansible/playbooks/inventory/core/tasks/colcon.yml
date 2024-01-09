@@ -1,0 +1,6 @@
+- name: Install Colcon
+  pip:
+    name:
+    - colcon-core
+    - colcon-package-selection
+    state: present
