@@ -40,3 +40,11 @@ ros2 run cartographer_tools pbstream_to_tum_trajectory -pbstream_filename posegr
 ```
 
 will output TUM trajectory files, one per trajectory in the pose graph.
+
+4. **Create a PLY file from pose graph and ROS 2 bag**
+
+```sh
+ros2 run cartographer_ros cartographer_assets_writer -configuration_directory path/to/cartographer_tools/configuration_files -configuration_basenames assets_writer_ply.lua -bag_filenames path/to/bagfile [path/to/bagfile_1 ...] -pose_graph_filename posegraph.pbstream 
+```
+
+will output a PLY file containing the high resolution point cloud.
