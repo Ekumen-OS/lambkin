@@ -1,17 +1,14 @@
 {
     "build": { "dockerfile": "../Dockerfile", "target": "development" },
     "onCreateCommand": "sudo chown -R lambkin:lambkin .",
-	"shutdownAction":"none",
+    "shutdownAction":"none",
     "mounts": [
 	{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"},
 	{"source": "${localWorkspaceFolder}/../../core/lambkin-shepherd", "target": "/workspace/edit/lambkin-shepherd", "type": "bind"},
 	{"source": "${localWorkspaceFolder}/../../core/lambkin-clerk", "target": "/workspace/edit/lambkin-clerk", "type": "bind"}
     ],
-
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/src/${localWorkspaceFolderBasename},type=bind,consistency=cached",
-
     "workspaceFolder": "/workspace",
-
 	"containerUser": "lambkin",
 	"customizations": {
 		"vscode": {
