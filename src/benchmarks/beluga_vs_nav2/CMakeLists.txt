@@ -8,6 +8,7 @@ install(
   PROGRAMS
     scripts/nominal.robot
     scripts/swept.robot
+    scripts/ndt_swept.robot
   DESTINATION lib/${PROJECT_NAME})
   
 install(
