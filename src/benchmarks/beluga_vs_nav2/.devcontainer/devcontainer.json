@@ -1,8 +1,7 @@
 {
     "build": { "dockerfile": "../Dockerfile", "target": "development" },
-
     "onCreateCommand": "sudo chown -R lambkin:lambkin .",
-
+	"shutdownAction":"none",
     "mounts": [
 	{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"},
 	{"source": "${localWorkspaceFolder}/../../core/lambkin-shepherd", "target": "/workspace/edit/lambkin-shepherd", "type": "bind"},
