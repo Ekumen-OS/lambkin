@@ -1,15 +1,10 @@
 {
-    "build": { "dockerfile": "../Dockerfile", "target": "development" },
-
-    "onCreateCommand": "sudo chown -R lambkin:lambkin .",
+    "image": "ekumenlabs/slam-toolbox-benchmarks:dev",
 
     "mounts": [{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"}],
-
-    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/src/${localWorkspaceFolderBasename},type=bind,consistency=cached",
-
+    "workspaceMount": "source=${localWorkspaceFolder}/../..,target=/workspace/src/lambkin,type=bind,consistency=cached",
     "workspaceFolder": "/workspace",
 
-    "containerUser": "lambkin",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -17,5 +12,7 @@
                 "robocorp.robotframework-lsp"
             ]
         }
-    }
+    },
+
+    "shutdownAction":"none"
 }

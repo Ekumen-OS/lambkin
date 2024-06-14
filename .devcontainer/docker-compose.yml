@@ -1,0 +1,16 @@
+services:
+  devcontainer:
+    image: ekumenlabs/lambkin:dev
+    container_name: lambkin-dev
+    environment:
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+    stdin_open: true
+    tty: true
+    privileged: ${PRIVILEGED:-false}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.docker.xauth:/tmp/.docker.xauth
+      - ..:/workspace
+    working_dir: /workspace

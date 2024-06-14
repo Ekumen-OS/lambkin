@@ -1,0 +1,75 @@
+# Copyright 2024 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+VERSION 0.8
+
+IMPORT ../../.. AS lambkin
+IMPORT ../../external/os AS os
+
+devel:
+    ARG user=lambkin
+    ARG uid=1001
+    ARG gid=1001
+    FROM lambkin+embed-ubuntu-devel --distro=focal \
+         --components="core/lambkin-shepherd core/lambkin-clerk external/ros
+                       external/typesetting/latex external/profiling/timemory"
+    RUN mkdir -p /workspace/src
+    WORKDIR /workspace
+    COPY package.xml src/lambkin/benchmarks/slam_toolbox_benchmarks/package.xml
+    RUN . /etc/profile && apt update && rosdep update && \
+        rosdep install -i -y --from-path src --skip-keys "lambkin-shepherd" && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
+    SAVE IMAGE ekumenlabs/slam-toolbox-benchmarks:dev
+
+local-devel:
+    LOCALLY
+    LET user = "$(whoami)"
+    LET uid = "$(id -u)"
+    LET gid = "$(id -g)"
+    BUILD +devel --user=${user} --uid=${uid} --gid=${gid}
+
+build:
+    FROM lambkin+embed-ubuntu-release --distro=focal \
+         --components="core/lambkin-shepherd core/lambkin-clerk external/ros
+                       external/typesetting/latex external/profiling/timemory"
+    RUN mkdir -p /workspace/src
+    WORKDIR /workspace
+    COPY . src/slam_toolbox_benchmarks
+    RUN . /etc/profile && apt update && rosdep update && \
+        rosdep install -i -y --from-path src --skip-keys "lambkin-shepherd" && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+    RUN . /etc/profile && catkin_make_isolated --install --merge --install-space /opt/ros/application
+    LET content = "
+    source /opt/ros/application/setup.bash
+    if [ \$# -ne 0 ]; then
+        rosrun slam_toolbox_benchmarks \$@
+    else
+        bash
+    fi
+    "
+    RUN echo "${content}" > /opt/ros/application/entrypoint.bash
+    SAVE ARTIFACT /opt/ros/application
+
+release:
+    FROM lambkin+embed-ubuntu-release --distro=focal \
+         --components="core/lambkin-shepherd core/lambkin-clerk external/ros
+                       external/typesetting/latex external/profiling/timemory"
+    COPY +build/application /opt/ros/application
+    RUN . /etc/profile && apt update && rosdep update && \
+        rosdep install -i -y --from-path /opt/ros/application \
+            -t exec --skip-keys "lambkin-shepherd" && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+    ENTRYPOINT ["/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
+    SAVE IMAGE ekumenlabs/slam-toolbox-benchmarks:latest

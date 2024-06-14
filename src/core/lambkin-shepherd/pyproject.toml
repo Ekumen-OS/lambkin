@@ -25,7 +25,8 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "<3.12,>=3.8.2"
 numpy = "^1.24.2"
-pandas = { version = "^2.0.0", extras = ["all"] }
+pandas = { version = "^2.0.0", extras = ["plot, performance, computation"] }
+tables = "^3.8.0"
 robotframework = "^6.0.2"
 Pint = "^0.20.0"
 PyYAML = "^6.0"

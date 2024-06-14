@@ -1,13 +1,18 @@
 {
-    "build": { "dockerfile": "Dockerfile", "context": ".." },
-
-    "onCreateCommand": "sudo chown -R lambkin:lambkin .",
+    "image": "ekumenlabs/lambkin:dev",
 
     "mounts": [{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"}],
-
-    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/src/${localWorkspaceFolderBasename},type=bind,consistency=cached",
-
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
     "workspaceFolder": "/workspace",
 
-    "containerUser": "lambkin"
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "tumit.vscode-rf-formatter",
+                "robocorp.robotframework-lsp"
+            ]
+        }
+    },
+
+    "shutdownAction":"none"
 }
