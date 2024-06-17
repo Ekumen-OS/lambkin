@@ -164,6 +164,9 @@ Before ROS system benchmark case rig bringup
     [Documentation]
     ...  See `Before ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
+    IF  ${BENCHMARK.RIG.ROS.SIMULATED}
+        Set ROS Parameter  use_sim_time  ${BENCHMARK.RIG.ROS.SIMULATED}
+    END
     Start recording ROS bag
     ...  ${BENCHMARK.OUTPUT.ROS.BAG}
     ...  cwd=${BENCHMARK.CASE.ITERATION.PATH}
@@ -191,9 +194,6 @@ After ROS system benchmark case rig bringup
     [Documentation]
     ...  See `After ${some} benchmark case rig bringup` documentation.
     [Tags]  declarative  override
-    IF  ${BENCHMARK.RIG.ROS.SIMULATED}
-        Set ROS Parameter  use_sim_time  ${BENCHMARK.RIG.ROS.SIMULATED}
-    END
     Dump ROS Parameters  cwd=${BENCHMARK.CASE.ITERATION.PATH}
 
 Per ROS system benchmark case iteration
