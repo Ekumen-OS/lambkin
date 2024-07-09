@@ -17,11 +17,17 @@ For instance, to bring up the root development environment:
    git clone --recursive git@github.com:ekumenlabs/lambkin.git
    ```
 
-2. **Build the root development container**. You will need [`earthly 0.8+`](https://earthly.dev/get-earthly).
+2. **Setup development tools**. You will need `docker`.
 
    ```bash
    cd lambkin
-   earthly +local-ubuntu-devel
+   ./tools/setup.sh
+   ```
+
+2. **Build the root development container**.
+
+   ```bash
+   ./tools/earthly +local-ubuntu-devel
    ```
 
 3. **Run the root development container**. You may use `devcontainers` tooling or plain `docker-compose`:
