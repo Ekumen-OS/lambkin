@@ -1,56 +1,34 @@
-# LAMBKIN
-## Overview
+# LAMBKIN: the Localization And Mapping BenchmarKINg Toolkit
 
-Lambkin is a mixture of automation tools and conventions for SLAM benchmarking, featuring:
+## 🌐 Overview
 
--   Reproducible environments.
--   Declarative benchmark definitions.
--   Standard performance metrics.
--   Automatic report generation.
+LAMBKIN is a mixture of automation and conventions to facilitate reproducible benchmarking and evaluation of localization and mapping systems, featuring:
 
-To do this, the main library leverages many great technologies such as:
+-   Reproducible environments
+-   Declarative benchmark definitions
+-   Standard performance metrics
+-   Automatic report generation
 
-- [Robot Framework](https://robotframework.org/) and [roslaunch](http://wiki.ros.org/roslaunch) for process orchestration.
-- [timem](https://timemory.readthedocs.io/en/develop/features.html#command-line-tools) for computational performance instrumentation.
-- [evo](https://michaelgrupp.github.io/evo/) for localization performance instrumentation.
-- [pandas](https://pandas.pydata.org/) and [seaborn](https://seaborn.pydata.org/) for metrics visualization.
-- [rosbag](http://wiki.ros.org/rosbag) for data storage.
-- [docker](https://docs.docker.com/) for containerization.
-- [reStructuredText](https://docutils.sourceforge.io/rst.html) for report generation.
+## 🧩 Components
 
-### Docker
+LAMBKIN aggregates a number of open-source libraries and tools, both local to the project and third-party, that can be mixed and matched as necessary:
 
-In order to generate reproducible environments, we've based our design around [docker](https://docs.docker.com/) containers. This gives us the ability to create isolated environments that satisfy all benchmark prerequisites. These come from two sources:
-- From the SLAM system: dependencies in the form of libraries installed from a package manager or source built using a specific build system.
-- From the benchmark itself: automation and performance monitoring tools.
+| Component                                                        | Description                                                                                                          |
+|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`core/lambkin-shepherd`](src/core/lambkin-shepherd)             | A Python package for RobotFramework-based benchmark definitions and orchestration.                                   |
+| [`core/lambkin-clerk`](src/core/lambkin-clerk)                   | A Python package for system introspection, useful to contextualize benchmark reports.                                |
+| [`external/ros`](src/external/ros)                               | ROS (1) distribution for the target platform (typically Ubuntu).                                                     |
+| [`external/ros2`](src/external/ros2)                             | ROS 2 distribution for the target platform (typically Ubuntu).                                                       |
+| [`external/typesetting/latex`](src/external/typesetting/latex)   | TeX Live distribution for the target platform.                                                                       |
+| [`external/profiling/timemory`](src/external/profiling/timemory) | Source distribution of [timemory](https://github.com/NERSC/timemory), the performance analysis and logging toolkit.  |
 
-For this purpose, we've developed a base docker image with common automation tools and utilities that can be used across all the different SLAM systems.
-A benchmark package extends this base image with the required installation steps for the SLAM system under test.
+These components are distributed and deployed using containers. Each container image bundles a set of components with an operating system, which ensures reproducibility (barring hardware and kernel dependencies).
 
-### ROS
+## 📈 Benchmarks
 
-When developing this tool, we decided to target ROS SLAM packages due to its widespread adoption among the robot development community.
-
-All the benchmarking scripts are distributed in their own ROS package, containing [launch files](http://wiki.ros.org/roslaunch), configuration files, and dependency declarations. Furthermore, the automation library and tools are also distributed in ROS packages.
-
-We provide run scripts for the containers that mount everything into the same workspace, ready to build and run the different benchmarks.
-
-We've also chosen [rosbag](http://wiki.ros.org/rosbag) as the preferred format for dataset instrumentation. The data formats of publicly available datasets vary significantly, so we've developed [conversion tools](src/tools) for many of them.
-
-### Robot Framework
-
-For the benchmark automation scripts we use [Robot Framework](https://robotframework.org/), which is a generic open source framework for robotic process automation (RPA).
-
-We've extended it with custom libraries that allow you to write benchmarking steps in a human-readable format. This format is flexible enough to adapt to a wide variety of scenarios.
-
-## Supported metrics
-
-We currently support the following performance metrics:
-
-- Absolute Pose Error (APE) and Relative Pose Error (RPE) using [evo](https://michaelgrupp.github.io/evo/) for localization performance (for more information see [Prokhorov et. al.](https://arxiv.org/pdf/1910.04755.pdf)).
-- CPU usage and Resident Set Size (RSS), i.e. the portion of a process’ memory space currently in RAM, using [timem](https://timemory.readthedocs.io/en/develop/features.html#command-line-tools) for process performance.
+The simplest approach to LAMBKIN is to draw inspiration from existing [sample benchmarks](src/benchmarks). These are written as containerized applications, built from a base package (typically a ROS package), using RobotFramework-driven definitions and Sphinx-powered reports.
 
 ## Next steps
 
-- Read about `lambkin`'s [architecture](docs/architecture.md).
-- Get hands-on experience with the [getting started](docs/getting-started.md) tutorial.
+- Run a [sample benchmark](src/benchmarks) or write your own!
+- Read the [contributing guidelines](CONTRIBUTING.md).

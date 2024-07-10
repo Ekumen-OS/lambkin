@@ -1,17 +1,13 @@
-# LAMBKIN
-## Overview
+# LAMBKIN `shepherd`
 
-Lambkin is a mixture of automation tools and conventions for SLAM benchmarking, featuring:
+The main package for benchmark definition and orchestration.
 
--   Reproducible environments.
--   Declarative benchmark definitions.
--   Standard performance metrics.
--   Automatic report generation.
+To do so, `lambkin.shepherd` leverages many existing technologies such as:
 
-To do this, the main library leverages existing technologies such as:
+- [ROS](https://www.ros.org/) for data exchange with localization and mapping systems
+- [Robot Framework](https://robotframework.org/) for benchmark definition and orchestration
+- [evo](https://michaelgrupp.github.io/evo/) for localization performance instrumentation
+- [timem](https://timemory.readthedocs.io/en/develop/features.html#command-line-tools) for computational performance instrumentation
+- [pandas](https://pandas.pydata.org/) and [seaborn](https://seaborn.pydata.org/) for metrics analysis visualization
 
-- [Robot Framework](https://robotframework.org/) and [roslaunch](http://wiki.ros.org/roslaunch) for process orchestration.
-- [timem](https://timemory.readthedocs.io/en/develop/features.html#command-line-tools) for computational performance instrumentation.
-- [evo](https://michaelgrupp.github.io/evo/) for localization performance instrumentation.
-- [pandas](https://pandas.pydata.org/) and [seaborn](https://seaborn.pydata.org/) for metrics visualization.
-- [rosbag](http://wiki.ros.org/rosbag) for data storage.
+And more. Most dependencies are optional though, and will not be imported if not required.

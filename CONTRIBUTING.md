@@ -116,7 +116,7 @@ This projects adopts a [feature branch workflow](https://about.gitlab.com/topics
 
 - **Pull latest `main` branch**. Clone repository (or repository fork) locally if you haven't yet.
 - **Branch from `main` branch**. Use a descriptive name for your feature branch. Make sure to prefix it with the associated issue number.
-- **Work on your contribution**. See [instructions](docs/getting-started.md) on how to get started with LAMBKIN development.
+- **Work on your contribution**. See [instructions](DEVELOPING.md) on how to get started with LAMBKIN development.
 - **Lint and test your changes**. For bug fixes, make sure regression tests are included.
 - **Document your changes as needed**. For new features, make sure added functionality is clearly documented.
 - **Push your feature branch**. To upstream repository (or repository fork).
