@@ -1,5 +1,5 @@
 {
-    "image": "ekumenlabs/lambkin:dev",
+    "image": "ekumenlabs/lambkin:devel",
 
     "mounts": [{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"}],
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",

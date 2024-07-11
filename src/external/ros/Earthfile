@@ -18,7 +18,7 @@ IMPORT ../os AS os
 
 embed-ubuntu-release:
     ARG distro
-    FROM os+ubuntu --distro=${distro}
+    FROM --pass-args os+ubuntu
     COPY rosdistro.yml /etc/.
     RUN echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list
     RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
@@ -29,5 +29,5 @@ embed-ubuntu-release:
 
 embed-ubuntu-devel:
     ARG distro
-    FROM +ubuntu-release --distro=${distro}
+    FROM +embed-ubuntu-release
     RUN apt update && apt install -y python3-wstool

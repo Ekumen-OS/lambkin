@@ -1,7 +1,7 @@
 services:
   devcontainer:
-    image: ekumenlabs/lambkin:dev
-    container_name: lambkin-dev
+    image: ekumenlabs/lambkin:devel
+    container_name: lambkin-devel
     environment:
       - DISPLAY
       - QT_X11_NO_MITSHM=1

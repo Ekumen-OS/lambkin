@@ -18,7 +18,7 @@ IMPORT ../../os AS os
 
 embed-ubuntu-release:
     ARG distro
-    FROM os+ubuntu --distro=${distro}
+    FROM --pass-args os+ubuntu
     RUN apt update && apt install -y \
           latexmk \
           tex-gyre \
@@ -29,4 +29,4 @@ embed-ubuntu-release:
 
 embed-ubuntu-devel:
     ARG distro
-    FROM +embed-ubuntu-release --distro=${distro}
+    FROM +embed-ubuntu-release
