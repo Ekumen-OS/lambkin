@@ -29,7 +29,11 @@ numpy = [
     { version = ">1.24.3", python = ">=3.9,<3.13" }
 ]
 pandas = { version = "^2.0.0", extras = ["plot, performance, computation"] }
-tables = "^3.8.0"
+
+tables = [
+    { version = "3.8.0", python = "~3.8" },
+    { version = "^3.9.2", python = ">=3.9,<3.13" }
+]
 robotframework = "^6.0.2"
 Pint = "^0.20.0"
 PyYAML = "^6.0"
