@@ -40,10 +40,10 @@ devel:
 
 local-devel:
     LOCALLY
-    LET user = "$(whoami)"
-    LET uid = "$(id -u)"
-    LET gid = "$(id -g)"
-    BUILD +devel --user=${user} --uid=${uid} --gid=${gid}
+    LET user="$(whoami)"
+    LET uid="$(id -u)"
+    LET gid="$(id -g)"
+    BUILD --pass-args +devel
 
 build:
     FROM lambkin+embed-ubuntu-devel --distro=focal --components="external/ros"

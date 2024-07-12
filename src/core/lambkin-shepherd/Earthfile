@@ -40,7 +40,7 @@ embed-ubuntu-release:
     FROM --pass-args os+ubuntu
     COPY +build/sdist/*.whl /tmp/.
     RUN apt update && apt install -y \
-	  libjpeg-dev \  # needed by Pillow
-	  zlib1g-dev \  # needed by Pillow
+	      libjpeg-dev \  # needed by Pillow
+	      zlib1g-dev \  # needed by Pillow
         && apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install $(ls /tmp/lambkin_shepherd*.whl)[full]

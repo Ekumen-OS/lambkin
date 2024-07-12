@@ -29,5 +29,5 @@ embed-ubuntu-release:
 
 embed-ubuntu-devel:
     ARG distro
-    FROM +embed-ubuntu-release
+    FROM --pass-args +embed-ubuntu-release
     RUN apt update && apt install -y python3-wstool

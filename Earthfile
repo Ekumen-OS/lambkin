@@ -33,24 +33,31 @@ embed-ubuntu-release:
     END
 
 ubuntu-devel:
-    ARG distro
+    ARG distro=jammy
     ARG user=lambkin
     ARG uid=1000
     ARG gid=1000
-    FROM +embed-ubuntu-devel
+    FROM --pass-args +embed-ubuntu-devel
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
     ARG tag=ubuntu-${distro}-devel
     SAVE IMAGE ekumenlabs/lambkin:${tag} ekumenlabs/lambkin:devel
 
 local-ubuntu-devel:
     LOCALLY
-    LET user = "$(whoami)"
-    LET uid = "$(id -u)"
-    LET gid = "$(id -g)"
-    BUILD +ubuntu-devel --user=${user} --uid=${uid} --gid=${gid}
+    ARG distro=jammy
+    # NOTE(hidmic): do a two-step expansion to
+    # avoid duplicate dependency builds (a bug
+    # upstream? a bug in our patch?)
+    LET local_user="$(whoami)"
+    LET local_uid="$(id -u)"
+    LET local_gid="$(id -g)"
+    LET user="${local_user}"
+    LET uid="${local_uid}"
+    LET gid="${local_gid}"
+    BUILD --pass-args +ubuntu-devel
 
 ubuntu-release:
-    ARG distro
+    ARG distro=jammy
     ARG tag=ubuntu-${distro}
-    FROM +embed-ubuntu-release
+    FROM --pass-args +embed-ubuntu-release
     SAVE IMAGE ekumenlabs/lambkin:${tag}

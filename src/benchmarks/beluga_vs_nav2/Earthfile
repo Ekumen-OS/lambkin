@@ -22,7 +22,7 @@ devel:
     ARG uid=1000
     ARG gid=1000
     ARG distro=jammy
-    FROM lambkin+embed-ubuntu-devel --distro=${distro} \
+    FROM --pass-args lambkin+embed-ubuntu-devel \
          --components="core/lambkin-shepherd core/lambkin-clerk external/ros2
                        external/typesetting/latex external/profiling/timemory"
     RUN mkdir -p /workspace/src
@@ -41,14 +41,14 @@ devel:
 local-devel:
     LOCALLY
     ARG distro=jammy
-    LET user = "$(whoami)"
-    LET uid = "$(id -u)"
-    LET gid = "$(id -g)"
-    BUILD +devel --distro=${distro} --user=${user} --uid=${uid} --gid=${gid}
+    LET user="$(whoami)"
+    LET uid="$(id -u)"
+    LET gid="$(id -g)"
+    BUILD --pass-args +devel
 
 build:
     ARG distro=jammy
-    FROM lambkin+ubuntu-devel --distro=${distro} --components="external/ros2"
+    FROM --pass-args lambkin+ubuntu-devel --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
@@ -72,7 +72,7 @@ build:
 
 release:
     ARG distro=jammy
-    FROM lambkin+embed-ubuntu-release --distro=${distro} \
+    FROM --pass-args lambkin+embed-ubuntu-release \
          --components="core/lambkin-shepherd core/lambkin-clerk external/ros2
                        external/typesetting/latex external/profiling/timemory"
     COPY (+build/application --distro=${distro}) /opt/ros/application

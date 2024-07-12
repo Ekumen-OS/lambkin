@@ -30,7 +30,7 @@ embed-ubuntu-release:
 embed-ubuntu-devel:
     ARG distro
     ARG rosdistro
-    FROM +embed-ubuntu-release
+    FROM --pass-args +embed-ubuntu-release
     RUN pip install colcon-common-extensions poetry colcon-poetry-ros
     ## NOTE(hidmic): remove colcon-poetry-ros weird script relocation
     RUN sed -i '111,131d' $(python3 -c "import colcon_poetry_ros.task.poetry.build as m; print(m.__file__)")
