@@ -37,7 +37,7 @@ For instance, to bring up the root development environment:
    ```
    
    ```bash
-   docker compose run -f .devcontainer/docker-compose.yml
+   docker compose -f .devcontainer/docker-compose.yml run devcontainer
    ```
 
 ## Workflow
