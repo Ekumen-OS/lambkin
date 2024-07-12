@@ -23,8 +23,11 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8.2"
-numpy = "^1.24.2"
+python = ">=3.8.2,<3.13"
+numpy = [
+    { version = "~1.24.2", python = "~3.8" },
+    { version = ">1.24.3", python = ">=3.9,<3.13" }
+]
 pandas = { version = "^2.0.0", extras = ["plot, performance, computation"] }
 tables = "^3.8.0"
 robotframework = "^6.0.2"
@@ -33,7 +36,10 @@ PyYAML = "^6.0"
 
 evo = { version = "^1.21.0", optional = true }
 Pillow = { version = "^9.4.0" , optional = true }
-scipy = { version = "^1.10.1", optional = true }
+scipy = [
+    { version = "^1.10.1", python = "~3.8", optional = true },
+    { version = ">=1.11.1", python = ">=3.9,<3.13", optional = true }
+]
 
 # NOTE(hidmic): mplot3d is broken in matplotlib 3.8.0
 # See https://github.com/matplotlib/matplotlib/issues/26827
