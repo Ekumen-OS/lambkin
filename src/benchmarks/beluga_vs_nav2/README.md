@@ -26,12 +26,14 @@ source install/setup.bash
 - Cd to `playgrounds` dir, where you've downloaded `beluga-datasets`
 
 ```sh
-cd src/beluga_vs_nav2/playground
+cd src/lambkin/benchmarks/beluga_vs_nav2/playground
 ```
 
 - Run the benchmark itself.
 ```sh
-ros2 run beluga_vs_nav2 beluga_vs_nav2.robot
+ros2 run beluga_vs_nav2 nominal.robot
+ros2 run beluga_vs_nav2 ndt_swept.robot
+ros2 run beluga_vs_nav2 swept.robot
 ```
 - Inspect the results
 ```sh
