@@ -19,7 +19,7 @@ IMPORT ../../packaging/spack AS spack
 
 ubuntu-build:
     ARG distro
-    FROM --pass-args spack+ubuntu-environment
+    FROM spack+ubuntu-environment --distro=${distro}
     RUN SPACK_SKIP_MODULES= . /opt/spack/share/spack/setup-env.sh && \
         spack install -y --fail-fast timemory@develop+tools && spack gc -y
     RUN echo "SPACK_SKIP_MODULES= . /opt/spack/share/spack/setup-env.sh" > profile.sh && \
@@ -29,10 +29,10 @@ ubuntu-build:
 
 embed-ubuntu-release:
     ARG distro
-    FROM --pass-args os+ubuntu
+    FROM os+ubuntu --distro=${distro}
     COPY (+ubuntu-build/spack --distro=${distro}) /opt/spack
     COPY (+ubuntu-build/profile.sh --distro=${distro}) /etc/profile.d/timemory.sh
 
 embed-ubuntu-devel:
     ARG distro
-    FROM --pass-args +embed-ubuntu-release
+    FROM +embed-ubuntu-release

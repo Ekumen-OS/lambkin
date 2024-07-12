@@ -19,17 +19,19 @@ ARG --global components="core/lambkin-shepherd core/lambkin-clerk external/ros2 
 
 embed-ubuntu-devel:
     ARG distro
-    FROM --pass-args os+ubuntu
+    ARG rosdistro  # forward
+    FROM os+ubuntu --distro=${distro}
     FOR component IN ${components}
-        MERGE --pass-args os+ubuntu.../src/${component}+embed-ubuntu-devel
+        MERGE os+ubuntu.../src/${component}+embed-ubuntu-devel  --distro=${distro} --rosdistro=${rosdistro}
     END
     RUN echo "echo 'Logged into development environment for ${components} on Ubuntu: ${distro}'" > /etc/profile.d/banner.sh
 
 embed-ubuntu-release:
     ARG distro
-    FROM --pass-args os+ubuntu
+    ARG rosdistro  # forward
+    FROM os+ubuntu --distro=${distro}
     FOR component IN ${components}
-        MERGE --pass-args os+ubuntu.../src/${component}+embed-ubuntu-release
+        MERGE os+ubuntu.../src/${component}+embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro}
     END
 
 ubuntu-devel:
@@ -37,7 +39,7 @@ ubuntu-devel:
     ARG user=lambkin
     ARG uid=1000
     ARG gid=1000
-    FROM --pass-args +embed-ubuntu-devel
+    FROM +embed-ubuntu-devel
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
     ARG tag=ubuntu-${distro}-devel
     SAVE IMAGE ekumenlabs/lambkin:${tag} ekumenlabs/lambkin:devel
@@ -45,19 +47,13 @@ ubuntu-devel:
 local-ubuntu-devel:
     LOCALLY
     ARG distro=jammy
-    # NOTE(hidmic): do a two-step expansion to
-    # avoid duplicate dependency builds (a bug
-    # upstream? a bug in our patch?)
-    LET local_user="$(whoami)"
-    LET local_uid="$(id -u)"
-    LET local_gid="$(id -g)"
-    LET user="${local_user}"
-    LET uid="${local_uid}"
-    LET gid="${local_gid}"
-    BUILD --pass-args +ubuntu-devel
+    LET user="$(whoami)"
+    LET uid="$(id -u)"
+    LET gid="$(id -g)"
+    BUILD +ubuntu-devel --user=${user} --uid=${uid} --gid=${gid}
 
 ubuntu-release:
     ARG distro=jammy
     ARG tag=ubuntu-${distro}
-    FROM --pass-args +embed-ubuntu-release
+    FROM +embed-ubuntu-release
     SAVE IMAGE ekumenlabs/lambkin:${tag}

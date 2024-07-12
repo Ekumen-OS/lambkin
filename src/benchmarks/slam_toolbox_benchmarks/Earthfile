@@ -38,7 +38,7 @@ local-devel:
     LET user="$(whoami)"
     LET uid="$(id -u)"
     LET gid="$(id -g)"
-    BUILD --pass-args +devel
+    BUILD +devel --user=${user} --uid=${uid} --gid=${gid}
 
 build:
     FROM lambkin+embed-ubuntu-release --distro=focal \

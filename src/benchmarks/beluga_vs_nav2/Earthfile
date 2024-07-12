@@ -14,7 +14,7 @@
 
 VERSION 0.8
 
-IMPORT ../../external/ros AS ros
+IMPORT ../../external/os AS os
 IMPORT ../../.. AS lambkin
 
 devel:
@@ -44,11 +44,11 @@ local-devel:
     LET user="$(whoami)"
     LET uid="$(id -u)"
     LET gid="$(id -g)"
-    BUILD --pass-args +devel
+    BUILD +devel --user=${user} --uid=${uid} --gid=${gid}
 
 build:
     ARG distro=jammy
-    FROM --pass-args lambkin+ubuntu-devel --components="external/ros2"
+    FROM lambkin+ubuntu-devel --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga

@@ -14,7 +14,7 @@
 
 VERSION 0.8
 
-IMPORT ../../external/ros AS ros
+IMPORT ../../external/os AS os
 IMPORT ../../.. AS lambkin
 
 ARG --global cartographer_rosinstall_uri=https://raw.githubusercontent.com/cartographer-project/cartographer_ros/master/cartographer_ros.rosinstall
@@ -43,7 +43,7 @@ local-devel:
     LET user="$(whoami)"
     LET uid="$(id -u)"
     LET gid="$(id -g)"
-    BUILD --pass-args +devel
+    BUILD +devel --user=${user} --uid=${uid} --gid=${gid}
 
 build:
     FROM lambkin+embed-ubuntu-devel --distro=focal --components="external/ros"
