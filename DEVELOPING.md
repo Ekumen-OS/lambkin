@@ -42,7 +42,7 @@ For instance, to bring up the root development environment:
 
 ## Workflow
 
-As an heterogeneous collection of software packages, LAMBKIN does not usually afford single full builds. Every package will likely require impose a workflow of its own, specially third-party ones. That said, [`colcon`](https://colcon.readthedocs.io/en/released/) (plus extensions such as `colcon-cmake`, `colcon-ros`, and `colcon-poetry-ros`) will take you a long way.
+As an heterogeneous collection of software packages, LAMBKIN does not usually afford single full builds. Every package will likely impose a workflow of its own, specially third-party ones. That said, [`colcon`](https://colcon.readthedocs.io/en/released/) (plus extensions such as `colcon-cmake`, `colcon-ros`, and `colcon-poetry-ros`) will take you a long way.
 
 ## Next Steps
 
