@@ -24,8 +24,7 @@ devel:
     ARG uid=1000
     ARG gid=1000
     FROM lambkin+embed-ubuntu-devel --distro=focal \
-         --components="core/lambkin-shepherd core/lambkin-clerk external/ros
-                       external/typesetting/latex external/profiling/timemory"
+         --components="core/lambkin-shepherd core/lambkin-clerk external/ros external/typesetting/latex external/profiling/timemory"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN curl -sSL ${cartographer_rosinstall_uri} -o cartographer_ros.rosinstall
@@ -33,9 +32,9 @@ devel:
     COPY package.xml src/lambkin/benchmarks/cartographer_ros_benchmarks/package.xml
     RUN . /etc/profile && apt update && apt install -y libgmock-dev ninja-build stow && \
         ./src/cartographer/scripts/install_abseil.sh && rosdep update && \
-        rosdep install -y -i --from-paths src --skip-keys libabsl-dev && \
+        rosdep install -y -i --from-paths src --skip-keys "libabsl-dev lambkin-shepherd" && \
         apt clean && rm -rf /var/lib/apt/lists/*
-    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
     SAVE IMAGE ekumenlabs/cartographer-ros-benchmarks:dev
 
 local-devel:
@@ -54,7 +53,8 @@ build:
     COPY . src/cartograph_ros_benchmarks
     RUN . /etc/profile && apt update && apt install -y libgmock-dev ninja-build stow && \
         ./src/cartographer/scripts/install_abseil.sh && rosdep update && \
-        rosdep install -y -i --from-paths src -t build -t buildtool -t test --skip-keys "libabsl-dev" && \
+        rosdep install -y -i --from-paths src -t build -t buildtool -t test \
+            --skip-keys "libabsl-dev lambkin-shepherd" && \
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN . /opt/ros/noetic/setup.sh && \
         catkin_make_isolated --install-space /opt/ros/application --install --merge

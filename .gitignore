@@ -1,8 +1,9 @@
-# catkin
+# catkin / colcon
 build
 install
 devel
 logs
+log
 
 # python
 **/__pycache__

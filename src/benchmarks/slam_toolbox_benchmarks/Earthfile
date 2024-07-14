@@ -30,7 +30,7 @@ devel:
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -i -y --from-path src --skip-keys "lambkin-shepherd" && \
         apt clean && rm -rf /var/lib/apt/lists/*
-    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
     SAVE IMAGE ekumenlabs/slam-toolbox-benchmarks:dev
 
 local-devel:

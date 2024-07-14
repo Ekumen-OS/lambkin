@@ -22,7 +22,7 @@ embed-ubuntu-devel:
     ARG rosdistro  # forward
     FROM os+ubuntu --distro=${distro}
     FOR component IN ${components}
-        MERGE os+ubuntu.../src/${component}+embed-ubuntu-devel  --distro=${distro} --rosdistro=${rosdistro}
+        MERGE os+ubuntu.../src/${component}+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro}
     END
     RUN echo "echo 'Logged into development environment for ${components} on Ubuntu: ${distro}'" > /etc/profile.d/banner.sh
 
@@ -35,25 +35,29 @@ embed-ubuntu-release:
     END
 
 ubuntu-devel:
-    ARG distro=jammy
     ARG user=lambkin
     ARG uid=1000
     ARG gid=1000
-    FROM +embed-ubuntu-devel
-    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
-    ARG tag=ubuntu-${distro}-devel
-    SAVE IMAGE ekumenlabs/lambkin:${tag} ekumenlabs/lambkin:devel
+    ARG distro=jammy
+    ARG rodistro  # forward
+    ARG tag=ubuntu-${distro}-dev
+    FROM +embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
+    SAVE IMAGE ekumenlabs/lambkin:${tag} ekumenlabs/lambkin:dev
 
 local-ubuntu-devel:
     LOCALLY
     ARG distro=jammy
+    ARG rosdistro  # forward
     LET user="$(whoami)"
     LET uid="$(id -u)"
     LET gid="$(id -g)"
-    BUILD +ubuntu-devel --user=${user} --uid=${uid} --gid=${gid}
+    BUILD +ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} \
+                        --user=${user} --uid=${uid} --gid=${gid}
 
 ubuntu-release:
     ARG distro=jammy
+    ARG rosdistro  # forward
     ARG tag=ubuntu-${distro}
-    FROM +embed-ubuntu-release
+    FROM +embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro}
     SAVE IMAGE ekumenlabs/lambkin:${tag}
