@@ -1,6 +1,6 @@
 services:
   devcontainer:
-    image: ekumenlabs/lambkin:devel
+    image: ekumenlabs/lambkin:dev
     container_name: lambkin-devel
     environment:
       - DISPLAY
