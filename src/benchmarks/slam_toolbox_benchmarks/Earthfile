@@ -72,4 +72,5 @@ release:
             -t exec --skip-keys "lambkin-shepherd" && \
         apt clean && rm -rf /var/lib/apt/lists/*
     ENTRYPOINT ["/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
+    CMD []
     SAVE IMAGE ekumenlabs/slam-toolbox-benchmarks:latest

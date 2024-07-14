@@ -42,7 +42,8 @@ ubuntu:
     ARG TARGETARCH
     RUN curl -sSL "https://github.com/mikefarah/yq/releases/latest/download/yq_${TARGETOS}_${TARGETARCH}" \
         -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
-    ENTRYPOINT ["/bin/bash", "--login"]
+    ENTRYPOINT ["/bin/bash", "--login", "-c"]
+    CMD ["/bin/bash"]
 
 ADDUSER:
     FUNCTION

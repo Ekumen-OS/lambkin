@@ -79,4 +79,5 @@ release:
             -t exec --skip-keys "libabsl-dev lambkin-shepherd" && \
         apt clean && rm -rf /var/lib/apt/lists/*
     ENTRYPOINT ["/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
+    CMD []
     SAVE IMAGE ekumenlabs/cartographer-ros-benchmarks:latest
