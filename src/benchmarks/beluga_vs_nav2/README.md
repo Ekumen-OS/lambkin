@@ -6,6 +6,11 @@
 ```sh
 cd {LAMBKIN_ROOT_DIR}
 ```
+- Build the beluga_vs_nav2 `devcontainer` image
+```sh
+./tools/setup.sh
+./tools/earthly ./src/benchmarks/beluga_vs_nav2+local-devel
+```
 - Clone `beluga-datasets`
 ```sh
 cd src/benchmarks/beluga_vs_nav2
