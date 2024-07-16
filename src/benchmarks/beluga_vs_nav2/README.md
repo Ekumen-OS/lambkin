@@ -36,11 +36,11 @@ ros2 run beluga_vs_nav2 nominal.robot
 ros2 run beluga_vs_nav2 ndt_swept.robot
 ros2 run beluga_vs_nav2 swept.robot
 ```
-- Inspect the results
+- Inspect the results using the same name of the launch file. For example, if you ran `nominal.robot`, you can inspect the results by running:
 ```sh
-ls beluga_vs_nav2
+ls nominal
 ```
-- Find the report
+- The report can be found in the `report` directory. For example, if you ran `nominal.robot`, you can inspect the `pdf` report by running:
 ```sh
-ls beluga_vs_nav2/report/latex/report.pdf 
+ls nominal/report/build/latex/report.pdf
 ```
