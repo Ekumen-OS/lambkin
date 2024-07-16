@@ -27,8 +27,6 @@ devel:
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
-    RUN cd src && git clone --depth 1 --no-checkout https://github.com/ros-planning/navigation2.git && \
-        cd navigation2 && git sparse-checkout set nav2_amcl && git checkout
     COPY package.xml src/lambkin/benchmarks/beluga_vs_nav2/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src \
@@ -54,8 +52,6 @@ build:
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
-    RUN cd src && git clone --depth 1 --no-checkout https://github.com/ros-planning/navigation2.git && \
-        cd navigation2 && git sparse-checkout set nav2_amcl && git checkout
     COPY . src/beluga_vs_nav2
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \
