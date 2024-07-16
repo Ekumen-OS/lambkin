@@ -11,8 +11,9 @@ cd {LAMBKIN_ROOT_DIR}
 ./tools/setup.sh
 ./tools/earthly ./src/benchmarks/beluga_vs_nav2+local-devel
 ```
-- Clone `beluga-datasets`
+- Clone `beluga-datasets`. **This repository uses LFS**, so make sure you have it installed.
 ```sh
+sudo apt install git-lfs
 cd src/benchmarks/beluga_vs_nav2
 mkdir -p playground && cd playground
 git clone git@github.com:Ekumen-OS/beluga-datasets.git
