@@ -11,8 +11,9 @@ cd {LAMBKIN_ROOT_DIR}
 ./tools/setup.sh
 ./tools/earthly ./src/benchmarks/beluga_vs_nav2+local-devel
 ```
-- Clone `beluga-datasets`
+- Clone `beluga-datasets`. **This repository uses LFS**, so make sure you have it installed.
 ```sh
+sudo apt install git-lfs
 cd src/benchmarks/beluga_vs_nav2
 mkdir -p playground && cd playground
 git clone git@github.com:Ekumen-OS/beluga-datasets.git
@@ -26,18 +27,20 @@ source install/setup.bash
 - Cd to `playgrounds` dir, where you've downloaded `beluga-datasets`
 
 ```sh
-cd src/beluga_vs_nav2/playground
+cd src/lambkin/benchmarks/beluga_vs_nav2/playground
 ```
 
 - Run the benchmark itself.
 ```sh
-ros2 run beluga_vs_nav2 beluga_vs_nav2.robot
+ros2 run beluga_vs_nav2 nominal.robot
+ros2 run beluga_vs_nav2 ndt_swept.robot
+ros2 run beluga_vs_nav2 swept.robot
 ```
-- Inspect the results
+- Inspect the results using the same name of the launch file. For example, if you ran `nominal.robot`, you can inspect the results by running:
 ```sh
-ls beluga_vs_nav2
+ls nominal
 ```
-- Find the report
+- The report can be found in the `report` directory. For example, if you ran `nominal.robot`, you can inspect the `pdf` report by running:
 ```sh
-ls beluga_vs_nav2/report/latex/report.pdf 
+ls nominal/report/build/latex/report.pdf
 ```

@@ -14,49 +14,48 @@
 
 VERSION 0.8
 
-IMPORT ../../external/ros AS ros
+IMPORT ../../external/os AS os
 IMPORT ../../.. AS lambkin
 
 devel:
+    ARG distro=jammy
+    ARG rosdistro  # forward
     ARG user=lambkin
     ARG uid=1000
     ARG gid=1000
-    ARG distro=jammy
-    FROM lambkin+embed-ubuntu-devel --distro=${distro} \
-         --components="core/lambkin-shepherd core/lambkin-clerk external/ros2
-                       external/typesetting/latex external/profiling/timemory"
+    FROM lambkin+embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
-    RUN cd src && git clone --depth 1 --no-checkout https://github.com/ros-planning/navigation2.git && \
-        cd navigation2 && git sparse-checkout set nav2_amcl && git checkout
     COPY package.xml src/lambkin/benchmarks/beluga_vs_nav2/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
-        rosdep install -y -i --from-paths src && \
+        rosdep install -y -i --from-paths src \
+            --skip-keys 'lambkin-shepherd lambkin-clerk' && \
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
-    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
     SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
 
 local-devel:
     LOCALLY
     ARG distro=jammy
-    LET user = "$(whoami)"
-    LET uid = "$(id -u)"
-    LET gid = "$(id -g)"
-    BUILD +devel --distro=${distro} --user=${user} --uid=${uid} --gid=${gid}
+    ARG rosdistro  # forward
+    LET user="$(whoami)"
+    LET uid="$(id -u)"
+    LET gid="$(id -g)"
+    BUILD +devel --distro=${distro} --rosdistro=${rosdistro} --user=${user} --uid=${uid} --gid=${gid}
 
 build:
     ARG distro=jammy
-    FROM lambkin+ubuntu-devel --distro=${distro} --components="external/ros2"
+    ARG rosdistro  # forward
+    FROM lambkin+ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
-    RUN cd src && git clone --depth 1 --no-checkout https://github.com/ros-planning/navigation2.git && \
-        cd navigation2 && git sparse-checkout set nav2_amcl && git checkout
     COPY . src/beluga_vs_nav2
     RUN . /etc/profile && apt update && rosdep update && \
-        rosdep install -y -i --from-paths src -t build -t buildtool -t test && \
+        rosdep install -y -i --from-paths src -t build -t buildtool -t test \
+            --skip-keys 'lambkin-shepherd lambkin-clerk' && \
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN . /etc/profile && colcon build --merge-install --install-base /opt/ros/application
     LET content = "
@@ -72,12 +71,12 @@ build:
 
 release:
     ARG distro=jammy
-    FROM lambkin+embed-ubuntu-release --distro=${distro} \
-         --components="core/lambkin-shepherd core/lambkin-clerk external/ros2
-                       external/typesetting/latex external/profiling/timemory"
-    COPY (+build/application --distro=${distro}) /opt/ros/application
+    ARG rosdistro  # forward
+    FROM lambkin+embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro} \
+    COPY (+build/application --distro=${distro} --rosdistro=${rosdistro}) /opt/ros/application
     RUN . /etc/profile && apt update && rosdep update && \
-        rosdep install -i -y --from-path /opt/ros/application -t exec && \
+        rosdep install -i -y --from-path /opt/ros/application \
+            -t exec --skip-keys 'lambkin-shepherd lambkin-clerk' && \
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
     ENTRYPOINT ["/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]

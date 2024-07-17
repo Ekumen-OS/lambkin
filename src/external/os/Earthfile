@@ -24,22 +24,41 @@ ubuntu:
         python3 python3-pip python3-dev tzdata sudo lsb-release \
         && apt clean && rm -rf /var/lib/apt/lists/*
     RUN locale-gen en_US.UTF-8
+    # NOTE(hidmic): Linux distrbutions are patching CPython sysconfig to encapsulate Python packages in /usr/local. CPython devs
+    # think that is conceptually wrong. Either way, the status quo when using pip>=21.1 is that pip install --prefix some/path
+    # while outside of a virtualenv installs to some/path/local (?), breaking tools left and right (e.g. some colcon extensions).
+    # Here, we patch pip to workaround the posix_local nonsense whenever a prefix is explicitly provided. God knows how ROS is
+    # going to deal with Python moving forward...
+    #
+    # https://discuss.python.org/t/linux-distro-patches-to-sysconfig-are-changing-pip-install-prefix-outside-virtual-environments/18240
+    IF python3 -c "import pip, sys; sys.exit(not(tuple(map(int, pip.__version__.split('.'))) > (21, 1, 0)))"
+        LET pip_sysconfig_path = $(python3 -c "import pip._internal.locations._sysconfig as m; print(m.__file__)")
+        RUN awk '/    paths = sysconfig.get_paths\(scheme=scheme_name, vars=variables\)/{
+           print "    if prefix is not None and scheme_name == \"posix_local\":"
+           print "        scheme_name = \"posix_prefix\""
+        } { print }' ${pip_sysconfig_path} > /tmp/awk.patch && mv /tmp/awk.patch ${pip_sysconfig_path}
+    END
     ARG TARGETOS
     ARG TARGETARCH
     RUN curl -sSL "https://github.com/mikefarah/yq/releases/latest/download/yq_${TARGETOS}_${TARGETARCH}" \
         -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
-    ENTRYPOINT ["/bin/bash", "--login"]
+    ENTRYPOINT ["/bin/bash", "--login", "-c"]
+    CMD ["/bin/bash"]
 
 ADDUSER:
     FUNCTION
     ARG user
     ARG uid
     ARG gid
+    ARG workdir=/home/${user}
     RUN addgroup --gid ${gid} ${user} && \
         adduser --uid ${uid} --ingroup ${user} \
         --home /home/${user} --shell /bin/bash ${user} && \
         echo "${user}:${user}" | chpasswd && adduser ${user} sudo && \
         echo "${user} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/${user}
+    IF [ -d "${workdir}" ]
+        RUN chown -R ${user}:${user} ${workdir}
+    END
     USER ${user}
     ENV HOME=/home/${user}
-    WORKDIR /home/${user}
+    WORKDIR ${workdir}

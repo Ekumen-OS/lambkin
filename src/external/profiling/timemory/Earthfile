@@ -35,4 +35,4 @@ embed-ubuntu-release:
 
 embed-ubuntu-devel:
     ARG distro
-    FROM +embed-ubuntu-release --distro=${distro}
+    FROM +embed-ubuntu-release

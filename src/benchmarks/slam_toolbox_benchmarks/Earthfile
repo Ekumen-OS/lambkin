@@ -30,14 +30,14 @@ devel:
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -i -y --from-path src --skip-keys "lambkin-shepherd" && \
         apt clean && rm -rf /var/lib/apt/lists/*
-    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
     SAVE IMAGE ekumenlabs/slam-toolbox-benchmarks:dev
 
 local-devel:
     LOCALLY
-    LET user = "$(whoami)"
-    LET uid = "$(id -u)"
-    LET gid = "$(id -g)"
+    LET user="$(whoami)"
+    LET uid="$(id -u)"
+    LET gid="$(id -g)"
     BUILD +devel --user=${user} --uid=${uid} --gid=${gid}
 
 build:
@@ -72,4 +72,5 @@ release:
             -t exec --skip-keys "lambkin-shepherd" && \
         apt clean && rm -rf /var/lib/apt/lists/*
     ENTRYPOINT ["/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
+    CMD []
     SAVE IMAGE ekumenlabs/slam-toolbox-benchmarks:latest

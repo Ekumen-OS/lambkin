@@ -18,38 +18,57 @@ IMPORT ./src/external/os AS os
 ARG --global components="core/lambkin-shepherd core/lambkin-clerk external/ros2 external/typesetting/latex external/profiling/timemory"
 
 embed-ubuntu-devel:
-    ARG distro=jammy
+    ARG distro
+    ARG rosdistro  # forward
     FROM os+ubuntu --distro=${distro}
     FOR component IN ${components}
-        MERGE os+ubuntu.../src/${component}+embed-ubuntu-devel --distro=${distro}
+        MERGE os+ubuntu.../src/${component}+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro}
     END
     RUN echo "echo 'Logged into development environment for ${components} on Ubuntu: ${distro}'" > /etc/profile.d/banner.sh
 
 embed-ubuntu-release:
-    ARG distro=jammy
+    ARG distro
+    ARG rosdistro  # forward
     FROM os+ubuntu --distro=${distro}
     FOR component IN ${components}
-        MERGE os+ubuntu.../src/${component}+embed-ubuntu-release --distro=${distro}
+        MERGE os+ubuntu.../src/${component}+embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro}
     END
 
 ubuntu-devel:
-    ARG distro=jammy
     ARG user=lambkin
     ARG uid=1000
     ARG gid=1000
-    FROM +embed-ubuntu-devel --distro=${distro}
-    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid}
-    SAVE IMAGE ekumenlabs/lambkin:ubuntu-${distro}-dev ekumenlabs/lambkin:dev
+    ARG distro=jammy
+    ARG rodistro  # forward
+    ARG tag=ubuntu-${distro}-dev
+    FROM +embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
+    SAVE IMAGE ekumenlabs/lambkin:${tag} ekumenlabs/lambkin:dev
 
 local-ubuntu-devel:
     LOCALLY
     ARG distro=jammy
-    LET user = "$(whoami)"
-    LET uid = "$(id -u)"
-    LET gid = "$(id -g)"
-    BUILD +ubuntu-devel --distro=${distro} --user=${user} --uid=${uid} --gid=${gid}
+    ARG rosdistro  # forward
+    LET user="$(whoami)"
+    LET uid="$(id -u)"
+    LET gid="$(id -g)"
+    BUILD +ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} \
+                        --user=${user} --uid=${uid} --gid=${gid}
 
 ubuntu-release:
     ARG distro=jammy
-    FROM +embed-ubuntu-release --distro=${distro}
-    SAVE IMAGE ekumenlabs/lambkin:ubuntu-${distro}
+    ARG rosdistro  # forward
+    ARG tag=ubuntu-${distro}
+    FROM +embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro}
+    ARG EARTHLY_GIT_BRANCH
+    ARG EARTHLY_GIT_HASH
+    LABEL "org.opencontainers.image.ref.name"="${EARTHLY_GIT_BRANCH}"
+    LABEL "org.opencontainers.image.version"="${tag}"
+    LABEL "org.opencontainers.image.title"="LAMBKIN"
+    LABEL "org.opencontainers.image.description"="Localization And Mapping BenchmarKINg toolkit release, bundling ${components} components"
+    LABEL "org.opencontainers.image.revision"="${EARTHLY_GIT_HASH}"
+    LABEL "org.opencontainers.image.source"="https://github.com/ekumenlabs/lambkin"
+    LABEL "org.opencontainers.image.base.name"="ubuntu:${distro}"
+    LABEL "org.opencontainers.image.vendor"="Ekumen, Inc."
+    LABEL "org.opencontainers.image.licenses"="Apache-2.0"
+    SAVE IMAGE ekumenlabs/lambkin:${tag}
