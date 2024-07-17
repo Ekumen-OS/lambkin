@@ -64,9 +64,11 @@ ubuntu-release:
     ARG EARTHLY_GIT_HASH
     LABEL "org.opencontainers.image.ref.name"="${EARTHLY_GIT_BRANCH}"
     LABEL "org.opencontainers.image.version"="${tag}"
-    LABEL "org.opencontainers.image.title"="LAMBKIN release image"
-    LABEL "org.opencontainers.image.description"="Bundling ${components}"
+    LABEL "org.opencontainers.image.title"="LAMBKIN"
+    LABEL "org.opencontainers.image.description"="Localization And Mapping BenchmarKINg toolkit release, bundling ${components} components"
     LABEL "org.opencontainers.image.revision"="${EARTHLY_GIT_HASH}"
     LABEL "org.opencontainers.image.source"="https://github.com/ekumenlabs/lambkin"
+    LABEL "org.opencontainers.image.base.name"="ubuntu:${distro}"
     LABEL "org.opencontainers.image.vendor"="Ekumen, Inc."
+    LABEL "org.opencontainers.image.licenses"="Apache-2.0"
     SAVE IMAGE ekumenlabs/lambkin:${tag}
