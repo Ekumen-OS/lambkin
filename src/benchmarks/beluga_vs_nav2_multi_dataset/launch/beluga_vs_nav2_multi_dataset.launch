@@ -1,0 +1,79 @@
+<launch>
+  <arg name="map_filename"/>
+  <arg name="global_frame_id" />
+  <arg name="odom_frame_id" />
+  <arg name="base_frame_id" />
+  <arg name="scan_topic" />
+
+  <arg name="max_particles" default="2000"/>
+  <arg name="min_particles" default="500"/>
+  <arg name="laser_model_type" default="beam"/>
+  <arg name="execution_policy" default="seq"/>
+  <arg name="use_sim_time" default="true"/>
+
+  <arg name="initial_pose_x"   default="0.0"/>
+  <arg name="initial_pose_y"   default="0.0"/>
+  <arg name="initial_pose_yaw" default="0.0"/>
+
+  <arg name="robot_model_type" />
+
+  <!-- don't change this because it's hardcoded in the robotframework stuff and you too will waste time -->
+  <arg name="map_topic" default="map" />
+
+  <set_parameter name="use_sim_time" value="$(var use_sim_time)"/>
+
+  <node pkg="nav2_amcl" exec="amcl" name="nav2_amcl" launch-prefix="$(env nav2_amcl_PREFIX '')">
+    <param from="$(find-pkg-share beluga_vs_nav2_multi_dataset)/params/amcl.yaml"/>
+    <param name="laser_model_type" value="$(var laser_model_type)"/>
+    <param name="max_particles" value="$(var max_particles)"/>
+    <param name="min_particles" value="$(var min_particles)"/>
+
+    <param name="global_frame_id" value="$(var global_frame_id)"/>
+    <param name="odom_frame_id" value="$(var odom_frame_id)"/>
+    <param name="base_frame_id" value="$(var base_frame_id)"/>
+    <param name="map_topic" value="$(var map_topic)"/>
+    <param name="scan_topic" value="$(var scan_topic)"/>
+
+    <param name="initial_pose.x" value="$(var initial_pose_x)"/>
+    <param name="initial_pose.y" value="$(var initial_pose_y)"/>
+    <param name="initial_pose.yaw" value="$(var initial_pose_yaw)"/>
+
+    <param name="robot_model_type" value="$(var robot_model_type)"/>
+
+    <remap from="amcl_pose" to="/nav2_amcl/pose"/>
+    <remap from="particle_cloud" to="/nav2_amcl/particle_cloud"/>
+  </node>
+
+  <node pkg="beluga_amcl" exec="amcl_node" name="beluga_amcl" launch-prefix="$(env beluga_amcl_PREFIX '')">
+    <param from="$(find-pkg-share beluga_vs_nav2_multi_dataset)/params/amcl.yaml"/>
+    <param name="laser_model_type" value="$(var laser_model_type)"/>
+    <param name="max_particles" value="$(var max_particles)"/>
+    <param name="min_particles" value="$(var min_particles)"/>
+    <param name="execution_policy" value="$(var execution_policy)"/>
+
+    <param name="global_frame_id" value="$(var global_frame_id)"/>
+    <param name="odom_frame_id" value="$(var odom_frame_id)"/>
+    <param name="base_frame_id" value="$(var base_frame_id)"/>
+    <param name="map_topic" value="$(var map_topic)"/>
+    <param name="scan_topic" value="$(var scan_topic)"/>
+
+    <param name="initial_pose.x" value="$(var initial_pose_x)"/>
+    <param name="initial_pose.y" value="$(var initial_pose_y)"/>
+    <param name="initial_pose.yaw" value="$(var initial_pose_yaw)"/>
+
+    <param name="robot_model_type" value="$(var robot_model_type)"/>
+
+    <remap from="pose" to="/beluga_amcl/pose"/>
+    <remap from="particle_cloud" to="/beluga_amcl/particle_cloud"/>
+  </node>
+
+  <node pkg="nav2_map_server" exec="map_server" name="map_server">
+    <param name="yaml_filename" value="$(var map_filename)"/>
+    <remap from="map" to="$(var map_topic)"/>
+  </node>
+
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" name="lifecycle_manager">
+    <param name="autostart" value="true"/>
+    <param name="node_names" value="[beluga_amcl, nav2_amcl, map_server]"/>
+  </node>
+</launch>
