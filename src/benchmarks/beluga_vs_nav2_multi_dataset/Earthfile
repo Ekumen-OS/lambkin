@@ -1,0 +1,83 @@
+# Copyright 2024 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+VERSION 0.8
+
+IMPORT ../../external/os AS os
+IMPORT ../../.. AS lambkin
+
+devel:
+    ARG distro=jammy
+    ARG rosdistro  # forward
+    ARG user=lambkin
+    ARG uid=1000
+    ARG gid=1000
+    FROM lambkin+embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
+    RUN mkdir -p /workspace/src
+    WORKDIR /workspace
+    RUN cd src && git clone https://github.com/Ekumen-OS/beluga
+    COPY package.xml src/lambkin/benchmarks/beluga_vs_nav2_multi_dataset/package.xml
+    RUN . /etc/profile && apt update && rosdep update && \
+        rosdep install -y -i --from-paths src \
+            --skip-keys 'lambkin-shepherd lambkin-clerk' && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+    RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
+    DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
+    SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
+
+local-devel:
+    LOCALLY
+    ARG distro=jammy
+    ARG rosdistro  # forward
+    LET user="$(whoami)"
+    LET uid="$(id -u)"
+    LET gid="$(id -g)"
+    BUILD +devel --distro=${distro} --rosdistro=${rosdistro} --user=${user} --uid=${uid} --gid=${gid}
+
+build:
+    ARG distro=jammy
+    ARG rosdistro  # forward
+    FROM lambkin+ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
+    RUN mkdir -p /workspace/src
+    WORKDIR /workspace
+    RUN cd src && git clone https://github.com/Ekumen-OS/beluga
+    COPY . src/beluga_vs_nav2_multi_dataset
+    RUN . /etc/profile && apt update && rosdep update && \
+        rosdep install -y -i --from-paths src -t build -t buildtool -t test \
+            --skip-keys 'lambkin-shepherd lambkin-clerk' && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+    RUN . /etc/profile && colcon build --merge-install --install-base /opt/ros/application
+    LET content = "
+    source /opt/ros/application/setup.bash
+    if [ \$# -ne 0 ]; then
+        ros2 run beluga_vs_nav2_multi_dataset \$@
+    else
+        bash
+    fi
+    "
+    RUN echo "${content}" > /opt/ros/application/entrypoint.bash
+    SAVE ARTIFACT /opt/ros/application
+
+release:
+    ARG distro=jammy
+    ARG rosdistro  # forward
+    FROM lambkin+embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro} \
+    COPY (+build/application --distro=${distro} --rosdistro=${rosdistro}) /opt/ros/application
+    RUN . /etc/profile && apt update && rosdep update && \
+        rosdep install -i -y --from-path /opt/ros/application \
+            -t exec --skip-keys 'lambkin-shepherd lambkin-clerk' && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+    RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
+    ENTRYPOINT ["/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
+    SAVE IMAGE ekumenlabs/beluga-vs-nav2:latest
