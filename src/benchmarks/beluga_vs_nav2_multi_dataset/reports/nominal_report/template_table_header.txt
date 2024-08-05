@@ -1,0 +1,13 @@
+.. flat-table:: APE metrics for ``{trajectory_name}`` trajectories
+    :header-rows: {nrows}
+    :name: {table_name}
+
+    *
+        - :rspan:`1`  :cspan:`1`  Implementation
+        - :cspan:`3` {sensor_model} sensor model
+
+    *
+        - rms
+        - mean
+        - stddev
+        - max

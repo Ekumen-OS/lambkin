@@ -1,0 +1,79 @@
+    ..     for laser_model in laser_model_choices:
+    ..         bagfiles = ape.loc[case_name].loc[laser_model]['bagfiles'].unique()
+
+    ..         for bagfile in bagfiles:
+    ..             ape_case = ape.loc[case_name].loc[laser_model].loc[bagfile]
+
+    ..             print(ape_case)
+
+    ..         output = SECTION_TEMPLATE.format(
+    ..             case_name=case_name,
+    ..             laser_model=laser_model,
+    ..             nrows=len(ape_case),
+    ..             table_name='hallway-localization-ape-comparison')
+
+    ..         for n in ape_case.itertuples():
+    ..             output = output + ROW_TEMPLATE.format(
+    ..                 implementation_name=n.Index[3],
+    ..                 likelihood_rms=n.rms,
+    ..                 likelihood_mean=n,
+    ..                 likelihood_std=n,
+    ..                 likelihood_max=n,
+    ..                 beam_rms=n,
+    ..                 beam_mean=n,
+    ..                 beam_std=n,
+    ..                 beam_max=n,
+    ..             )
+
+    ..         print(output)
+
+    ..         with open('_generated/generated_section.inc', 'w') as f:
+    ..             f.write(output)
+
+    .. for
+
+    .. ape_likelihood = ape.loc[:, 'likelihood_field']
+
+    .. for dataset_name in ape.index.get_level_values(0).unique():
+    ..     dataset_ape = ape.loc[dataset_name]
+    ..     print(dataset_ape)
+
+    ..     beluga_likelihood_rms = ape.loc['/beluga_amcl/pose', 'likelihood_field', 'rms']
+    ..     beluga_likelihood_mean = ape.loc['/beluga_amcl/pose', 'likelihood_field', 'mean']
+    ..     beluga_likelihood_std = ape.loc['/beluga_amcl/pose', 'likelihood_field', 'std']
+    ..     beluga_likelihood_max = ape.loc['/beluga_amcl/pose', 'likelihood_field', 'max']
+    ..     beluga_beam_rms = ape.loc['/beluga_amcl/pose', 'beam', 'rms']
+    ..     beluga_beam_mean = ape.loc['/beluga_amcl/pose', 'beam', 'mean']
+    ..     beluga_beam_std = ape.loc['/beluga_amcl/pose', 'beam', 'std']
+    ..     beluga_beam_max = ape.loc['/beluga_amcl/pose', 'beam', 'max']
+    ..     nav2_likelihood_rms = ape.loc['/nav2_amcl/pose', 'likelihood_field', 'rms']
+    ..     nav2_likelihood_mean = ape.loc['/nav2_amcl/pose', 'likelihood_field', 'mean']
+    ..     nav2_likelihood_std = ape.loc['/nav2_amcl/pose', 'likelihood_field', 'std']
+    ..     nav2_likelihood_max = ape.loc['/nav2_amcl/pose', 'likelihood_field', 'max']
+    ..     nav2_beam_rms = ape.loc['/nav2_amcl/pose', 'beam', 'rms']
+    ..     nav2_beam_mean = ape.loc['/nav2_amcl/pose', 'beam', 'mean']
+    ..     nav2_beam_std = ape.loc['/nav2_amcl/pose', 'beam', 'std']
+    ..     nav2_beam_max = ape.loc['/nav2_amcl/pose', 'beam', 'max']
+
+    ..     output = SECTION_TEMPLATE.format(
+    ..         trajectory_name=dataset_name,
+    ..         nrows=len(dataset_ape),
+    ..         table_name='hallway-localization-ape-comparison')
+
+    ..     for n in dataset_ape.itertuples():
+    ..         output = output + ROW_TEMPLATE.format(
+    ..             implementation_name=n.Index[,
+    ..             likelihood_rms=n.rms,
+    ..             likelihood_mean=n,
+    ..             likelihood_std=n,
+    ..             likelihood_max=n,
+    ..             beam_rms=n,
+    ..             beam_mean=n,
+    ..             beam_std=n,
+    ..             beam_max=n,
+    ..         )
+
+    .. print(output)
+
+    .. with open('_generated/generated_section.inc', 'w') as f:
+    ..     f.write(output)
