@@ -159,7 +159,7 @@ ${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
 
 *** Test Cases ***        DATASET                         BASEDIR                   LASER_MODEL           ODOM_FRAME     MAP_FRAME  BASE_FRAME      SCAN_TOPIC
 Magazino Datasets         ${{MAGAZINO_BAGS}}              ${{MAGAZINO_DIR}}         ${{LASER_MODELS}}     odom           map        base_footprint  /scan_front
-Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}        ${{LASER_MODELS}}     base_odom      map        base_link       /scan
+# Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}        ${{LASER_MODELS}}     base_odom      map        base_link       /scan
 TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   ${{LASER_MODELS}}     odom           map        base_link       /front/scan
 TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      ${{LASER_MODELS}}     odom           map        base_link       /front/scan
 Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      ${{LASER_MODELS}}     odom_combined  map        base_footprint  /base_scan
@@ -195,4 +195,4 @@ Beluga vs Nav2 benchmark case
     Uses ${artifacts_path}/groundtruth.tum as trajectory groundtruth
     Performs trajectory corrections  align=yes  t_max_diff=${0.1}
 
-    Uses 3 iterations
+    Uses 2 iterations

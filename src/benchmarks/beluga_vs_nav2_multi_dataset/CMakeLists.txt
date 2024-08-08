@@ -15,6 +15,7 @@ install(
     params
     launch
     reports
+    scripts
   DESTINATION share/${PROJECT_NAME})
 
 
