@@ -126,6 +126,38 @@
                 nav2_beam_max = nav2_beam_data['max']
             except:
                 nav2_likelihood_rms = nav2_likelihood_mean = nav2_likelihood_std = nav2_likelihood_max = "???"
+            output.append(TABLE_HEADER_TEMPLATE.format(
+                trajectory_name=bagfile,
+                sensor_model='Likelihood field',
+                nrows=len(data_for_bagfile)))
+            output.append(ROW_TEMPLATE.format(
+                implementation_name="Beluga AMCL",
+                median=equalize_digits(beluga_likelihood_median),
+                mean=equalize_digits(beluga_likelihood_mean),
+                std=equalize_digits(beluga_likelihood_std),
+                worst=equalize_digits(beluga_likelihood_max)))
+            output.append(ROW_TEMPLATE.format(
+                implementation_name="Nav2 AMCL",
+                median=equalize_digits(nav2_likelihood_median),
+                mean=equalize_digits(nav2_likelihood_mean),
+                std=equalize_digits(nav2_likelihood_std),
+                worst=equalize_digits(nav2_likelihood_max)))
+            output.append(TABLE_HEADER_TEMPLATE.format(
+                trajectory_name=bagfile,
+                sensor_model='Beam',
+                nrows=len(data_for_bagfile)))
+            output.append(ROW_TEMPLATE.format(
+                implementation_name="Beluga AMCL",
+                median=equalize_digits(beluga_beam_median),
+                mean=equalize_digits(beluga_beam_mean),
+                std=equalize_digits(beluga_beam_std),
+                worst=equalize_digits(beluga_beam_max)))
+            output.append(ROW_TEMPLATE.format(
+                implementation_name="Nav2 AMCL",
+                median=equalize_digits(nav2_beam_median),
+                mean=equalize_digits(nav2_beam_mean),
+                std=equalize_digits(nav2_beam_std),
+                worst=equalize_digits(nav2_beam_max)))
 
     output = '\n\n'.join(output)
 
