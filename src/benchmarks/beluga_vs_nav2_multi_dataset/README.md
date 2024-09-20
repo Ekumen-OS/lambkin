@@ -33,7 +33,7 @@ cd src/lambkin/benchmarks/beluga_vs_nav2_multi_dataset/playground
 ```
 - Run the benchmark itself.
 ```sh
-ros2 run beluga_vs_nav2_multi_dataset nominal.robot
+rm -rf nominal/.cache && ros2 run beluga_vs_nav2_multi_dataset nominal.robot
 ```
 - Inspect the results using the same name of the launch file.
 ```sh
