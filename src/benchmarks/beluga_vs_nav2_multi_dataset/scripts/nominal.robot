@@ -32,7 +32,7 @@ Test Template       Run Beluga vs Nav2 benchmark case for each ${dataset} ${base
 
 ${TORWIC_SLAM_DIR}          torwic_slam_dataset_ros2_localization_only
 @{TORWIC_SLAM_BAGS}         2022-06-15_aisle_ccw_run_1
-...                         2022-06-15_aisle_ccw_run_2
+# ...                         2022-06-15_aisle_ccw_run_2
 # ...                         2022-06-15_aisle_cw_run_1
 # ...                         2022-06-15_aisle_cw_run_2
 # ...                         2022-06-15_hallway_full_cw_parts_1_and_2
@@ -70,7 +70,7 @@ Beluga vs Nav2 benchmark case
     # Setup benchmark inputs
     ${bagfile_path} =  Set Variable  ${EXECDIR}/${basedir}/bagfiles/${dataset}
     ${artifacts_path} =  Set Variable  ${EXECDIR}/${basedir}/artifacts/${dataset}
-    Uses ${bagfile_path} at 5x as input to ROS 2 system
+    Uses ${bagfile_path} at 1x as input to ROS 2 system
     ${package_share_path} =  Find ROS 2 Package  beluga_vs_nav2_multi_dataset  share=yes
     ${qos_override_path} =  Join Path  ${package_share_path}  config  qos_override.yml
     Configures QoS overrides from ${qos_override_path} for input to ROS 2 system
