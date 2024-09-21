@@ -32,12 +32,12 @@ Test Template       Run Beluga vs Nav2 benchmark case for each ${dataset} ${base
 
 ${TORWIC_SLAM_DIR}          torwic_slam_dataset_ros2_localization_only
 @{TORWIC_SLAM_BAGS}         2022-06-15_aisle_ccw_run_1
-# ...                         2022-06-15_aisle_ccw_run_2
-# ...                         2022-06-15_aisle_cw_run_1
-# ...                         2022-06-15_aisle_cw_run_2
-# ...                         2022-06-15_hallway_full_cw_parts_1_and_2
-# ...                         2022-06-15_hallway_full_ccw_parts_1_and_2
-# ...                         2022-06-15_hallway_straight_ccw_parts_1_and_2
+...                         2022-06-15_aisle_ccw_run_2
+...                         2022-06-15_aisle_cw_run_1
+...                         2022-06-15_aisle_cw_run_2
+...                         2022-06-15_hallway_full_cw_parts_1_and_2
+...                         2022-06-15_hallway_full_ccw_parts_1_and_2
+...                         2022-06-15_hallway_straight_ccw_parts_1_and_2
 # ...                         2022-06-23_aisle_ccw_run_1
 # ...                         2022-06-23_aisle_ccw_run_2
 # ...                         2022-06-23_aisle_cw_run_1

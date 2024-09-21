@@ -18,6 +18,7 @@ IMPORT ../../external/os AS os
 IMPORT ../../.. AS lambkin
 
 devel:
+    ARG iter=3
     ARG distro=jammy
     ARG rosdistro  # forward
     ARG user=lambkin
@@ -26,8 +27,10 @@ devel:
     FROM lambkin+embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
-    RUN cd src && git clone https://github.com/Ekumen-OS/beluga
-    RUN cd src && git clone https://github.com/glpuga/navigation2.git \
+    RUN cd src && git  clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga  \
+     && git checkout glpuga/likelihood_storage_reduction
+   RUN cd src && git clone https://github.com/glpuga/navigation2.git \
      && cd navigation2 \
      && git checkout glpuga/dfaconti/amcl_memory_reduction \
      && mv nav2_amcl .. \
@@ -52,13 +55,16 @@ local-devel:
     BUILD +devel --distro=${distro} --rosdistro=${rosdistro} --user=${user} --uid=${uid} --gid=${gid}
 
 build:
+    ARG iter=3
     ARG distro=jammy
     ARG rosdistro  # forward
     FROM lambkin+ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
-    RUN cd src && git clone https://github.com/Ekumen-OS/beluga
-    RUN cd src && git clone https://github.com/glpuga/navigation2.git \
+    RUN cd src && git  clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga  \
+     && git checkout glpuga/likelihood_storage_reduction
+   RUN cd src && git clone https://github.com/glpuga/navigation2.git \
      && cd navigation2 \
      && git checkout glpuga/dfaconti/amcl_memory_reduction \
      && mv nav2_amcl .. \
