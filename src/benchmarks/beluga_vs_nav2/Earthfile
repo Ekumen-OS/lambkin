@@ -72,7 +72,7 @@ build:
 release:
     ARG distro=jammy
     ARG rosdistro  # forward
-    FROM lambkin+embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro} \
+    FROM lambkin+embed-ubuntu-release --distro=${distro} --rosdistro=${rosdistro}
     COPY (+build/application --distro=${distro} --rosdistro=${rosdistro}) /opt/ros/application
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -i -y --from-path /opt/ros/application \
