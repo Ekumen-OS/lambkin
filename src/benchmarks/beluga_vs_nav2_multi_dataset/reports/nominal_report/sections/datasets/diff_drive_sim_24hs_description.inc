@@ -2,7 +2,7 @@ Dataset information
 ^^^^^^^^^^^^^^^^^^^
 
 This is a synthetic dataset created recording a simulated robot wandering around a
-450m^2 office environment for 24 hours.
+:math:`450 \mathrm{m}^2` office environment for 24 hours.
 
 The simulated diff-drive robot is modelled after a Kobuki platform with a mounted RPLidar A1 (range: 8m). The
 simulation was performed using Gazebo Classic.
