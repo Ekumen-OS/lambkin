@@ -1,5 +1,5 @@
 
-.. repl-quiet::
+.. repl::
 
     def get_bagfile_info(bagpath):
         import subprocess
@@ -82,8 +82,6 @@
         'laser_model',
     ])
 
-    print(prof_data)
-
     beluga_max_cpu = prof_data['beluga_amcl_cpu_util'].agg(['max'])
     beluga_max_rss = prof_data['beluga_amcl_peak_rss'].agg(['max'])
     nav2_max_cpu = prof_data['nav2_amcl_cpu_util'].agg(['max'])
@@ -133,8 +131,9 @@
     datasets_in_data = ape.index.get_level_values(0).unique()
     missing_datasets = [x for x in datasets_in_data if x not in desired_section_order]
     desired_section_order = desired_section_order + missing_datasets
+    datasets_to_process = [x for x in desired_section_order if x in datasets_in_data]
 
-    for case_name in desired_section_order:
+    for case_name in datasets_to_process:
         output.append(DATASET_CHAPTER_TEMPLATE.format(dataset_name=case_name))
         case_name_str = case_name.replace(' ', '_').lower()
         output.append(f'.. include:: sections/datasets/{case_name_str}_description.inc\n\n')
