@@ -16,7 +16,7 @@ The robot covers approximately 45 km during the 24 hours, with an average speed 
 The robot model was configured to introduce small imperfections in the odometry to cause a small amount of drift and
 emulate conditions closer to real-world.
 
-Most, but not all, of the obstacles and furniture are mapped, and one of the walls is windowed and therefore
+Most but not all obstacles and furniture are mapped, and one of the walls is windowed and therefore
 invisible to the simulated lidar.
 
 The localization world used to evaluate the localization performance with this dataset is the one shown below.
