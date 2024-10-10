@@ -5,8 +5,7 @@ Datasets used
 ^^^^^^^^^^^^^
 
 A number of pre-recorded datasets were selected to evaluate the performance of the Beluga AMCL and Nav2 AMCL localization systems.
-A number of public datasets were considered for this evaluation, looking for a diversity of environments and robots that were
-that could be considered representative of a wide range of real-world scenarios.
+A number of public datasets were considered for this evaluation, looking for a diversity of environments and robots that were representative of a wide range of real-world scenarios.
 
 The following datasets were selected based on their characteristics and availability for this evaluation:
 
