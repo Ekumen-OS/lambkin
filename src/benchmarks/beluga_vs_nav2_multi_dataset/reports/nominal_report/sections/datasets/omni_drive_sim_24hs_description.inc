@@ -4,7 +4,7 @@ Dataset information
 This is a synthetic dataset created recording a simulated omni-drive robot wandering around the
 `AWS Robomaker Bookstore World <https://github.com/aws-robotics/aws-robomaker-bookstore-world>`_ for 24 hours.
 
-The simulated omni-drive robot is modelled after a customized Robomaster EP with a mounted RPLidar A2 (range: 12m).
+The simulated omni-drive robot is modelled after a customized Robomaster EP featuring an RPLidar A2, a 12m range 2D lidar.
 The simulation was performed using Gazebo Sim.
 
 The dataset was recorded in a single run, and it consists of a single continuous bagfile with a duration of 24 hours.
