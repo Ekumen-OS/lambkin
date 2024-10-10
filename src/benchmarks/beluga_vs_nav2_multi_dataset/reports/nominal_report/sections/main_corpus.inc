@@ -66,8 +66,13 @@
 
     output = []
 
-    def equalize_digits(value, digits=3):
-        return f'{value:.{digits}f}' if value is not str else value
+    def round_digits(value, digits=3):
+        # if the value is not a number, just pass through whatever it is
+        try:
+            output_str = f'{value:.{digits}f}'
+        except:
+            output_str = str(value)
+        return output_str
 
     desired_section_order = [
         'Magazino Datasets',
@@ -132,32 +137,32 @@
                 nrows=len(data_for_bagfile)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Beluga AMCL",
-                median=equalize_digits(beluga_likelihood_median),
-                mean=equalize_digits(beluga_likelihood_mean),
-                std=equalize_digits(beluga_likelihood_std),
-                worst=equalize_digits(beluga_likelihood_max)))
+                median=round_digits(beluga_likelihood_median),
+                mean=round_digits(beluga_likelihood_mean),
+                std=round_digits(beluga_likelihood_std),
+                worst=round_digits(beluga_likelihood_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Nav2 AMCL",
-                median=equalize_digits(nav2_likelihood_median),
-                mean=equalize_digits(nav2_likelihood_mean),
-                std=equalize_digits(nav2_likelihood_std),
-                worst=equalize_digits(nav2_likelihood_max)))
+                median=round_digits(nav2_likelihood_median),
+                mean=round_digits(nav2_likelihood_mean),
+                std=round_digits(nav2_likelihood_std),
+                worst=round_digits(nav2_likelihood_max)))
             output.append(TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
                 sensor_model='Beam',
                 nrows=len(data_for_bagfile)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Beluga AMCL",
-                median=equalize_digits(beluga_beam_median),
-                mean=equalize_digits(beluga_beam_mean),
-                std=equalize_digits(beluga_beam_std),
-                worst=equalize_digits(beluga_beam_max)))
+                median=round_digits(beluga_beam_median),
+                mean=round_digits(beluga_beam_mean),
+                std=round_digits(beluga_beam_std),
+                worst=round_digits(beluga_beam_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Nav2 AMCL",
-                median=equalize_digits(nav2_beam_median),
-                mean=equalize_digits(nav2_beam_mean),
-                std=equalize_digits(nav2_beam_std),
-                worst=equalize_digits(nav2_beam_max)))
+                median=round_digits(nav2_beam_median),
+                mean=round_digits(nav2_beam_mean),
+                std=round_digits(nav2_beam_std),
+                worst=round_digits(nav2_beam_max)))
 
     output = '\n\n'.join(output)
 
