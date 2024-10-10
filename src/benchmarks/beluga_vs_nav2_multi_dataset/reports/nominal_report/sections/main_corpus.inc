@@ -1,5 +1,5 @@
 
-.. repl::
+.. repl-quiet::
 
     def get_bagfile_info(bagpath):
         import subprocess
