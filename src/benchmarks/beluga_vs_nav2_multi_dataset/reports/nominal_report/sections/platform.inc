@@ -15,16 +15,16 @@ The following datasets were selected based on their characteristics and availabi
 
    * - Name
      - Description
-   * - `Cartographer Magazino <https://github.com/magazino/cartographer_magazino>`_
-     - Two sample datasets for mapping and localization that were recorded in a hallway.
    * - `Willow Garage dataset <https://web.archive.org/web/20151207202459id_/http://cgi.cs.duke.edu/~mac/papers/iros12_sm.pdf>`_
      - Large office environment with multiple recordings along different trajectories and times, including multiple rooms and hallways.
-   * - `OpenLORIS-Scene dataset (Office set) <https://lifelong-robotic-vision.github.io/dataset/scene.html>`_
-     - Short trajectories in an office environment.
-   * - `TorWIC Mapping dataset <https://github.com/Viky397/TorWICDataset>`_
-     - Trajectories in a synthetic warehouse-like environment undergoing incremental changes.
    * - `TorWIC SLAM dataset <https://github.com/Viky397/TorWICDataset>`_
      - Warehouse environment with multiple recordings along different trajectories and times.
+   * - `TorWIC Mapping dataset <https://github.com/Viky397/TorWICDataset>`_
+     - Trajectories in a synthetic warehouse-like environment undergoing incremental changes.
+   * - `Cartographer Magazino <https://github.com/magazino/cartographer_magazino>`_
+     - Two sample datasets for mapping and localization that were recorded in a hallway.
+   * - `OpenLORIS-Scene dataset (Office set) <https://lifelong-robotic-vision.github.io/dataset/scene.html>`_
+     - Short trajectories in an office environment.
 
 None of these datasets were originally conceived for the evaluation of 2D localization systems,
 and therefore none of them provided a complete ground-truth that included both the real-world trajectory and the environment's
