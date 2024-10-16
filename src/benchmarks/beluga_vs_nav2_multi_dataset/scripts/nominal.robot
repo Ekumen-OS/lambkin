@@ -52,9 +52,15 @@ ${TORWIC_SLAM_DIR}          torwic_slam_dataset_ros2_localization_only
 # ...                         2022-10-12_hallway_straight_ccw
 # ...                         2022-10-12_hallway_straight_cw
 
+${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
+ # 2011-08-03-16-16-43 is not in the list because it's missing the scan topic
+@{WILLOW_DSET_BAGS}          2011-08-04-12-16-23
+# ...                          2011-08-03-20-03-22
+# ...                          2011-08-04-14-27-40
 
 *** Test Cases ***        DATASET                         BASEDIR                   LASER_MODEL           ODOM_FRAME     MAP_FRAME  BASE_FRAME      SCAN_TOPIC     ITERATION      INITIAL_POSE_X  INITIAL_POSE_Y  INITIAL_POSE_YAW    ROBOT_MODEL_TYPE 
-TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      ${{LASER_MODELS}}     odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+# TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      ${{LASER_MODELS}}     odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      ${{LASER_MODELS}}     odom_combined  map        base_footprint  /base_scan     1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
 
 *** Keywords ***
 Beluga vs Nav2 benchmark suite

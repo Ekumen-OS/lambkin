@@ -75,6 +75,6 @@
   <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" name="lifecycle_manager">
     <param name="autostart" value="true"/>
     <param name="node_names" value="[beluga_amcl, nav2_amcl, map_server]"/>
-    <param name="bond_timeout" value="300.0"/>
+    <param name="bond_timeout" value="3600.0"/>
   </node>
 </launch>

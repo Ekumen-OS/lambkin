@@ -115,7 +115,7 @@
         return f'{value:.{digits}f}'
 
     desired_section_order = [
-        'TorWIC SLAM',
+        'Willow Garage',
     ]
     datasets_in_data = ape.index.get_level_values(0).unique()
     missing_datasets = [x for x in datasets_in_data if x not in desired_section_order]
@@ -211,38 +211,6 @@
             except:
                 beluga_likelihood_cpu = beluga_likelihood_peak_rss = nav2_likelihood_cpu = nav2_likelihood_peak_rss = "???"
                 beluga_beam_cpu = beluga_beam_peak_rss = nav2_beam_cpu = nav2_beam_peak_rss = "???"
-            output.append(TABLE_HEADER_TEMPLATE.format(
-                trajectory_name=bagfile,
-                sensor_model='Likelihood field',
-                nrows=len(data_for_bagfile)))
-            output.append(ROW_TEMPLATE.format(
-                implementation_name="Beluga AMCL",
-                median=equalize_digits(beluga_likelihood_median),
-                mean=equalize_digits(beluga_likelihood_mean),
-                std=equalize_digits(beluga_likelihood_std),
-                worst=equalize_digits(beluga_likelihood_max)))
-            output.append(ROW_TEMPLATE.format(
-                implementation_name="Nav2 AMCL",
-                median=equalize_digits(nav2_likelihood_median),
-                mean=equalize_digits(nav2_likelihood_mean),
-                std=equalize_digits(nav2_likelihood_std),
-                worst=equalize_digits(nav2_likelihood_max)))
-            output.append(TABLE_HEADER_TEMPLATE.format(
-                trajectory_name=bagfile,
-                sensor_model='Beam',
-                nrows=len(data_for_bagfile)))
-            output.append(ROW_TEMPLATE.format(
-                implementation_name="Beluga AMCL",
-                median=equalize_digits(beluga_beam_median),
-                mean=equalize_digits(beluga_beam_mean),
-                std=equalize_digits(beluga_beam_std),
-                worst=equalize_digits(beluga_beam_max)))
-            output.append(ROW_TEMPLATE.format(
-                implementation_name="Nav2 AMCL",
-                median=equalize_digits(nav2_beam_median),
-                mean=equalize_digits(nav2_beam_mean),
-                std=equalize_digits(nav2_beam_std),
-                worst=equalize_digits(nav2_beam_max)))
             output.append(RESOURCE_TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
                 nrows=2))
