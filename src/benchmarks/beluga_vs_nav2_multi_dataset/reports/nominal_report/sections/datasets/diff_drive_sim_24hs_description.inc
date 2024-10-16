@@ -4,7 +4,7 @@ Dataset information
 This is a synthetic dataset created recording a simulated robot wandering around a
 :math:`450 \mathrm{m}^2` office environment for 24 hours.
 
-The simulated diff-drive robot is modelled after a Kobuki platform featuring an RPLidar A1, an 8m range 2D lidar. The
+The simulated diff-drive robot is modelled after a `Kobuki platform <https://iclebo-kobuki.readthedocs.io/en/latest/about.html>`_ featuring an `RPLidar A1 <https://www.slamtec.com/en/Lidar/A1Spec>`_, an 8m range 2D lidar. The
 simulation was performed using Gazebo Classic.
 
 The dataset was recorded in single run, and it consists of a single continuous bagfile with a duration of 24 hours.
