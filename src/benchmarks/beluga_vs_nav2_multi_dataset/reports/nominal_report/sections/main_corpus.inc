@@ -120,11 +120,11 @@
         return output_str
 
     desired_section_order = [
+        'Willow Garage',
+        'TorWIC SLAM',
+        'TorWIC Mapping',
         'Magazino Datasets',
         'Openloris Office',
-        'TorWIC Mapping',
-        'TorWIC SLAM',
-        'Willow Garage',
         'Diff Drive Sim 24hs',
         'Omni Drive Sim 24hs',
     ]
