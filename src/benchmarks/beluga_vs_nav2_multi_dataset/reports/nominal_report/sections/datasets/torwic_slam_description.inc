@@ -58,8 +58,7 @@ The following is a representative map from the set, to exemplify the type of env
 Transformations to the original dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To repurpose the TorWIC Mapping dataset for 2D localization evaluation, we made the following changes from
-the original dataset as distributed in here:
+To repurpose the original dataset for 2D localization evaluation, we made the following modifications:
 
 - The original ROS 1 bagfiles were converted to ROS 2 bagfiles.
 - All topics not related to lidar-based 2D localization were removed to reduce file size.
