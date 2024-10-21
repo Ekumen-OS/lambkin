@@ -1,4 +1,4 @@
-.. flat-table:: Peak values for CPU and Resident Set Size (RSS).
+.. flat-table:: Average CPU and peak Resident Set Size (RSS) values.
     :header-rows: {nrows}
 
     *
