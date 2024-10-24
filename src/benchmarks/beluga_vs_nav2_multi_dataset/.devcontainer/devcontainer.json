@@ -1,0 +1,18 @@
+{
+    "image": "ekumenlabs/beluga-vs-nav2:dev",
+
+    "mounts": [{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"}],
+    "workspaceMount": "source=${localWorkspaceFolder}/../..,target=/workspace/src/lambkin,type=bind,consistency=cached",
+    "workspaceFolder": "/workspace",
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"tumit.vscode-rf-formatter",
+				"robocorp.robotframework-lsp"
+			]
+		}
+	},
+
+    "shutdownAction":"none"
+}
