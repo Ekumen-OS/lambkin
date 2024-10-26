@@ -53,6 +53,9 @@ build:
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
     COPY . src/beluga_vs_nav2
+    USER root
+    RUN rosdep fix-permissions
+    USER ${USER}
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \
             --skip-keys 'lambkin-shepherd lambkin-clerk' && \
