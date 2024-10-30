@@ -10,7 +10,7 @@ above it is mentioned that the dataset was recorded
 in a hallway using a Magazino `TORU robot <https://robotsguide.com/robots/toru>`_.
 
 The set contains only two bagfiles, corresponding to two different trajectories along the same hallway.
-"Hallway Localization" is a bit over two minutes long, while "Hallway Return" is a little below four
+"Hallway Localization" is a bit over 2 minutes long, while "Hallway Return" is a little below 4
 minutes long.
 
 The following is a representative map from the set, to exemplify the type of environment:

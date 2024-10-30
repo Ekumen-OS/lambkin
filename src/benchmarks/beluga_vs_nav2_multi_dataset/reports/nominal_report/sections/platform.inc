@@ -30,17 +30,17 @@ None of these datasets were originally conceived for the evaluation of 2D locali
 and therefore none of them provided a complete ground-truth that included both the real-world trajectory and the environment's
 occupancy grid map.
 
-For this reason ground-truth data was generated locally from the bagfiles themselves using Cartographer SLAM to create mutually
+For this reason, ground-truth data was generated locally from the bagfiles themselves using Cartographer SLAM to create mutually
 consistent ground-truth trajectory and occupancy grid map for each bagfile.
 
-It has to be notices that this approach has some drawbacks that need to be taken into account when interpreting the results later:
+Note that this approach has some drawbacks that need to be taken into account when interpreting the results later:
 
 - Both the space and time diversity of the original datasets is lost, as the ground-truth is generated for each individual bagfile representing the state of the environment as perceived when the data was recorded.
 - All of the objects present in the environment are part of the generated occupancy grid map; i.e. there are no unmapped objects.
 
-These real robot datasets have two more limitations worth mentioning:
+These real-world datasets have two more limitations worth mentioning:
 
-- The longest run time of any bagfile the real robot datasets listed above is around 30 minutes, which may not detect longer-term resource use issues, such as memory leaks.
+- The longest run-time of any of the real-world datasets listed above is around 30 minutes, which may fail to flag longer-term resource usage issues, such as memory leaks.
 - In all cases the datasets were recorded using differential-drive robots.
 
 To somewhat mitigate these issues two additional synthetic datasets were added to the evaluation:

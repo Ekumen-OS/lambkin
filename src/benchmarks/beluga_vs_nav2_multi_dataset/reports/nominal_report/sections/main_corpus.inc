@@ -2,6 +2,7 @@
 .. repl-quiet::
 
     def get_bagfile_info(bagpath):
+        """TODO: replace this with rosbag2_py.Info().read_metadata(bag_path)"""
         import subprocess
         process = subprocess.Popen(['ros2', 'bag', 'info', f'{bagpath}'], stdout=subprocess.PIPE)
         output, error = process.communicate()
