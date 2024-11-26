@@ -8,7 +8,7 @@ dataset is no longer available online, but it was described in the following ref
     “`An Object-Based Semantic World Model for Long-Term Change Detection and Semantic
     Querying. <https://web.archive.org/web/20151207202459id_/http://cgi.cs.duke.edu/~mac/papers/iros12_sm.pdf>`_”, by Julian Mason and Bhaskara Marthi, IROS 2012.
 
-About the hardware used to record the dataset, as described in the reference quoted above:
+The dataset was collected using a PR2 omnidirectional mobile robot developed by Willow Garage.
 
     Our mobile robot is a `Willow Garage PR2 <https://robotsguide.com/robots/pr2>`_ with a headmounted Microsoft Kinect. When the robot is in motion,
     the Kinect is roughly 1.5 meters off the floor, and captures
@@ -22,16 +22,16 @@ About the hardware used to record the dataset, as described in the reference quo
     do require that the sensor be fairly far from the floor, in order
     to perceive supporting surfaces and the objects on them
 
-The dataset provides 67 trajectories distributed over multiple days and time periods. All of the trajectories
-are in the same office-like environment, and represent on average 15 minutes of robot operation. The shortest
+The dataset provides 67 trajectories recorded over multiple days and time periods. All of the trajectories
+are in the same office-like environment, and each represents about 15 minutes of robot operation on average. The shortest
 trajectory is 8.5 minutes long, and the longest is 30 minutes long.
 
-The following is a representative map from the set, to exemplify the type of environment:
+The following is a representative map from the set:
 
 .. figure:: assets/representative_willow_garage_map.png
    :scale: 99 %
 
-   Localization map of one of the trajectories in the Willow Garage dataset, representative of the environment.
+   Localization map of a representative example in the Willow Garage dataset.
 
 Transformations to the original dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

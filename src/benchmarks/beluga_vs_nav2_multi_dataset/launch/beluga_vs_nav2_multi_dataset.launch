@@ -22,7 +22,7 @@
 
   <set_parameter name="use_sim_time" value="$(var use_sim_time)"/>
 
-  <node pkg="nav2_amcl" exec="amcl" name="nav2_amcl" launch-prefix="$(env nav2_amcl_PREFIX '')" sigkill_timeout="20.0" sigterm_timeout="40.0" >
+  <node pkg="nav2_amcl" exec="amcl" name="nav2_amcl" launch-prefix="$(env nav2_amcl_PREFIX '')" >
     <param from="$(find-pkg-share beluga_vs_nav2_multi_dataset)/params/amcl.yaml"/>
     <param name="laser_model_type" value="$(var laser_model_type)"/>
     <param name="max_particles" value="$(var max_particles)"/>
@@ -44,7 +44,7 @@
     <remap from="particle_cloud" to="/nav2_amcl/particle_cloud"/>
   </node>
 
-  <node pkg="beluga_amcl" exec="amcl_node" name="beluga_amcl" launch-prefix="$(env beluga_amcl_PREFIX '')" sigkill_timeout="20.0" sigterm_timeout="40.0" >
+  <node pkg="beluga_amcl" exec="amcl_node" name="beluga_amcl" launch-prefix="$(env beluga_amcl_PREFIX '')" >
     <param from="$(find-pkg-share beluga_vs_nav2_multi_dataset)/params/amcl.yaml"/>
     <param name="laser_model_type" value="$(var laser_model_type)"/>
     <param name="max_particles" value="$(var max_particles)"/>
@@ -65,6 +65,7 @@
 
     <remap from="pose" to="/beluga_amcl/pose"/>
     <remap from="particle_cloud" to="/beluga_amcl/particle_cloud"/>
+    <remap from="particle_markers" to="/beluga_amcl/particle_markers"/>
   </node>
 
   <node pkg="nav2_map_server" exec="map_server" name="map_server">

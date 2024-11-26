@@ -13,12 +13,12 @@ The set contains only two bagfiles, corresponding to two different trajectories 
 "Hallway Localization" is a bit over 2 minutes long, while "Hallway Return" is a little below 4
 minutes long.
 
-The following is a representative map from the set, to exemplify the type of environment:
+The following is a representative map from the set:
 
 .. figure:: assets/representative_cartographer_magazino_map.png
    :scale: 99 %
 
-   Localization map of one of the trajectories in the Cartographer Magazino dataset, representative of the environment.
+   Localization map of one of the trajectories in the Cartographer Magazino dataset.
 
 Transformations to the original dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
