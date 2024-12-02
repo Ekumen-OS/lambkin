@@ -17,9 +17,10 @@ This document is limited to the presentation of the methodology, description of 
 Analysis and interpretation of the results will be performed in the article or blog post that will be created
 to make these results public.
 
-A limited number of configuration variants are used in the experiments: the sensor model and the motion model.
-Both differential drive and omnidirectional robots are used in the experiments, therefore exercising the different motion models available in the AMCL implementations.
-The rest of the configuration parameters are kept at their default values, which are the same for both AMCL implementations.
+For the sake of brevity, a limited number of configuration variants are tested in this benchmark. For each dataset both
+the beam and the likelihood field sensor models are evaluated. Both differential drive
+and omnidirectional robots are represented in the input datasets.
+The rest of the configuration parameters are kept at their default values, which are the same for both Beluga AMCL and Nav2 AMCL.
 
 
 
