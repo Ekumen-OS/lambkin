@@ -8,8 +8,8 @@
     os.makedirs('_generated', exist_ok=True)
 
 
-Nominal Beluga AMCL vs Nav2 AMCL benchmark
-==========================================
+Beluga AMCL Performance Benchmarking Results
+============================================
 
 .. toctree::
    :maxdepth: 2

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S shepherd robot --skip-all -f
 
-# Copyright 2022 Ekumen, Inc.
+# Copyright 2024 Ekumen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -97,76 +97,72 @@ ${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
 ...                         2011-08-08-09-48-17
 ...                         2011-08-08-14-26-55
 ...                         2011-08-08-23-29-37
-# we are not testing the full dataset because it's too big and because all bags
-# are basically the same environment with different starting positions and trajectories
-#...                         2011-08-09-08-49-52
-#...                         2011-08-09-14-32-35
-#...                         2011-08-09-22-31-30
-#...                         2011-08-10-09-36-26
-#...                         2011-08-10-14-48-32
-#...                         2011-08-11-01-31-15
-#...                         2011-08-11-08-36-01
-#...                         2011-08-11-14-27-41
-#...                         2011-08-11-22-03-37
-#...                         2011-08-12-09-06-48
-#...                         2011-08-12-16-39-48
-#...                         2011-08-12-22-46-34
-#...                         2011-08-15-17-22-26
-#...                         2011-08-15-21-26-26
-#...                         2011-08-16-09-20-08
-#...                         2011-08-16-18-40-52
-#...                         2011-08-16-20-59-00
-#...                         2011-08-17-15-51-51
-#...                         2011-08-17-21-17-05
-#...                         2011-08-18-20-33-16
-#...                         2011-08-18-20-52-30
-#...                         2011-08-19-10-12-20
-#...                         2011-08-19-14-17-55
-#...                         2011-08-19-21-35-17
-#...                         2011-08-22-10-02-27
-#...                         2011-08-22-14-53-33
-#...                         2011-08-23-01-11-53
-#...                         2011-08-23-09-21-17
-#...                         2011-08-24-09-52-14
-#...                         2011-08-24-15-01-39
-#...                         2011-08-24-19-47-10
-#...                         2011-08-25-09-31-05
-#...                         2011-08-25-20-14-56
-#...                         2011-08-25-20-38-39
-#...                         2011-08-26-09-58-19
-#...                         2011-08-29-15-48-07
-#...                         2011-08-29-21-14-07
-#...                         2011-08-30-08-55-28
-#...                         2011-08-30-20-49-42
-#...                         2011-08-30-21-17-56
-#...                         2011-08-31-20-29-19
-#...                         2011-08-31-20-44-19
-#...                         2011-09-01-08-21-33
-#...                         2011-09-02-09-20-25
-#...                         2011-09-06-09-04-41
-#...                         2011-09-06-13-20-36
-#...                         2011-09-08-13-14-39
-#...                         2011-09-09-13-22-57
-#...                         2011-09-11-07-34-22
-#...                         2011-09-11-09-43-46
-#...                         2011-09-12-14-18-56
-#...                         2011-09-12-14-47-01
-#...                         2011-09-13-10-23-31
-#...                         2011-09-13-13-44-21
-#...                         2011-09-14-10-19-20
-#...                         2011-09-15-08-32-46
+...                         2011-08-09-08-49-52
+...                         2011-08-09-14-32-35
+...                         2011-08-09-22-31-30
+...                         2011-08-10-09-36-26
+...                         2011-08-10-14-48-32
+...                         2011-08-11-01-31-15
+...                         2011-08-11-08-36-01
+...                         2011-08-11-14-27-41
+...                         2011-08-11-22-03-37
+...                         2011-08-12-09-06-48
+...                         2011-08-12-16-39-48
+...                         2011-08-12-22-46-34
+...                         2011-08-15-17-22-26
+...                         2011-08-15-21-26-26
+...                         2011-08-16-09-20-08
+...                         2011-08-16-18-40-52
+...                         2011-08-16-20-59-00
+...                         2011-08-17-15-51-51
+...                         2011-08-17-21-17-05
+...                         2011-08-18-20-33-16
+...                         2011-08-18-20-52-30
+...                         2011-08-19-10-12-20
+...                         2011-08-19-14-17-55
+...                         2011-08-19-21-35-17
+...                         2011-08-22-10-02-27
+...                         2011-08-22-14-53-33
+...                         2011-08-23-01-11-53
+...                         2011-08-23-09-21-17
+...                         2011-08-24-09-52-14
+...                         2011-08-24-15-01-39
+...                         2011-08-24-19-47-10
+...                         2011-08-25-09-31-05
+...                         2011-08-25-20-14-56
+...                         2011-08-25-20-38-39
+...                         2011-08-26-09-58-19
+...                         2011-08-29-15-48-07
+...                         2011-08-29-21-14-07
+...                         2011-08-30-08-55-28
+...                         2011-08-30-20-49-42
+...                         2011-08-30-21-17-56
+...                         2011-08-31-20-29-19
+...                         2011-08-31-20-44-19
+...                         2011-09-01-08-21-33
+...                         2011-09-02-09-20-25
+...                         2011-09-06-09-04-41
+...                         2011-09-06-13-20-36
+...                         2011-09-08-13-14-39
+...                         2011-09-09-13-22-57
+...                         2011-09-11-07-34-22
+...                         2011-09-11-09-43-46
+...                         2011-09-12-14-18-56
+...                         2011-09-12-14-47-01
+...                         2011-09-13-10-23-31
+...                         2011-09-13-13-44-21
+...                         2011-09-14-10-19-20
+...                         2011-09-15-08-32-46
 
 @{LONG_DURATION_DIR}          long_duration_bags_ros2_localization_only
-@{DIFF_DRIVE_SIM_BAGS}        simulated_hq_kobuki_25hs
 @{OMNI_DRIVE_SIM_BAGS}        simulated_bookstore_robomaster_24hs
 
 *** Test Cases ***        DATASET                         BASEDIR                   LASER_MODEL           ODOM_FRAME     MAP_FRAME  BASE_FRAME      SCAN_TOPIC     ITERATION      INITIAL_POSE_X  INITIAL_POSE_Y  INITIAL_POSE_YAW    ROBOT_MODEL_TYPE 
-Magazino Datasets         ${{MAGAZINO_BAGS}}              ${{MAGAZINO_DIR}}         ${{LASER_MODELS}}     odom           map        base_footprint  /scan_front    5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+Magazino Datasets         ${{MAGAZINO_BAGS}}              ${{MAGAZINO_DIR}}         ${{LASER_MODELS}}     odom           map        base_footprint  /scan_front    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
 Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}        ${{LASER_MODELS}}     base_odom      map        base_link       /scan          5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   ${{LASER_MODELS}}     odom           map        base_link       /front/scan    5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      ${{LASER_MODELS}}     odom           map        base_link       /front/scan    5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      ${{LASER_MODELS}}     odom_combined  map        base_footprint  /base_scan     3              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-Diff Drive Sim 24hs       ${{DIFF_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    ${{LASER_MODELS}}     odom           map        base_link       /scan          1              0.0             2.0             0.0                nav2_amcl::DifferentialMotionModel
+TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   ${{LASER_MODELS}}     odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      ${{LASER_MODELS}}     odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      ${{LASER_MODELS}}     odom_combined  map        base_footprint  /base_scan     1              0.0             0.0             0.0                nav2_amcl::OmniMotionModel
 Omni Drive Sim 24hs       ${{OMNI_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    ${{LASER_MODELS}}     odom           map        base_link       /scan          1              3.2             9.0             0.7                 nav2_amcl::OmniMotionModel
 
 *** Keywords ***

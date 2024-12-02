@@ -26,7 +26,6 @@ devel:
     FROM lambkin+embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
-    RUN cd src && git clone https://github.com/Ekumen-OS/beluga
     COPY package.xml src/lambkin/benchmarks/beluga_vs_nav2_multi_dataset/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src \
@@ -53,7 +52,6 @@ build:
     FROM lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
-    RUN cd src && git clone https://github.com/Ekumen-OS/beluga
     COPY . src/beluga_vs_nav2_multi_dataset
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \

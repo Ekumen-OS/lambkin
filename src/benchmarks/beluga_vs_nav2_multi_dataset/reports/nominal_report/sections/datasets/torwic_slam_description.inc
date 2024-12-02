@@ -48,12 +48,13 @@ Jun. 23, 2022     7
 Oct. 12, 2022     6
 ================  ===========================
 
-The following is a representative map from the set, to exemplify the type of environment:
+The following is a representative map from the set:
 
 .. figure:: assets/representative_torwic_slam_map.png
    :scale: 50 %
 
-   Localization map of one of the TorWIC SLAM dataset trajectories, representative of the environment.
+   Localization map of a representative example in the TorWIC SLAM dataset.
+
 
 Transformations to the original dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -64,5 +65,4 @@ To repurpose the original dataset for 2D localization evaluation, we made the fo
 - All topics not related to lidar-based 2D localization were removed to reduce file size.
 - The map->odom TF transformations were removed from the transform tree.
 - A reference ground-truth and a matching occupancy map were generated for each bagfile using SLAM.
-
-
+- The SLAM-generated occupancy maps were manually cleaned to remove "unknonwn" patches and small obstacles along the groundtruth trajectory caused by the robot operator's presence.

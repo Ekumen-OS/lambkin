@@ -28,13 +28,12 @@ About the hardware used to record the dataset,
 
 This analysis only uses the "Office" subset of the OpenLORIS-Scene dataset.
 
-The following is a representative map from the set, to exemplify the type of environment:
+The following is a representative map from the set:
 
 .. figure:: assets/representative_openloris_office_map.png
    :scale: 99 %
 
-   Localization map of one of the trajectories in the OpenLORIS Scene, representative of the environment.
-
+   Localization map of a representative example in the  OpenLORIS Scene dataset.
 
 Transformations to the original dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -37,12 +37,12 @@ Moving fences              3             Fences are shifted outwards and inwards
 Adding new boxes           1             The four fences are covered with stacks of boxes.
 =========================  ============  ============================
 
-The following is a representative map from the set, to exemplify the type of environment:
+The following is a representative map from the set:
 
 .. figure:: assets/representative_torwic_mapping_map.png
    :scale: 99 %
 
-   Localization map of one of the "baseline" trajectory in the TorWIC Mapping dataset.
+   Localization map of the "baseline" trajectory in the TorWIC Mapping dataset.
 
 
 Transformations to the original dataset

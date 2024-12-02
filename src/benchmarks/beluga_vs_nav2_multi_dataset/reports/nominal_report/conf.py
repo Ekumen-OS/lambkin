@@ -22,12 +22,12 @@ import ament_index_python
 
 # -- Project information -----------------------------------------------------
 
-project = 'Nominal Beluga AMCL Benchmark Report'
-copyright = '2023, Ekumen Inc.'
+project = 'Beluga AMCL Performance Benchmarking Results'
+copyright = '2024, Ekumen Inc.'
 author = 'Ekumen Inc.'
 
 version = '0.1.0'
-release = '0.1.0-alpha'
+release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
 
