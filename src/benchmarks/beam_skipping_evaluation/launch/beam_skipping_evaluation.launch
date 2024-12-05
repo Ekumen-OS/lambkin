@@ -48,6 +48,9 @@
 
     <param name="robot_model_type" value="$(var robot_model_type)" />
 
+    <!-- we use this one for reference in case of failures -->
+    <param name="tf_broadcast" value="true" />
+
     <remap from="amcl_pose" to="/nav2_amcl_likelihood/pose" />
     <remap from="particle_cloud" to="/nav2_amcl_likelihood/particle_cloud" />
   </node>

@@ -13,8 +13,8 @@ cd {LAMBKIN_ROOT_DIR}
 ```
 - Clone `beluga-datasets`. **This repository uses LFS**, so make sure you have it installed.
 ```bash
-cd src/benchmarks/beam_skipping_evaluation \
-    && mkdir -p playground && cd playground
+cd src/benchmarks/beam_skipping_evaluation
+mkdir -p playground && cd playground
 ```
 - Copy in that folder the datasets from the `/srv/datasets/beluga_evaluation_datasets` directory in the beefy machine.
 ```sh
