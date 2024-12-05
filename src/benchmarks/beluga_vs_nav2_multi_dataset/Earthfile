@@ -33,7 +33,7 @@ devel:
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
     COPY DEFAULT_FASTRTPS_PROFILES.xml /
-    ENV ROS2_DEFAULT_FASTRTPS_PROFILES_FILE=/DEFAULT_FASTRTPS_PROFILES.xml
+    ENV FASTRTPS_DEFAULT_PROFILES_FILE=/DEFAULT_FASTRTPS_PROFILES.xml
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
     SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
 
