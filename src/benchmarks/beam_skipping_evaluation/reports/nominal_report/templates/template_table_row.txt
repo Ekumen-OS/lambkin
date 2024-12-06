@@ -1,6 +1,8 @@
     *
         - :cspan:`1` {implementation_name}
         - {median} m
+        - {median_05}-{median_95} m
         - {mean} m
+        - {mean_05}-{mean_95} m
         - {std} m
         - {worst} m
