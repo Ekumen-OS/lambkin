@@ -3,12 +3,11 @@
 
     *
         - :rspan:`1`  :cspan:`1`  Implementation
-        - :cspan:`6` {sensor_model} sensor model
+        - :cspan:`5` {sensor_model} sensor model
 
     *
         - median
         - median c.i.
         - mean
         - mean c.i.
-        - std
         - worst-case

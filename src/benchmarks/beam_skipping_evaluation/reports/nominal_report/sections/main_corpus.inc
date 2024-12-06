@@ -1,5 +1,5 @@
 
-.. repl::
+.. repl-quiet::
 
     def get_bagfile_info(bagpath):
         """TODO: replace this with rosbag2_py.Info().read_metadata(bag_path)"""
@@ -30,16 +30,14 @@
         'metric.series.value': 'ape',
     })
 
-    def build_bootstrapped_estimator(name, func, p = 50, n_bootstraps=1000):
-        def bootstrap_confidence_interval(data, name, func, p, n_bootstraps=1000):
+    def build_bootstrapped_estimator(name, func, p = 50, n_bootstraps=500):
+        def bootstrap_confidence_interval(data, name, func, p, n_bootstraps):
             bootstrapped = np.array([func(data.sample(frac=1, replace=True)) for _ in range(n_bootstraps)])
             return np.percentile(bootstrapped, [p])[0]
         return lambda data: bootstrap_confidence_interval(data, name, func, p, n_bootstraps)
 
-    bootstrapped_mean = build_bootstrapped_estimator('mean', np.mean)
     bootstrapped_mean_05 = build_bootstrapped_estimator('mean', np.mean, 5)
     bootstrapped_mean_95 = build_bootstrapped_estimator('mean', np.mean, 95)
-    bootstrapped_median = build_bootstrapped_estimator('median', np.median)
     bootstrapped_median_05 = build_bootstrapped_estimator('median', np.median, 5)
     bootstrapped_median_95 = build_bootstrapped_estimator('median', np.median, 95)
 
@@ -48,17 +46,15 @@
         'bagfile',
         'implementation',
     ])['ape'].agg([
-        ('median', bootstrapped_median),
+        ('median', np.median),
         ('median_05', bootstrapped_median_05),
         ('median_95', bootstrapped_median_95),
-        ('mean', bootstrapped_mean),
+        ('mean', np.mean),
         ('mean_05', bootstrapped_mean_05),
         ('mean_95', bootstrapped_mean_95),
         'std',
         'max',
     ])
-
-    print(ape)
 
     bagfile_location_data = data.groupby([
         'case_name',
@@ -260,7 +256,6 @@
                 mean=round_digits(nav2_amcl_likelihood_mean),
                 mean_05=round_digits(nav2_amcl_likelihood_mean_05),
                 mean_95=round_digits(nav2_amcl_likelihood_mean_95),
-                std=round_digits(nav2_amcl_likelihood_std),
                 worst=round_digits(nav2_amcl_likelihood_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Likelihood Prob",
@@ -270,7 +265,6 @@
                 mean=round_digits(nav2_amcl_likelihood_prob_mean),
                 mean_05=round_digits(nav2_amcl_likelihood_prob_mean_05),
                 mean_95=round_digits(nav2_amcl_likelihood_prob_mean_95),
-                std=round_digits(nav2_amcl_likelihood_prob_std),
                 worst=round_digits(nav2_amcl_likelihood_prob_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Beam Skip",
@@ -280,7 +274,6 @@
                 mean=round_digits(nav2_amcl_likelihood_beam_skip_mean),
                 mean_05=round_digits(nav2_amcl_likelihood_beam_skip_mean_05),
                 mean_95=round_digits(nav2_amcl_likelihood_beam_skip_mean_95),
-                std=round_digits(nav2_amcl_likelihood_beam_skip_std),
                 worst=round_digits(nav2_amcl_likelihood_beam_skip_max)))
             """ """
             output.append(RESOURCE_TABLE_HEADER_TEMPLATE.format(
