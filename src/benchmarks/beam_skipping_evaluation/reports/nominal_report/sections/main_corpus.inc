@@ -1,5 +1,5 @@
 
-.. repl-quiet::
+.. repl::
 
     def get_bagfile_info(bagpath):
         """TODO: replace this with rosbag2_py.Info().read_metadata(bag_path)"""
@@ -30,11 +30,35 @@
         'metric.series.value': 'ape',
     })
 
+    def build_bootstrapped_estimator(name, func, p = 50, n_bootstraps=1000):
+        def bootstrap_confidence_interval(data, name, func, p, n_bootstraps=1000):
+            bootstrapped = np.array([func(data.sample(frac=1, replace=True)) for _ in range(n_bootstraps)])
+            return np.percentile(bootstrapped, [p])[0]
+        return lambda data: bootstrap_confidence_interval(data, name, func, p, n_bootstraps)
+
+    bootstrapped_mean = build_bootstrapped_estimator('mean', np.mean)
+    bootstrapped_mean_05 = build_bootstrapped_estimator('mean', np.mean, 5)
+    bootstrapped_mean_95 = build_bootstrapped_estimator('mean', np.mean, 95)
+    bootstrapped_median = build_bootstrapped_estimator('median', np.median)
+    bootstrapped_median_05 = build_bootstrapped_estimator('median', np.median, 5)
+    bootstrapped_median_95 = build_bootstrapped_estimator('median', np.median, 95)
+
     ape = data.groupby([
         'case_name',
         'bagfile',
         'implementation',
-    ])['ape'].agg(['median', 'mean', 'std', 'max']).round(3)
+    ])['ape'].agg([
+        ('median', bootstrapped_median),
+        ('median_05', bootstrapped_median_05),
+        ('median_95', bootstrapped_median_95),
+        ('mean', bootstrapped_mean),
+        ('mean_05', bootstrapped_mean_05),
+        ('mean_95', bootstrapped_mean_95),
+        'std',
+        'max',
+    ])
+
+    print(ape)
 
     bagfile_location_data = data.groupby([
         'case_name',
@@ -155,25 +179,60 @@
             try:
                 nav2_amcl_likelihood_data = data_for_bagfile.loc['/nav2_amcl_likelihood/pose']
                 nav2_amcl_likelihood_median = nav2_amcl_likelihood_data['median']
+                nav2_amcl_likelihood_median_05 = nav2_amcl_likelihood_data['median_05']
+                nav2_amcl_likelihood_median_95 = nav2_amcl_likelihood_data['median_95']
                 nav2_amcl_likelihood_mean = nav2_amcl_likelihood_data['mean']
+                nav2_amcl_likelihood_mean_05 = nav2_amcl_likelihood_data['mean_05']
+                nav2_amcl_likelihood_mean_95 = nav2_amcl_likelihood_data['mean_95']
                 nav2_amcl_likelihood_std = nav2_amcl_likelihood_data['std']
                 nav2_amcl_likelihood_max = nav2_amcl_likelihood_data['max']
                 """ """
                 nav2_amcl_likelihood_prob_data = data_for_bagfile.loc['/nav2_amcl_likelihood_prob/pose']
                 nav2_amcl_likelihood_prob_median = nav2_amcl_likelihood_prob_data['median']
+                nav2_amcl_likelihood_prob_median_05 = nav2_amcl_likelihood_prob_data['median_05']
+                nav2_amcl_likelihood_prob_median_95 = nav2_amcl_likelihood_prob_data['median_95']
                 nav2_amcl_likelihood_prob_mean = nav2_amcl_likelihood_prob_data['mean']
+                nav2_amcl_likelihood_prob_mean_05 = nav2_amcl_likelihood_prob_data['mean_05']
+                nav2_amcl_likelihood_prob_mean_95 = nav2_amcl_likelihood_prob_data['mean_95']
                 nav2_amcl_likelihood_prob_std = nav2_amcl_likelihood_prob_data['std']
                 nav2_amcl_likelihood_prob_max = nav2_amcl_likelihood_prob_data['max']
                 """ """
                 nav2_amcl_likelihood_beam_skip_data = data_for_bagfile.loc['/nav2_amcl_likelihood_beam_skip/pose']
                 nav2_amcl_likelihood_beam_skip_median = nav2_amcl_likelihood_beam_skip_data['median']
+                nav2_amcl_likelihood_beam_skip_median_05 = nav2_amcl_likelihood_beam_skip_data['median_05']
+                nav2_amcl_likelihood_beam_skip_median_95 = nav2_amcl_likelihood_beam_skip_data['median_95']
                 nav2_amcl_likelihood_beam_skip_mean = nav2_amcl_likelihood_beam_skip_data['mean']
+                nav2_amcl_likelihood_beam_skip_mean_05 = nav2_amcl_likelihood_beam_skip_data['mean_05']
+                nav2_amcl_likelihood_beam_skip_mean_95 = nav2_amcl_likelihood_beam_skip_data['mean_95']
                 nav2_amcl_likelihood_beam_skip_std = nav2_amcl_likelihood_beam_skip_data['std']
                 nav2_amcl_likelihood_beam_skip_max = nav2_amcl_likelihood_beam_skip_data['max']
             except:
-                nav2_amcl_likelihood_rms = nav2_amcl_likelihood_mean = nav2_amcl_likelihood_std = nav2_amcl_likelihood_max = "???"
-                nav2_amcl_likelihood_prob_rms = nav2_amcl_likelihood_prob_mean = nav2_amcl_likelihood_prob_std = nav2_amcl_likelihood_prob_max = "???"
-                nav2_amcl_likelihood_beam_skip_rms = nav2_amcl_likelihood_beam_skip_mean = nav2_amcl_likelihood_beam_skip_std = nav2_amcl_likelihood_beam_skip_max = "???"
+                nav2_amcl_likelihood_median = '???'
+                nav2_amcl_likelihood_median_05 = '???'
+                nav2_amcl_likelihood_median_95 = '???'
+                nav2_amcl_likelihood_mean = '???'
+                nav2_amcl_likelihood_mean_05 = '???'
+                nav2_amcl_likelihood_mean_95 = '???'
+                nav2_amcl_likelihood_std = '???'
+                nav2_amcl_likelihood_max = '???'
+                """ """
+                nav2_amcl_likelihood_prob_median = '???'
+                nav2_amcl_likelihood_prob_median_05 = '???'
+                nav2_amcl_likelihood_prob_median_95 = '???'
+                nav2_amcl_likelihood_prob_mean = '???'
+                nav2_amcl_likelihood_prob_mean_05 = '???'
+                nav2_amcl_likelihood_prob_mean_95 = '???'
+                nav2_amcl_likelihood_prob_std = '???'
+                nav2_amcl_likelihood_prob_max = '???'
+                """ """
+                nav2_amcl_likelihood_beam_skip_median = '???'
+                nav2_amcl_likelihood_beam_skip_median_05 = '???'
+                nav2_amcl_likelihood_beam_skip_median_95 = '???'
+                nav2_amcl_likelihood_beam_skip_mean = '???'
+                nav2_amcl_likelihood_beam_skip_mean_05 = '???'
+                nav2_amcl_likelihood_beam_skip_mean_95 = '???'
+                nav2_amcl_likelihood_beam_skip_std = '???'
+                nav2_amcl_likelihood_beam_skip_max = '???'
             try:
                 nav2_amcl_likelihood_cpu_util = nav2_amcl_likelihood_cpu_util_data.loc[case_name].loc[bagfile]['max']
                 nav2_amcl_likelihood_peak_rss = nav2_amcl_likelihood_peak_rss_data.loc[case_name].loc[bagfile]['max']
@@ -196,19 +255,31 @@
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Likelihood Field",
                 median=round_digits(nav2_amcl_likelihood_median),
+                median_05=round_digits(nav2_amcl_likelihood_median_05),
+                median_95=round_digits(nav2_amcl_likelihood_median_95),
                 mean=round_digits(nav2_amcl_likelihood_mean),
+                mean_05=round_digits(nav2_amcl_likelihood_mean_05),
+                mean_95=round_digits(nav2_amcl_likelihood_mean_95),
                 std=round_digits(nav2_amcl_likelihood_std),
                 worst=round_digits(nav2_amcl_likelihood_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Likelihood Prob",
                 median=round_digits(nav2_amcl_likelihood_prob_median),
+                median_05=round_digits(nav2_amcl_likelihood_prob_median_05),
+                median_95=round_digits(nav2_amcl_likelihood_prob_median_95),
                 mean=round_digits(nav2_amcl_likelihood_prob_mean),
+                mean_05=round_digits(nav2_amcl_likelihood_prob_mean_05),
+                mean_95=round_digits(nav2_amcl_likelihood_prob_mean_95),
                 std=round_digits(nav2_amcl_likelihood_prob_std),
                 worst=round_digits(nav2_amcl_likelihood_prob_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Beam Skip",
                 median=round_digits(nav2_amcl_likelihood_beam_skip_median),
+                median_05=round_digits(nav2_amcl_likelihood_beam_skip_median_05),
+                median_95=round_digits(nav2_amcl_likelihood_beam_skip_median_95),
                 mean=round_digits(nav2_amcl_likelihood_beam_skip_mean),
+                mean_05=round_digits(nav2_amcl_likelihood_beam_skip_mean_05),
+                mean_95=round_digits(nav2_amcl_likelihood_beam_skip_mean_95),
                 std=round_digits(nav2_amcl_likelihood_beam_skip_std),
                 worst=round_digits(nav2_amcl_likelihood_beam_skip_max)))
             """ """
