@@ -1,4 +1,4 @@
-#!/usr/bin/env -S shepherd robot -f
+#!/usr/bin/env -S shepherd robot --skip-all -f
 
 # Copyright 2022 Ekumen, Inc.
 #
@@ -159,7 +159,7 @@ Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}    
 TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
 TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
 Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      odom_combined  map        base_footprint  /base_scan     1              0.0             0.0             0.0                nav2_amcl::OmniMotionModel
-Omni Drive Sim 24hs       ${{OMNI_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    odom           map        base_link       /scan          1              3.2             9.0             0.7                 nav2_amcl::OmniMotionModel
+# Omni Drive Sim 24hs       ${{OMNI_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    odom           map        base_link       /scan          1              3.2             9.0             0.7                 nav2_amcl::OmniMotionModel
 
 
 *** Keywords ***
