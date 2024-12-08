@@ -67,9 +67,7 @@ FIXUSER:
     FUNCTION
     ARG user
     ARG workdir=/home/${user}
-    USER root
     IF [ -d "${workdir}" ]
         RUN cd ${workdir}
         RUN rosdep fix-permissions
     END
-    USER ${user}
