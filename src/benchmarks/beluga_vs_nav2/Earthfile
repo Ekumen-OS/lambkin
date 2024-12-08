@@ -34,6 +34,7 @@ devel:
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
+    DO os+FIXUSER --user=${user} --workdir=/workspace/src
     SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
 
 local-devel:
@@ -48,14 +49,11 @@ local-devel:
 build:
     ARG distro=jammy
     ARG rosdistro  # forward
-    lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
+    FROM lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
     COPY . src/beluga_vs_nav2
-    USER root
-    RUN rosdep fix-permissions
-    USER ${USER}
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \
             --skip-keys 'lambkin-shepherd lambkin-clerk' && \
