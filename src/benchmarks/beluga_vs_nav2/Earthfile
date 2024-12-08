@@ -48,7 +48,7 @@ local-devel:
 build:
     ARG distro=jammy
     ARG rosdistro  # forward
-    FROM lambkin+ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
+    lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
