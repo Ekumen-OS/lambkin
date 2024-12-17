@@ -154,59 +154,14 @@ ${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
 @{OMNI_DRIVE_SIM_BAGS}        simulated_bookstore_robomaster_24hs
 
 @{HQ_SIMULATION_DIR}          hq_simulation
-# @{HQ_SIMULATION_BAGS}         hq_simulation_segment_0
-# ...                           hq_simulation_segment_1
-# ...                           hq_simulation_segment_2
-# ...                           hq_simulation_segment_3
-# ...                           hq_simulation_segment_4
-# ...                           hq_simulation_segment_5
-# ...                           hq_simulation_segment_6
-# ...                           hq_simulation_segment_7
-# ...                           hq_simulation_segment_8
-# ...                           hq_simulation_segment_9
-# ...                           hq_simulation_segment_10
-# ...                           hq_simulation_segment_11
-# ...                           hq_simulation_segment_12
-# ...                           hq_simulation_segment_13
-# ...                           hq_simulation_segment_14
-# ...                           hq_simulation_segment_15
-# ...                           hq_simulation_segment_16
-# ...                           hq_simulation_segment_17
-# ...                           hq_simulation_segment_18
-# ...                           hq_simulation_segment_19
-# ...                           hq_simulation_segment_20
-# ...                           hq_simulation_segment_21
-# ...                           hq_simulation_segment_22
-# ...                           hq_simulation_segment_23
-# ...                           hq_simulation_segment_24
-# ...                           hq_simulation_segment_25
-# ...                           hq_simulation_segment_26
-# ...                           hq_simulation_segment_27
-# ...                           hq_simulation_segment_28
-# ...                           hq_simulation_segment_29
-# ...                           hq_simulation_segment_30
-# ...                           hq_simulation_segment_31
-# ...                           hq_simulation_segment_32
-# ...                           hq_simulation_segment_33
-# ...                           hq_simulation_segment_34
-# ...                           hq_simulation_segment_35
-# ...                           hq_simulation_segment_36
-# ...                           hq_simulation_segment_37
-# ...                           hq_simulation_segment_38
-# ...                           hq_simulation_segment_39
-# ...                           hq_simulation_segment_40
-# ...                           hq_simulation_segment_41
-# ...                           hq_simulation_segment_42
-# ...                           hq_simulation_segment_43
-# ...                           hq_simulation_segment_44
-# ...                           hq_simulation_segment_45
-# ...                           hq_simulation_segment_46
-# ...                           hq_simulation_segment_47
-# ...                           hq_simulation_segment_48
-@{HQ_SIMULATION_BAGS}         hq_simulation_segment_5
-
-# problematicos:
-# - hq_simulation_segment_4
+@{HQ_SIMULATION_BAGS}         hq_simulation_segment_3
+...                           hq_simulation_segment_4
+...                           hq_simulation_segment_5
+...                           hq_simulation_segment_9
+...                           hq_simulation_segment_10
+...                           hq_simulation_segment_11
+...                           hq_simulation_segment_12
+...                           hq_simulation_segment_13
 
 
 *** Test Cases ***        DATASET                         BASEDIR                   ODOM_FRAME     MAP_FRAME  BASE_FRAME      SCAN_TOPIC     ITERATION      INITIAL_POSE_X  INITIAL_POSE_Y  INITIAL_POSE_YAW    ROBOT_MODEL_TYPE 
@@ -232,7 +187,7 @@ Nav2 Beam Skipping Evaluation benchmark case
     # Setup benchmark inputs
     ${bagfile_path} =  Set Variable  ${EXECDIR}/${basedir}/bagfiles/${dataset}
     ${artifacts_path} =  Set Variable  ${EXECDIR}/${basedir}/artifacts/${dataset}
-    Uses ${bagfile_path} at 4x as input to ROS 2 system
+    Uses ${bagfile_path} at 1x as input to ROS 2 system
     ${package_share_path} =  Find ROS 2 Package  beam_skipping_evaluation  share=yes
     ${qos_override_path} =  Join Path  ${package_share_path}  config  qos_override.yml
     Configures QoS overrides from ${qos_override_path} for input to ROS 2 system
