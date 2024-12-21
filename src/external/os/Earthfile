@@ -65,6 +65,4 @@ ADDUSER:
 
 FIXUSER:
     FUNCTION
-    ARG user
-    ARG workdir=/home/${user}
     RUN rosdep fix-permissions
