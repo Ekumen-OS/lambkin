@@ -34,7 +34,7 @@ devel:
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
-    DO os+FIXUSER --user=${user} --workdir=/workspace/src
+    DO os+FIXUSER
     SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
 
 local-devel:
