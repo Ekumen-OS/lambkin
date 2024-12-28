@@ -62,7 +62,3 @@ ADDUSER:
     USER ${user}
     ENV HOME=/home/${user}
     WORKDIR ${workdir}
-
-FIXUSER:
-    FUNCTION
-    RUN rosdep fix-permissions
