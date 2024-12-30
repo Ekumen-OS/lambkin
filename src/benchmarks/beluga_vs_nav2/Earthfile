@@ -16,6 +16,7 @@ VERSION 0.8
 
 IMPORT ../../external/os AS os
 IMPORT ../../.. AS lambkin
+IMPORT ../../external/rosdep AS rosdep
 
 devel:
     ARG distro=jammy
@@ -34,7 +35,7 @@ devel:
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
-    DO os+FIXUSER
+    DO rosdep+FIXUSER
     SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
 
 local-devel:
