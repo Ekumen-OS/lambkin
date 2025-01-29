@@ -26,6 +26,10 @@ devel:
     FROM lambkin+embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
+    RUN cd src \
+     && git clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga \
+     && git checkout 455b006 && echo "Checking out fbattocchia_likelihoob_prob..."
     COPY package.xml src/lambkin/benchmarks/beam_skipping_evaluation/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src \
@@ -52,6 +56,10 @@ build:
     FROM lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
+    RUN cd src \
+     && git clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga \
+     && git checkout 455b006 && echo "Checking out fbattocchia_likelihoob_prob..."
     COPY . src/beam_skipping_evaluation
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \

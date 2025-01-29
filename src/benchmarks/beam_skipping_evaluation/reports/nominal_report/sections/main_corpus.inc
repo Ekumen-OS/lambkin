@@ -12,6 +12,8 @@
         lks.evo.series('/nav2_amcl_likelihood/pose', 'ape', normalization='long'),
         lks.evo.series('/nav2_amcl_likelihood_prob/pose', 'ape', normalization='long'),
         lks.evo.series('/nav2_amcl_likelihood_beam_skip/pose', 'ape', normalization='long'),
+        lks.evo.series('/beluga_amcl_likelihood/pose', 'ape', normalization='long'),
+        lks.evo.series('/beluga_amcl_likelihood_prob/pose', 'ape', normalization='long'),
     ])
 
     data = data[[
@@ -68,6 +70,10 @@
         lks.timem.summary('nav2_amcl_likelihood_prob', 'peak_rss'),
         lks.timem.summary('nav2_amcl_likelihood_beam_skip', 'cpu_util'),
         lks.timem.summary('nav2_amcl_likelihood_beam_skip', 'peak_rss'),
+        lks.timem.summary('beluga_amcl_likelihood', 'cpu_util'),
+        lks.timem.summary('beluga_amcl_likelihood', 'peak_rss'),
+        lks.timem.summary('beluga_amcl_likelihood_prob', 'cpu_util'),
+        lks.timem.summary('beluga_amcl_likelihood_prob', 'peak_rss'),
     ])
 
     prof_data = lks.pandas.rescale(prof_data, {
@@ -77,6 +83,10 @@
         'nav2_amcl_likelihood_prob.summary.peak_rss': 1 / 8e6,
         'nav2_amcl_likelihood_beam_skip.summary.cpu_util': 100.,
         'nav2_amcl_likelihood_beam_skip.summary.peak_rss': 1 / 8e6,
+        'beluga_amcl_likelihood.summary.cpu_util': 100.,
+        'beluga_amcl_likelihood.summary.peak_rss': 1 / 8e6,
+        'beluga_amcl_likelihood_prob.summary.cpu_util': 100.,
+        'beluga_amcl_likelihood_prob.summary.peak_rss': 1 / 8e6,
     })
 
     prof_data = prof_data[[
@@ -88,6 +98,10 @@
         'nav2_amcl_likelihood_prob.summary.cpu_util',
         'nav2_amcl_likelihood_beam_skip.summary.peak_rss',
         'nav2_amcl_likelihood_beam_skip.summary.cpu_util',
+        'beluga_amcl_likelihood.summary.peak_rss',
+        'beluga_amcl_likelihood.summary.cpu_util',
+        'beluga_amcl_likelihood_prob.summary.peak_rss',
+        'beluga_amcl_likelihood_prob.summary.cpu_util',
     ]]
 
     prof_data = prof_data.rename(columns = {
@@ -99,6 +113,10 @@
         'nav2_amcl_likelihood_prob.summary.peak_rss': 'nav2_amcl_likelihood_prob_peak_rss',
         'nav2_amcl_likelihood_beam_skip.summary.cpu_util': 'nav2_amcl_likelihood_beam_skip_cpu_util',
         'nav2_amcl_likelihood_beam_skip.summary.peak_rss': 'nav2_amcl_likelihood_beam_skip_peak_rss',
+        'beluga_amcl_likelihood.summary.cpu_util': 'beluga_amcl_likelihood_cpu_util',
+        'beluga_amcl_likelihood.summary.peak_rss': 'beluga_amcl_likelihood_peak_rss',
+        'beluga_amcl_likelihood_prob.summary.cpu_util': 'beluga_amcl_likelihood_prob_cpu_util',
+        'beluga_amcl_likelihood_prob.summary.peak_rss': 'beluga_amcl_likelihood_prob_peak_rss',
     })
 
     prof_data = prof_data.groupby([
@@ -112,6 +130,10 @@
     nav2_amcl_likelihood_prob_peak_rss_data = prof_data['nav2_amcl_likelihood_prob_peak_rss'].agg(['max'])
     nav2_amcl_likelihood_beam_skip_cpu_util_data = prof_data['nav2_amcl_likelihood_beam_skip_cpu_util'].agg(['max'])
     nav2_amcl_likelihood_beam_skip_peak_rss_data = prof_data['nav2_amcl_likelihood_beam_skip_peak_rss'].agg(['max'])
+    beluga_amcl_likelihood_cpu_util_data = prof_data['beluga_amcl_likelihood_cpu_util'].agg(['max'])
+    beluga_amcl_likelihood_peak_rss_data = prof_data['beluga_amcl_likelihood_peak_rss'].agg(['max'])
+    beluga_amcl_likelihood_prob_cpu_util_data = prof_data['beluga_amcl_likelihood_prob_cpu_util'].agg(['max'])
+    beluga_amcl_likelihood_prob_peak_rss_data = prof_data['beluga_amcl_likelihood_prob_peak_rss'].agg(['max'])
 
     from ament_index_python import get_package_share_directory
 
@@ -206,6 +228,26 @@
                 nav2_amcl_likelihood_beam_skip_mean_95 = nav2_amcl_likelihood_beam_skip_data['mean_95']
                 nav2_amcl_likelihood_beam_skip_std = nav2_amcl_likelihood_beam_skip_data['std']
                 nav2_amcl_likelihood_beam_skip_max = nav2_amcl_likelihood_beam_skip_data['max']
+                """ """
+                beluga_amcl_likelihood_data = data_for_bagfile.loc['/beluga_amcl_likelihood/pose']
+                beluga_amcl_likelihood_median = beluga_amcl_likelihood_data['median']
+                beluga_amcl_likelihood_median_05 = beluga_amcl_likelihood_data['median_05']
+                beluga_amcl_likelihood_median_95 = beluga_amcl_likelihood_data['median_95']
+                beluga_amcl_likelihood_mean = beluga_amcl_likelihood_data['mean']
+                beluga_amcl_likelihood_mean_05 = beluga_amcl_likelihood_data['mean_05']
+                beluga_amcl_likelihood_mean_95 = beluga_amcl_likelihood_data['mean_95']
+                beluga_amcl_likelihood_std = beluga_amcl_likelihood_data['std']
+                beluga_amcl_likelihood_max = beluga_amcl_likelihood_data['max']
+                """ """
+                beluga_amcl_likelihood_prob_data = data_for_bagfile.loc['/beluga_amcl_likelihood_prob/pose']
+                beluga_amcl_likelihood_prob_median = beluga_amcl_likelihood_prob_data['median']
+                beluga_amcl_likelihood_prob_median_05 = beluga_amcl_likelihood_prob_data['median_05']
+                beluga_amcl_likelihood_prob_median_95 = beluga_amcl_likelihood_prob_data['median_95']
+                beluga_amcl_likelihood_prob_mean = beluga_amcl_likelihood_prob_data['mean']
+                beluga_amcl_likelihood_prob_mean_05 = beluga_amcl_likelihood_prob_data['mean_05']
+                beluga_amcl_likelihood_prob_mean_95 = beluga_amcl_likelihood_prob_data['mean_95']
+                beluga_amcl_likelihood_prob_std = beluga_amcl_likelihood_prob_data['std']
+                beluga_amcl_likelihood_prob_max = beluga_amcl_likelihood_prob_data['max']
             except:
                 nav2_amcl_likelihood_median = '???'
                 nav2_amcl_likelihood_median_05 = '???'
@@ -233,6 +275,24 @@
                 nav2_amcl_likelihood_beam_skip_mean_95 = '???'
                 nav2_amcl_likelihood_beam_skip_std = '???'
                 nav2_amcl_likelihood_beam_skip_max = '???'
+                """ """
+                beluga_amcl_likelihood_median = '???'
+                beluga_amcl_likelihood_median_05 = '???'
+                beluga_amcl_likelihood_median_95 = '???'
+                beluga_amcl_likelihood_mean = '???'
+                beluga_amcl_likelihood_mean_05 = '???'
+                beluga_amcl_likelihood_mean_95 = '???'
+                beluga_amcl_likelihood_std = '???'
+                beluga_amcl_likelihood_max = '???'
+                """ """
+                beluga_amcl_likelihood_prob_median = '???'
+                beluga_amcl_likelihood_prob_median_05 = '???'
+                beluga_amcl_likelihood_prob_median_95 = '???'
+                beluga_amcl_likelihood_prob_mean = '???'
+                beluga_amcl_likelihood_prob_mean_05 = '???'
+                beluga_amcl_likelihood_prob_mean_95 = '???'
+                beluga_amcl_likelihood_prob_std = '???'
+                beluga_amcl_likelihood_prob_max = '???'
             try:
                 nav2_amcl_likelihood_cpu_util = nav2_amcl_likelihood_cpu_util_data.loc[case_name].loc[bagfile]['max']
                 nav2_amcl_likelihood_peak_rss = nav2_amcl_likelihood_peak_rss_data.loc[case_name].loc[bagfile]['max']
@@ -242,10 +302,18 @@
                 """ """
                 nav2_amcl_likelihood_beam_skip_cpu_util = nav2_amcl_likelihood_beam_skip_cpu_util_data.loc[case_name].loc[bagfile]['max']
                 nav2_amcl_likelihood_beam_skip_peak_rss = nav2_amcl_likelihood_beam_skip_peak_rss_data.loc[case_name].loc[bagfile]['max']
+                """ """
+                beluga_amcl_likelihood_cpu_util = beluga_amcl_likelihood_cpu_util_data.loc[case_name].loc[bagfile]['max']
+                beluga_amcl_likelihood_peak_rss = beluga_amcl_likelihood_peak_rss_data.loc[case_name].loc[bagfile]['max']
+                """ """
+                beluga_amcl_likelihood_prob_cpu_util = beluga_amcl_likelihood_prob_cpu_util_data.loc[case_name].loc[bagfile]['max']
+                beluga_amcl_likelihood_prob_peak_rss = beluga_amcl_likelihood_prob_peak_rss_data.loc[case_name].loc[bagfile]['max']
             except:
                 nav2_amcl_likelihood_cpu_util = nav2_amcl_likelihood_peak_rss = "???"
                 nav2_amcl_likelihood_prob_cpu_util = nav2_amcl_likelihood_prob_peak_rss = "???"
                 nav2_amcl_likelihood_beam_skip_cpu_util = nav2_amcl_likelihood_beam_skip_peak_rss = "???"
+                beluga_amcl_likelihood_cpu_util = beluga_amcl_likelihood_peak_rss = "???"
+                beluga_amcl_likelihood_prob_cpu_util = beluga_amcl_likelihood_prob_peak_rss = "???"
             """ """
             output.append(TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
@@ -253,7 +321,7 @@
                 nrows=len(data_for_bagfile)))
             """ """
             output.append(ROW_TEMPLATE.format(
-                implementation_name="Likelihood Field",
+                implementation_name="Nav2 LF",
                 median=round_digits(nav2_amcl_likelihood_median),
                 median_05=round_digits(nav2_amcl_likelihood_median_05),
                 median_95=round_digits(nav2_amcl_likelihood_median_95),
@@ -262,7 +330,7 @@
                 mean_95=round_digits(nav2_amcl_likelihood_mean_95),
                 worst=round_digits(nav2_amcl_likelihood_max)))
             output.append(ROW_TEMPLATE.format(
-                implementation_name="Likelihood Prob",
+                implementation_name="Nav2 LFP",
                 median=round_digits(nav2_amcl_likelihood_prob_median),
                 median_05=round_digits(nav2_amcl_likelihood_prob_median_05),
                 median_95=round_digits(nav2_amcl_likelihood_prob_median_95),
@@ -271,7 +339,7 @@
                 mean_95=round_digits(nav2_amcl_likelihood_prob_mean_95),
                 worst=round_digits(nav2_amcl_likelihood_prob_max)))
             output.append(ROW_TEMPLATE.format(
-                implementation_name="Beam Skip",
+                implementation_name="Nav2 LFP + BS",
                 median=round_digits(nav2_amcl_likelihood_beam_skip_median),
                 median_05=round_digits(nav2_amcl_likelihood_beam_skip_median_05),
                 median_95=round_digits(nav2_amcl_likelihood_beam_skip_median_95),
@@ -279,22 +347,48 @@
                 mean_05=round_digits(nav2_amcl_likelihood_beam_skip_mean_05),
                 mean_95=round_digits(nav2_amcl_likelihood_beam_skip_mean_95),
                 worst=round_digits(nav2_amcl_likelihood_beam_skip_max)))
+            output.append(ROW_TEMPLATE.format(
+                implementation_name="Beluga LF",
+                median=round_digits(beluga_amcl_likelihood_median),
+                median_05=round_digits(beluga_amcl_likelihood_median_05),
+                median_95=round_digits(beluga_amcl_likelihood_median_95),
+                mean=round_digits(beluga_amcl_likelihood_mean),
+                mean_05=round_digits(beluga_amcl_likelihood_mean_05),
+                mean_95=round_digits(beluga_amcl_likelihood_mean_95),
+                worst=round_digits(beluga_amcl_likelihood_max)))
+            output.append(ROW_TEMPLATE.format(
+                implementation_name="Beluga LFP",
+                median=round_digits(beluga_amcl_likelihood_prob_median),
+                median_05=round_digits(beluga_amcl_likelihood_prob_median_05),
+                median_95=round_digits(beluga_amcl_likelihood_prob_median_95),
+                mean=round_digits(beluga_amcl_likelihood_prob_mean),
+                mean_05=round_digits(beluga_amcl_likelihood_prob_mean_05),
+                mean_95=round_digits(beluga_amcl_likelihood_prob_mean_95),
+                worst=round_digits(beluga_amcl_likelihood_prob_max)))
             """ """
             output.append(RESOURCE_TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
-                nrows=3))
+                nrows=5))
             output.append(RESOURCE_TABLE_ROW_TEMPLATE.format(
-                implementation_name="Likelihood Field",
+                implementation_name="Nav2 LF",
                 likelihood_field_peak_cpu=round_digits(nav2_amcl_likelihood_cpu_util, 1),
                 likelihood_field_peak_rss=round_digits(nav2_amcl_likelihood_peak_rss, 0)))
             output.append(RESOURCE_TABLE_ROW_TEMPLATE.format(
-                implementation_name="Likelihood Prob",
+                implementation_name="Nav2 LFP",
                 likelihood_field_peak_cpu=round_digits(nav2_amcl_likelihood_prob_cpu_util, 1),
                 likelihood_field_peak_rss=round_digits(nav2_amcl_likelihood_prob_peak_rss, 0)))
             output.append(RESOURCE_TABLE_ROW_TEMPLATE.format(
-                implementation_name="Beam Skip",
+                implementation_name="Nav2 LFP + BS",
                 likelihood_field_peak_cpu=round_digits(nav2_amcl_likelihood_beam_skip_cpu_util, 1),
                 likelihood_field_peak_rss=round_digits(nav2_amcl_likelihood_beam_skip_peak_rss, 0)))
+            output.append(RESOURCE_TABLE_ROW_TEMPLATE.format(
+                implementation_name="Beluga LF",
+                likelihood_field_peak_cpu=round_digits(beluga_amcl_likelihood_cpu_util, 1),
+                likelihood_field_peak_rss=round_digits(beluga_amcl_likelihood_peak_rss, 0)))
+            output.append(RESOURCE_TABLE_ROW_TEMPLATE.format(
+                implementation_name="Beluga LFP",
+                likelihood_field_peak_cpu=round_digits(beluga_amcl_likelihood_prob_cpu_util, 1),
+                likelihood_field_peak_rss=round_digits(beluga_amcl_likelihood_prob_peak_rss, 0)))
 
     output = '\n\n'.join(output)
 

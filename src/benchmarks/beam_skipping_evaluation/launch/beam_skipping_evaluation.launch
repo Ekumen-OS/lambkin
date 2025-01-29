@@ -27,7 +27,7 @@
   <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" name="lifecycle_manager">
     <param name="autostart" value="true" />
     <param name="node_names"
-      value="[map_server, nav2_amcl_likelihood, nav2_amcl_likelihood_prob, nav2_amcl_likelihood_beam_skip]" />
+      value="[map_server, nav2_amcl_likelihood, nav2_amcl_likelihood_prob, nav2_amcl_likelihood_beam_skip, beluga_amcl_likelihood, beluga_amcl_likelihood_prob]" />
   </node>
 
   <!-- nav2_amcl_likelihood -->
@@ -55,6 +55,29 @@
     <remap from="particle_cloud" to="/nav2_amcl_likelihood/particle_cloud" />
   </node>
 
+  <!-- beluga_amcl_likelihood -->
+
+  <node pkg="beluga_amcl" exec="amcl_node" name="beluga_amcl_likelihood"
+    launch-prefix="$(env beluga_amcl_likelihood_PREFIX '')">
+    <param from="$(find-pkg-share beam_skipping_evaluation)/params/nav2_amcl_likelihood.yaml" />
+
+    <param name="global_frame_id" value="$(var global_frame_id)" />
+    <param name="odom_frame_id" value="$(var odom_frame_id)" />
+    <param name="base_frame_id" value="$(var base_frame_id)" />
+    <param name="map_topic" value="$(var map_topic)" />
+    <param name="scan_topic" value="$(var scan_topic)" />
+
+    <param name="initial_pose.x" value="$(var initial_pose_x)" />
+    <param name="initial_pose.y" value="$(var initial_pose_y)" />
+    <param name="initial_pose.yaw" value="$(var initial_pose_yaw)" />
+
+    <param name="robot_model_type" value="$(var robot_model_type)" />
+
+    <remap from="pose" to="/beluga_amcl_likelihood/pose"/>
+    <remap from="particle_cloud" to="/beluga_amcl_likelihood/particle_cloud"/>
+    <remap from="particle_markers" to="/beluga_amcl_likelihood/particle_markers"/>
+  </node>
+
   <!-- nav2_amcl_likelihood_prob -->
 
   <node pkg="nav2_amcl" exec="amcl" name="nav2_amcl_likelihood_prob"
@@ -75,6 +98,29 @@
 
     <remap from="amcl_pose" to="/nav2_amcl_likelihood_prob/pose" />
     <remap from="particle_cloud" to="/nav2_amcl_likelihood_prob/particle_cloud" />
+  </node>
+
+  <!-- beluga_amcl_likelihood_prob -->
+
+  <node pkg="beluga_amcl" exec="amcl_node" name="beluga_amcl_likelihood_prob"
+    launch-prefix="$(env beluga_amcl_likelihood_prob_PREFIX '')">
+    <param from="$(find-pkg-share beam_skipping_evaluation)/params/nav2_amcl_likelihood_prob.yaml" />
+
+    <param name="global_frame_id" value="$(var global_frame_id)" />
+    <param name="odom_frame_id" value="$(var odom_frame_id)" />
+    <param name="base_frame_id" value="$(var base_frame_id)" />
+    <param name="map_topic" value="$(var map_topic)" />
+    <param name="scan_topic" value="$(var scan_topic)" />
+
+    <param name="initial_pose.x" value="$(var initial_pose_x)" />
+    <param name="initial_pose.y" value="$(var initial_pose_y)" />
+    <param name="initial_pose.yaw" value="$(var initial_pose_yaw)" />
+
+    <param name="robot_model_type" value="$(var robot_model_type)" />
+
+    <remap from="pose" to="/beluga_amcl_likelihood_prob/pose"/>
+    <remap from="particle_cloud" to="/beluga_amcl_likelihood_prob/particle_cloud"/>
+    <remap from="particle_markers" to="/beluga_amcl_likelihood_prob/particle_markers"/>
   </node>
 
   <!-- nav2_amcl_likelihood_beam_skip -->
@@ -102,9 +148,9 @@
 
   <!-- launch rviz -->
 
-  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
+  <!-- <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
     args="-d $(find-pkg-share beam_skipping_evaluation)/config/display.rviz">
     <param name="use_sim_time" value="$(var use_sim_time)" />
-  </node>
+  </node> -->
 
 </launch>
