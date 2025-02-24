@@ -26,8 +26,8 @@ project = 'Beluga AMCL Performance Benchmarking Results'
 copyright = '2024, Ekumen Inc.'
 author = 'Ekumen Inc.'
 
-version = '0.1.0'
-release = '0.1.0'
+version = '0.1.1'
+release = '0.1.1'
 
 # -- General configuration ---------------------------------------------------
 

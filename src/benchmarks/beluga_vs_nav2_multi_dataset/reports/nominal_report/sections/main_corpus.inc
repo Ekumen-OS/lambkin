@@ -31,12 +31,32 @@
         'metric.series.value': 'ape',
     })
 
+    def build_bootstrapped_estimator(name, func, p = 50, n_bootstraps=500):
+        def bootstrap_confidence_interval(data, name, func, p, n_bootstraps):
+            bootstrapped = np.array([func(data.sample(frac=1, replace=True)) for _ in range(n_bootstraps)])
+            return np.percentile(bootstrapped, [p])[0]
+        return lambda data: bootstrap_confidence_interval(data, name, func, p, n_bootstraps)
+
+    bootstrapped_mean_05 = build_bootstrapped_estimator('mean', np.mean, 5)
+    bootstrapped_mean_95 = build_bootstrapped_estimator('mean', np.mean, 95)
+    bootstrapped_median_05 = build_bootstrapped_estimator('median', np.median, 5)
+    bootstrapped_median_95 = build_bootstrapped_estimator('median', np.median, 95)
+
     ape = data.groupby([
         'case_name',
         'bagfile',
         'implementation',
         'laser_model',
-    ])['ape'].agg(['median', 'mean', 'std', 'max']).round(3)
+    ])['ape'].agg([
+        ('median', np.median),
+        ('median_05', bootstrapped_median_05),
+        ('median_95', bootstrapped_median_95),
+        ('mean', np.mean),
+        ('mean_05', bootstrapped_mean_05),
+        ('mean_95', bootstrapped_mean_95),
+        'std',
+        'max',
+    ])
 
     bagfile_location_data = data.groupby([
         'case_name',
@@ -154,30 +174,68 @@
             data_for_bagfile = data_for_case.loc[bagfile]
             try:
                 beluga_likelihood_data = data_for_bagfile.loc['/beluga_amcl/pose', 'likelihood_field']
-                beluga_beam_data = data_for_bagfile.loc['/beluga_amcl/pose', 'beam']
-                beluga_likelihood_median = beluga_likelihood_data['median']
-                beluga_likelihood_mean = beluga_likelihood_data['mean']
-                beluga_likelihood_std = beluga_likelihood_data['std']
-                beluga_likelihood_max = beluga_likelihood_data['max']
-                beluga_beam_median = beluga_beam_data['median']
-                beluga_beam_mean = beluga_beam_data['mean']
-                beluga_beam_std = beluga_beam_data['std']
-                beluga_beam_max = beluga_beam_data['max']
+                beluga_beam_data       = data_for_bagfile.loc['/beluga_amcl/pose', 'beam']
+                beluga_likelihood_median    = beluga_likelihood_data['median']
+                beluga_likelihood_median_05 = beluga_likelihood_data['median_05']
+                beluga_likelihood_median_95 = beluga_likelihood_data['median_95']
+                beluga_likelihood_mean      = beluga_likelihood_data['mean']
+                beluga_likelihood_mean_05   = beluga_likelihood_data['mean_05']
+                beluga_likelihood_mean_95   = beluga_likelihood_data['mean_95']
+                beluga_likelihood_max       = beluga_likelihood_data['max']
+                beluga_beam_median          = beluga_beam_data['median']
+                beluga_beam_median_05       = beluga_beam_data['median_05']
+                beluga_beam_median_95       = beluga_beam_data['median_95']
+                beluga_beam_mean            = beluga_beam_data['mean']
+                beluga_beam_mean_05         = beluga_beam_data['mean_05']
+                beluga_beam_mean_95         = beluga_beam_data['mean_95']
+                beluga_beam_max             = beluga_beam_data['max']
             except:
-                beluga_likelihood_rms = beluga_likelihood_mean = beluga_likelihood_std = beluga_likelihood_max = "???"
+                beluga_likelihood_median    = "???"
+                beluga_likelihood_median_05 = "???"
+                beluga_likelihood_median_95 = "???"
+                beluga_likelihood_mean      = "???"
+                beluga_likelihood_mean_05   = "???"
+                beluga_likelihood_mean_95   = "???"
+                beluga_likelihood_max       = "???"
+                beluga_beam_median          = "???"
+                beluga_beam_median_05       = "???"
+                beluga_beam_median_95       = "???"
+                beluga_beam_mean            = "???"
+                beluga_beam_mean_05         = "???"
+                beluga_beam_mean_95         = "???"
+                beluga_beam_max             = "???"
             try:
                 nav2_likelihood_data = data_for_bagfile.loc['/nav2_amcl/pose', 'likelihood_field']
-                nav2_beam_data = data_for_bagfile.loc['/nav2_amcl/pose', 'beam']
-                nav2_likelihood_median = nav2_likelihood_data['median']
-                nav2_likelihood_mean = nav2_likelihood_data['mean']
-                nav2_likelihood_std = nav2_likelihood_data['std']
-                nav2_likelihood_max = nav2_likelihood_data['max']
-                nav2_beam_median = nav2_beam_data['median']
-                nav2_beam_mean = nav2_beam_data['mean']
-                nav2_beam_std = nav2_beam_data['std']
-                nav2_beam_max = nav2_beam_data['max']
+                nav2_beam_data       = data_for_bagfile.loc['/nav2_amcl/pose', 'beam']
+                nav2_likelihood_median    = nav2_likelihood_data['median']
+                nav2_likelihood_median_05 = nav2_likelihood_data['median_05']
+                nav2_likelihood_median_95 = nav2_likelihood_data['median_95']
+                nav2_likelihood_mean      = nav2_likelihood_data['mean']
+                nav2_likelihood_mean_05   = nav2_likelihood_data['mean_05']
+                nav2_likelihood_mean_95   = nav2_likelihood_data['mean_95']
+                nav2_likelihood_max       = nav2_likelihood_data['max']
+                nav2_beam_median          = nav2_beam_data['median']
+                nav2_beam_median_05       = nav2_beam_data['median_05']
+                nav2_beam_median_95       = nav2_beam_data['median_95']
+                nav2_beam_mean            = nav2_beam_data['mean']
+                nav2_beam_mean_05         = nav2_beam_data['mean_05']
+                nav2_beam_mean_95         = nav2_beam_data['mean_95']
+                nav2_beam_max             = nav2_beam_data['max']
             except:
-                nav2_likelihood_rms = nav2_likelihood_mean = nav2_likelihood_std = nav2_likelihood_max = "???"
+                nav2_likelihood_median    = "???"
+                nav2_likelihood_median_05 = "???"
+                nav2_likelihood_median_95 = "???"
+                nav2_likelihood_mean      = "???"
+                nav2_likelihood_mean_05   = "???"
+                nav2_likelihood_mean_95   = "???"
+                nav2_likelihood_max       = "???"
+                nav2_beam_median          = "???"
+                nav2_beam_median_05       = "???"
+                nav2_beam_median_95       = "???"
+                nav2_beam_mean            = "???"
+                nav2_beam_mean_05         = "???"
+                nav2_beam_mean_95         = "???"
+                nav2_beam_max             = "???"
             try:
                 beluga_likelihood_cpu = beluga_max_cpu.loc[case_name].loc[bagfile].loc['likelihood_field']['max']
                 beluga_likelihood_peak_rss = beluga_max_rss.loc[case_name].loc[bagfile].loc['likelihood_field']['max']
@@ -188,8 +246,14 @@
                 nav2_beam_cpu = nav2_max_cpu.loc[case_name].loc[bagfile].loc['beam']['max']
                 nav2_beam_peak_rss = nav2_max_rss.loc[case_name].loc[bagfile].loc['beam']['max']
             except:
-                beluga_likelihood_cpu = beluga_likelihood_peak_rss = nav2_likelihood_cpu = nav2_likelihood_peak_rss = "???"
-                beluga_beam_cpu = beluga_beam_peak_rss = nav2_beam_cpu = nav2_beam_peak_rss = "???"
+                beluga_likelihood_cpu      = "???"
+                beluga_likelihood_peak_rss = "???"
+                nav2_likelihood_cpu        = "???"
+                nav2_likelihood_peak_rss   = "???"
+                beluga_beam_cpu            = "???"
+                beluga_beam_peak_rss       = "???"
+                nav2_beam_cpu              = "???"
+                nav2_beam_peak_rss         = "???"
             output.append(TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
                 sensor_model='Likelihood field',
@@ -197,14 +261,20 @@
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Beluga AMCL",
                 median=round_digits(beluga_likelihood_median),
+                median_05=round_digits(beluga_likelihood_median_05),
+                median_95=round_digits(beluga_likelihood_median_95),
                 mean=round_digits(beluga_likelihood_mean),
-                std=round_digits(beluga_likelihood_std),
+                mean_05=round_digits(beluga_likelihood_mean_05),
+                mean_95=round_digits(beluga_likelihood_mean_95),
                 worst=round_digits(beluga_likelihood_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Nav2 AMCL",
                 median=round_digits(nav2_likelihood_median),
+                median_05=round_digits(nav2_likelihood_median_05),
+                median_95=round_digits(nav2_likelihood_median_95),
                 mean=round_digits(nav2_likelihood_mean),
-                std=round_digits(nav2_likelihood_std),
+                mean_05=round_digits(nav2_likelihood_mean_05),
+                mean_95=round_digits(nav2_likelihood_mean_95),
                 worst=round_digits(nav2_likelihood_max)))
             output.append(TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
@@ -213,14 +283,20 @@
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Beluga AMCL",
                 median=round_digits(beluga_beam_median),
+                median_05=round_digits(beluga_beam_median_05),
+                median_95=round_digits(beluga_beam_median_95),
                 mean=round_digits(beluga_beam_mean),
-                std=round_digits(beluga_beam_std),
+                mean_05=round_digits(beluga_beam_mean_05),
+                mean_95=round_digits(beluga_beam_mean_95),
                 worst=round_digits(beluga_beam_max)))
             output.append(ROW_TEMPLATE.format(
                 implementation_name="Nav2 AMCL",
                 median=round_digits(nav2_beam_median),
+                median_05=round_digits(nav2_beam_median_05),
+                median_95=round_digits(nav2_beam_median_95),
                 mean=round_digits(nav2_beam_mean),
-                std=round_digits(nav2_beam_std),
+                mean_05=round_digits(nav2_beam_mean_05),
+                mean_95=round_digits(nav2_beam_mean_95),
                 worst=round_digits(nav2_beam_max)))
             output.append(RESOURCE_TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
