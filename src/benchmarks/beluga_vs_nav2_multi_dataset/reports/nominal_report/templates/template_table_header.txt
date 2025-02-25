@@ -2,11 +2,12 @@
     :header-rows: {nrows}
 
     *
-        - :rspan:`1`  :cspan:`1`  Implementation
-        - :cspan:`4` {sensor_model} sensor model
+        - :rspan:`1`  :cspan:`1`  Sensor Model
+        - :cspan:`5` Statistics
 
     *
         - median
+        - median c.i.
         - mean
-        - std
+        - mean c.i.
         - worst-case
