@@ -16,6 +16,7 @@ VERSION 0.8
 
 IMPORT ../../external/os AS os
 IMPORT ../../.. AS lambkin
+IMPORT ../../external/rosdep AS rosdep
 
 devel:
     ARG distro=jammy
@@ -34,6 +35,7 @@ devel:
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
+    DO rosdep+FIXUSER
     SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
 
 local-devel:
@@ -48,7 +50,7 @@ local-devel:
 build:
     ARG distro=jammy
     ARG rosdistro  # forward
-    FROM lambkin+ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
+    FROM lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
     RUN cd src && git clone https://github.com/Ekumen-OS/beluga
