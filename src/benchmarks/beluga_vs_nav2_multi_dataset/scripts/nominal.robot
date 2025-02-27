@@ -16,19 +16,16 @@
 
 
 *** Settings ***
+
 Documentation       Nominal Beluga AMCL vs Nav2 AMCL benchmark using 2D datasets.
 
 Resource            lambkin/shepherd/robot/resources/all.resource
 
 Suite Setup         Setup Beluga vs Nav2 benchmark suite
 Suite Teardown      Teardown Beluga vs Nav2 benchmark suite
-Test Template       Run Beluga vs Nav2 benchmark case for each ${dataset} ${basedir} ${laser_model} ${odom_frame} ${map_frame} ${base_frame} ${scan_topic} ${iterations} ${initial_pose_x} ${initial_pose_y} ${initial_pose_yaw} ${robot_model_type}
-
+Test Template       Run Beluga vs Nav2 benchmark case for each ${dataset} ${basedir} ${odom_frame} ${map_frame} ${base_frame} ${scan_topic} ${iterations} ${initial_pose_x} ${initial_pose_y} ${initial_pose_yaw} ${robot_model_type}
 
 *** Variables ***
-
-@{LASER_MODELS}             likelihood_field
-...                         beam
 
 @{MAGAZINO_DIR}             magazzino_ros2_localization_only
 @{MAGAZINO_BAGS}            hallway_localization
@@ -86,7 +83,7 @@ ${TORWIC_SLAM_DIR}          torwic_slam_dataset_ros2_localization_only
 ...                         2022-10-12_hallway_straight_cw
 
 ${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
-# # 2011-08-03-16-16-43 is not in the list because it's missing the scan topic
+# 2011-08-03-16-16-43 is not in the list because it's missing the scan topic
 @{WILLOW_DSET_BAGS}         2011-08-03-20-03-22
 ...                         2011-08-04-12-16-23
 ...                         2011-08-04-14-27-40
@@ -157,13 +154,62 @@ ${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
 @{LONG_DURATION_DIR}          long_duration_bags_ros2_localization_only
 @{OMNI_DRIVE_SIM_BAGS}        simulated_bookstore_robomaster_24hs
 
-*** Test Cases ***        DATASET                         BASEDIR                   LASER_MODEL           ODOM_FRAME     MAP_FRAME  BASE_FRAME      SCAN_TOPIC     ITERATION      INITIAL_POSE_X  INITIAL_POSE_Y  INITIAL_POSE_YAW    ROBOT_MODEL_TYPE 
-Magazino Datasets         ${{MAGAZINO_BAGS}}              ${{MAGAZINO_DIR}}         ${{LASER_MODELS}}     odom           map        base_footprint  /scan_front    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}        ${{LASER_MODELS}}     base_odom      map        base_link       /scan          5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   ${{LASER_MODELS}}     odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      ${{LASER_MODELS}}     odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      ${{LASER_MODELS}}     odom_combined  map        base_footprint  /base_scan     1              0.0             0.0             0.0                nav2_amcl::OmniMotionModel
-Omni Drive Sim 24hs       ${{OMNI_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    ${{LASER_MODELS}}     odom           map        base_link       /scan          1              3.2             9.0             0.7                 nav2_amcl::OmniMotionModel
+@{HQ_SIMULATION_DIR}            hq_simulation
+@{HQ_SIMULATION_BAGS}           hq_simulation_segment_0
+...                             hq_simulation_segment_1
+...                             hq_simulation_segment_2
+...                             hq_simulation_segment_3
+...                             hq_simulation_segment_4
+...                             hq_simulation_segment_5
+...                             hq_simulation_segment_6
+...                             hq_simulation_segment_7
+...                             hq_simulation_segment_8
+...                             hq_simulation_segment_9
+...                             hq_simulation_segment_10
+...                             hq_simulation_segment_12
+...                             hq_simulation_segment_13
+...                             hq_simulation_segment_14
+...                             hq_simulation_segment_20
+...                             hq_simulation_segment_21
+...                             hq_simulation_segment_22
+...                             hq_simulation_segment_23
+...                             hq_simulation_segment_24
+...                             hq_simulation_segment_25
+...                             hq_simulation_segment_26
+...                             hq_simulation_segment_32
+...                             hq_simulation_segment_33
+...                             hq_simulation_segment_34
+...                             hq_simulation_segment_35
+...                             hq_simulation_segment_36
+...                             hq_simulation_segment_37
+...                             hq_simulation_segment_38
+...                             hq_simulation_segment_39
+...                             hq_simulation_segment_40
+...                             hq_simulation_segment_41
+...                             hq_simulation_segment_42
+...                             hq_simulation_segment_43
+...                             hq_simulation_segment_44
+...                             hq_simulation_segment_45
+...                             hq_simulation_segment_46
+...                             hq_simulation_segment_48
+...                             hq_simulation_segment_49
+...                             hq_simulation_segment_50
+...                             hq_simulation_segment_51
+...                             hq_simulation_segment_52
+...                             hq_simulation_segment_53
+...                             hq_simulation_segment_54
+...                             hq_simulation_segment_55
+...                             hq_simulation_segment_56
+
+
+*** Test Cases ***        DATASET                         BASEDIR                   ODOM_FRAME     MAP_FRAME  BASE_FRAME      SCAN_TOPIC     ITERATION      INITIAL_POSE_X  INITIAL_POSE_Y  INITIAL_POSE_YAW   ROBOT_MODEL_TYPE
+Magazino Datasets         ${{MAGAZINO_BAGS}}              ${{MAGAZINO_DIR}}         odom           map        base_footprint  /scan_front    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}        base_odom      map        base_link       /scan          5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      odom_combined  map        base_footprint  /base_scan     1              0.0             0.0             0.0                nav2_amcl::OmniMotionModel
+Omni Drive Sim 24hs       ${{OMNI_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    odom           map        base_link       /scan          1              3.2             9.0             0.7                nav2_amcl::OmniMotionModel
+HQ Simulation             ${{HQ_SIMULATION_BAGS}}         ${{HQ_SIMULATION_DIR}}    odom           map        base_link       /scan          1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
 
 *** Keywords ***
 Beluga vs Nav2 benchmark suite
@@ -186,7 +232,6 @@ Beluga vs Nav2 benchmark case
     # Setup benchmark rig
     Uses beluga_vs_nav2_multi_dataset.launch in beluga_vs_nav2_multi_dataset ROS package as rig
     Sets map_filename launch argument to ${artifacts_path}/map.yaml
-    Sets laser_model_type launch argument to ${laser_model}
     Sets global_frame_id launch argument to ${map_frame}
     Sets odom_frame_id launch argument to ${odom_frame}
     Sets base_frame_id launch argument to ${base_frame}
@@ -197,10 +242,18 @@ Beluga vs Nav2 benchmark case
     Sets robot_model_type launch argument to ${robot_model_type}
     Sets use_sim_time launch argument to true
     # Setup benchmark profiling
-    Uses timemory-timem to sample beluga_amcl performance
-    Uses timemory-timem to sample nav2_amcl performance
+    Uses timemory-timem to sample nav2_amcl_likelihood performance
+    Uses timemory-timem to sample nav2_amcl_likelihood_prob performance
+    Uses timemory-timem to sample nav2_amcl_likelihood_beam_skip performance
+    Uses timemory-timem to sample beluga_amcl_likelihood performance
+    Uses timemory-timem to sample beluga_amcl_likelihood_prob performance
+    # Setup tracking
+    Tracks /nav2_amcl_likelihood/pose trajectories
+    Tracks /nav2_amcl_likelihood_prob/pose trajectories
+    Tracks /nav2_amcl_likelihood_beam_skip/pose trajectories
+    Tracks /beluga_amcl_likelihood/pose trajectories
+    Tracks /beluga_amcl_likelihood_prob/pose trajectories
     # Setup benchmark analysis
-    Tracks /nav2_amcl/pose /beluga_amcl/pose trajectories
     Uses ${artifacts_path}/groundtruth.tum as trajectory groundtruth
     Performs trajectory corrections  align=yes  t_max_diff=${0.1}
     Uses ${iterations} iterations
