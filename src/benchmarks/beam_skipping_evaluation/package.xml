@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>beluga_vs_nav2</name>
+  <name>beam_skipping_evaluation</name>
   <version>1.0.0</version>
   <description>LAMBKIN powered benchmarks for comparing Beluga AMCL to Nav2 AMCL.</description>
 
-  <maintainer email="serraramiro@ekumenlabs.com">Ramiro Serra</maintainer>
+  <maintainer email="glpuga@ekumenlabs.com">Gerardo Puga</maintainer>
 
   <license>Apache-2.0</license>
 
@@ -20,12 +20,15 @@
   <exec_depend>python3-tk</exec_depend>
 
   <exec_depend>nav2_amcl</exec_depend>
+  <exec_depend>beluga_amcl</exec_depend>
   <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>nav2_map_server</exec_depend>
 
-  <exec_depend>beluga_amcl</exec_depend>
-
   <exec_depend>rosbag2_storage_default_plugins</exec_depend>
+  <exec_depend>rosbag2_storage_mcap</exec_depend>
+
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>nav2_rviz_plugins</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

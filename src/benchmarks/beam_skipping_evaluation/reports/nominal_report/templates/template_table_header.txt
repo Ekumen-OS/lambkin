@@ -1,0 +1,13 @@
+.. flat-table:: APE metrics aggregated across all iterations of ``{trajectory_name}`` for the {sensor_model} sensor model.
+    :header-rows: {nrows}
+
+    *
+        - :rspan:`1`  :cspan:`1`  Implementation
+        - :cspan:`5` {sensor_model} sensor model
+
+    *
+        - median
+        - median c.i.
+        - mean
+        - mean c.i.
+        - worst-case
