@@ -199,100 +199,100 @@
             output.append(BAGFILE_SECTION_TEMPLATE.format(bagfile_name=bagfile, metadata=metadata))
             data_for_bagfile = data_for_case.loc[bagfile]
             try:
-                nav2_amcl_likelihood_data = data_for_bagfile.loc['/nav2_amcl_likelihood/pose']
-                nav2_amcl_likelihood_median = nav2_amcl_likelihood_data['median']
+                nav2_amcl_likelihood_data      = data_for_bagfile.loc['/nav2_amcl_likelihood/pose']
+                nav2_amcl_likelihood_median    = nav2_amcl_likelihood_data['median']
                 nav2_amcl_likelihood_median_05 = nav2_amcl_likelihood_data['median_05']
                 nav2_amcl_likelihood_median_95 = nav2_amcl_likelihood_data['median_95']
-                nav2_amcl_likelihood_mean = nav2_amcl_likelihood_data['mean']
-                nav2_amcl_likelihood_mean_05 = nav2_amcl_likelihood_data['mean_05']
-                nav2_amcl_likelihood_mean_95 = nav2_amcl_likelihood_data['mean_95']
-                nav2_amcl_likelihood_std = nav2_amcl_likelihood_data['std']
-                nav2_amcl_likelihood_max = nav2_amcl_likelihood_data['max']
+                nav2_amcl_likelihood_mean      = nav2_amcl_likelihood_data['mean']
+                nav2_amcl_likelihood_mean_05   = nav2_amcl_likelihood_data['mean_05']
+                nav2_amcl_likelihood_mean_95   = nav2_amcl_likelihood_data['mean_95']
+                nav2_amcl_likelihood_std       = nav2_amcl_likelihood_data['std']
+                nav2_amcl_likelihood_max       = nav2_amcl_likelihood_data['max']
                 """ """
-                nav2_amcl_likelihood_prob_data = data_for_bagfile.loc['/nav2_amcl_likelihood_prob/pose']
-                nav2_amcl_likelihood_prob_median = nav2_amcl_likelihood_prob_data['median']
+                nav2_amcl_likelihood_prob_data      = data_for_bagfile.loc['/nav2_amcl_likelihood_prob/pose']
+                nav2_amcl_likelihood_prob_median    = nav2_amcl_likelihood_prob_data['median']
                 nav2_amcl_likelihood_prob_median_05 = nav2_amcl_likelihood_prob_data['median_05']
                 nav2_amcl_likelihood_prob_median_95 = nav2_amcl_likelihood_prob_data['median_95']
-                nav2_amcl_likelihood_prob_mean = nav2_amcl_likelihood_prob_data['mean']
-                nav2_amcl_likelihood_prob_mean_05 = nav2_amcl_likelihood_prob_data['mean_05']
-                nav2_amcl_likelihood_prob_mean_95 = nav2_amcl_likelihood_prob_data['mean_95']
-                nav2_amcl_likelihood_prob_std = nav2_amcl_likelihood_prob_data['std']
-                nav2_amcl_likelihood_prob_max = nav2_amcl_likelihood_prob_data['max']
+                nav2_amcl_likelihood_prob_mean      = nav2_amcl_likelihood_prob_data['mean']
+                nav2_amcl_likelihood_prob_mean_05   = nav2_amcl_likelihood_prob_data['mean_05']
+                nav2_amcl_likelihood_prob_mean_95   = nav2_amcl_likelihood_prob_data['mean_95']
+                nav2_amcl_likelihood_prob_std       = nav2_amcl_likelihood_prob_data['std']
+                nav2_amcl_likelihood_prob_max       = nav2_amcl_likelihood_prob_data['max']
                 """ """
-                nav2_amcl_likelihood_beam_skip_data = data_for_bagfile.loc['/nav2_amcl_likelihood_beam_skip/pose']
-                nav2_amcl_likelihood_beam_skip_median = nav2_amcl_likelihood_beam_skip_data['median']
+                nav2_amcl_likelihood_beam_skip_data      = data_for_bagfile.loc['/nav2_amcl_likelihood_beam_skip/pose']
+                nav2_amcl_likelihood_beam_skip_median    = nav2_amcl_likelihood_beam_skip_data['median']
                 nav2_amcl_likelihood_beam_skip_median_05 = nav2_amcl_likelihood_beam_skip_data['median_05']
                 nav2_amcl_likelihood_beam_skip_median_95 = nav2_amcl_likelihood_beam_skip_data['median_95']
-                nav2_amcl_likelihood_beam_skip_mean = nav2_amcl_likelihood_beam_skip_data['mean']
-                nav2_amcl_likelihood_beam_skip_mean_05 = nav2_amcl_likelihood_beam_skip_data['mean_05']
-                nav2_amcl_likelihood_beam_skip_mean_95 = nav2_amcl_likelihood_beam_skip_data['mean_95']
-                nav2_amcl_likelihood_beam_skip_std = nav2_amcl_likelihood_beam_skip_data['std']
-                nav2_amcl_likelihood_beam_skip_max = nav2_amcl_likelihood_beam_skip_data['max']
+                nav2_amcl_likelihood_beam_skip_mean      = nav2_amcl_likelihood_beam_skip_data['mean']
+                nav2_amcl_likelihood_beam_skip_mean_05   = nav2_amcl_likelihood_beam_skip_data['mean_05']
+                nav2_amcl_likelihood_beam_skip_mean_95   = nav2_amcl_likelihood_beam_skip_data['mean_95']
+                nav2_amcl_likelihood_beam_skip_std       = nav2_amcl_likelihood_beam_skip_data['std']
+                nav2_amcl_likelihood_beam_skip_max       = nav2_amcl_likelihood_beam_skip_data['max']
                 """ """
-                beluga_amcl_likelihood_data = data_for_bagfile.loc['/beluga_amcl_likelihood/pose']
-                beluga_amcl_likelihood_median = beluga_amcl_likelihood_data['median']
+                beluga_amcl_likelihood_data      = data_for_bagfile.loc['/beluga_amcl_likelihood/pose']
+                beluga_amcl_likelihood_median    = beluga_amcl_likelihood_data['median']
                 beluga_amcl_likelihood_median_05 = beluga_amcl_likelihood_data['median_05']
                 beluga_amcl_likelihood_median_95 = beluga_amcl_likelihood_data['median_95']
-                beluga_amcl_likelihood_mean = beluga_amcl_likelihood_data['mean']
-                beluga_amcl_likelihood_mean_05 = beluga_amcl_likelihood_data['mean_05']
-                beluga_amcl_likelihood_mean_95 = beluga_amcl_likelihood_data['mean_95']
-                beluga_amcl_likelihood_std = beluga_amcl_likelihood_data['std']
-                beluga_amcl_likelihood_max = beluga_amcl_likelihood_data['max']
+                beluga_amcl_likelihood_mean      = beluga_amcl_likelihood_data['mean']
+                beluga_amcl_likelihood_mean_05   = beluga_amcl_likelihood_data['mean_05']
+                beluga_amcl_likelihood_mean_95   = beluga_amcl_likelihood_data['mean_95']
+                beluga_amcl_likelihood_std       = beluga_amcl_likelihood_data['std']
+                beluga_amcl_likelihood_max       = beluga_amcl_likelihood_data['max']
                 """ """
-                beluga_amcl_likelihood_prob_data = data_for_bagfile.loc['/beluga_amcl_likelihood_prob/pose']
-                beluga_amcl_likelihood_prob_median = beluga_amcl_likelihood_prob_data['median']
+                beluga_amcl_likelihood_prob_data      = data_for_bagfile.loc['/beluga_amcl_likelihood_prob/pose']
+                beluga_amcl_likelihood_prob_median    = beluga_amcl_likelihood_prob_data['median']
                 beluga_amcl_likelihood_prob_median_05 = beluga_amcl_likelihood_prob_data['median_05']
                 beluga_amcl_likelihood_prob_median_95 = beluga_amcl_likelihood_prob_data['median_95']
-                beluga_amcl_likelihood_prob_mean = beluga_amcl_likelihood_prob_data['mean']
-                beluga_amcl_likelihood_prob_mean_05 = beluga_amcl_likelihood_prob_data['mean_05']
-                beluga_amcl_likelihood_prob_mean_95 = beluga_amcl_likelihood_prob_data['mean_95']
-                beluga_amcl_likelihood_prob_std = beluga_amcl_likelihood_prob_data['std']
-                beluga_amcl_likelihood_prob_max = beluga_amcl_likelihood_prob_data['max']
+                beluga_amcl_likelihood_prob_mean      = beluga_amcl_likelihood_prob_data['mean']
+                beluga_amcl_likelihood_prob_mean_05   = beluga_amcl_likelihood_prob_data['mean_05']
+                beluga_amcl_likelihood_prob_mean_95   = beluga_amcl_likelihood_prob_data['mean_95']
+                beluga_amcl_likelihood_prob_std       = beluga_amcl_likelihood_prob_data['std']
+                beluga_amcl_likelihood_prob_max       = beluga_amcl_likelihood_prob_data['max']
             except:
-                nav2_amcl_likelihood_median = '???'
+                nav2_amcl_likelihood_median    = '???'
                 nav2_amcl_likelihood_median_05 = '???'
                 nav2_amcl_likelihood_median_95 = '???'
-                nav2_amcl_likelihood_mean = '???'
-                nav2_amcl_likelihood_mean_05 = '???'
-                nav2_amcl_likelihood_mean_95 = '???'
-                nav2_amcl_likelihood_std = '???'
-                nav2_amcl_likelihood_max = '???'
+                nav2_amcl_likelihood_mean      = '???'
+                nav2_amcl_likelihood_mean_05   = '???'
+                nav2_amcl_likelihood_mean_95   = '???'
+                nav2_amcl_likelihood_std       = '???'
+                nav2_amcl_likelihood_max       = '???'
                 """ """
-                nav2_amcl_likelihood_prob_median = '???'
+                nav2_amcl_likelihood_prob_median    = '???'
                 nav2_amcl_likelihood_prob_median_05 = '???'
                 nav2_amcl_likelihood_prob_median_95 = '???'
-                nav2_amcl_likelihood_prob_mean = '???'
-                nav2_amcl_likelihood_prob_mean_05 = '???'
-                nav2_amcl_likelihood_prob_mean_95 = '???'
-                nav2_amcl_likelihood_prob_std = '???'
-                nav2_amcl_likelihood_prob_max = '???'
+                nav2_amcl_likelihood_prob_mean      = '???'
+                nav2_amcl_likelihood_prob_mean_05   = '???'
+                nav2_amcl_likelihood_prob_mean_95   = '???'
+                nav2_amcl_likelihood_prob_std       = '???'
+                nav2_amcl_likelihood_prob_max       = '???'
                 """ """
-                nav2_amcl_likelihood_beam_skip_median = '???'
+                nav2_amcl_likelihood_beam_skip_median    = '???'
                 nav2_amcl_likelihood_beam_skip_median_05 = '???'
                 nav2_amcl_likelihood_beam_skip_median_95 = '???'
-                nav2_amcl_likelihood_beam_skip_mean = '???'
-                nav2_amcl_likelihood_beam_skip_mean_05 = '???'
-                nav2_amcl_likelihood_beam_skip_mean_95 = '???'
-                nav2_amcl_likelihood_beam_skip_std = '???'
-                nav2_amcl_likelihood_beam_skip_max = '???'
+                nav2_amcl_likelihood_beam_skip_mean      = '???'
+                nav2_amcl_likelihood_beam_skip_mean_05   = '???'
+                nav2_amcl_likelihood_beam_skip_mean_95   = '???'
+                nav2_amcl_likelihood_beam_skip_std       = '???'
+                nav2_amcl_likelihood_beam_skip_max       = '???'
                 """ """
-                beluga_amcl_likelihood_median = '???'
+                beluga_amcl_likelihood_median    = '???'
                 beluga_amcl_likelihood_median_05 = '???'
                 beluga_amcl_likelihood_median_95 = '???'
-                beluga_amcl_likelihood_mean = '???'
-                beluga_amcl_likelihood_mean_05 = '???'
-                beluga_amcl_likelihood_mean_95 = '???'
-                beluga_amcl_likelihood_std = '???'
-                beluga_amcl_likelihood_max = '???'
+                beluga_amcl_likelihood_mean      = '???'
+                beluga_amcl_likelihood_mean_05   = '???'
+                beluga_amcl_likelihood_mean_95   = '???'
+                beluga_amcl_likelihood_std       = '???'
+                beluga_amcl_likelihood_max       = '???'
                 """ """
-                beluga_amcl_likelihood_prob_median = '???'
+                beluga_amcl_likelihood_prob_median    = '???'
                 beluga_amcl_likelihood_prob_median_05 = '???'
                 beluga_amcl_likelihood_prob_median_95 = '???'
-                beluga_amcl_likelihood_prob_mean = '???'
-                beluga_amcl_likelihood_prob_mean_05 = '???'
-                beluga_amcl_likelihood_prob_mean_95 = '???'
-                beluga_amcl_likelihood_prob_std = '???'
-                beluga_amcl_likelihood_prob_max = '???'
+                beluga_amcl_likelihood_prob_mean      = '???'
+                beluga_amcl_likelihood_prob_mean_05   = '???'
+                beluga_amcl_likelihood_prob_mean_95   = '???'
+                beluga_amcl_likelihood_prob_std       = '???'
+                beluga_amcl_likelihood_prob_max       = '???'
             try:
                 nav2_amcl_likelihood_cpu_util = nav2_amcl_likelihood_cpu_util_data.loc[case_name].loc[bagfile]['max']
                 nav2_amcl_likelihood_peak_rss = nav2_amcl_likelihood_peak_rss_data.loc[case_name].loc[bagfile]['max']
@@ -309,11 +309,16 @@
                 beluga_amcl_likelihood_prob_cpu_util = beluga_amcl_likelihood_prob_cpu_util_data.loc[case_name].loc[bagfile]['max']
                 beluga_amcl_likelihood_prob_peak_rss = beluga_amcl_likelihood_prob_peak_rss_data.loc[case_name].loc[bagfile]['max']
             except:
-                nav2_amcl_likelihood_cpu_util = nav2_amcl_likelihood_peak_rss = "???"
-                nav2_amcl_likelihood_prob_cpu_util = nav2_amcl_likelihood_prob_peak_rss = "???"
-                nav2_amcl_likelihood_beam_skip_cpu_util = nav2_amcl_likelihood_beam_skip_peak_rss = "???"
-                beluga_amcl_likelihood_cpu_util = beluga_amcl_likelihood_peak_rss = "???"
-                beluga_amcl_likelihood_prob_cpu_util = beluga_amcl_likelihood_prob_peak_rss = "???"
+                nav2_amcl_likelihood_cpu_util           = "???"
+                nav2_amcl_likelihood_peak_rss           = "???"
+                nav2_amcl_likelihood_prob_cpu_util      = "???"
+                nav2_amcl_likelihood_prob_peak_rss      = "???"
+                nav2_amcl_likelihood_beam_skip_cpu_util = "???"
+                nav2_amcl_likelihood_beam_skip_peak_rss = "???"
+                beluga_amcl_likelihood_cpu_util         = "???"
+                beluga_amcl_likelihood_peak_rss         = "???"
+                beluga_amcl_likelihood_prob_cpu_util    = "???"
+                beluga_amcl_likelihood_prob_peak_rss    = "???"
             """ """
             output.append(TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
@@ -367,7 +372,7 @@
             """ """
             output.append(RESOURCE_TABLE_HEADER_TEMPLATE.format(
                 trajectory_name=bagfile,
-                nrows=5))
+                nrows=len(data_for_bagfile)))
             output.append(RESOURCE_TABLE_ROW_TEMPLATE.format(
                 implementation_name="Nav2 LF",
                 likelihood_field_peak_cpu=round_digits(nav2_amcl_likelihood_cpu_util, 1),
