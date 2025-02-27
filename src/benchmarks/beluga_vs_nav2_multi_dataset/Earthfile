@@ -26,6 +26,10 @@ devel:
     FROM lambkin+embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
+    RUN cd src \
+     && git clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga \
+     && git checkout 3a800c62d4a216ee16edda8925c0486856dfb8ed && echo "Checking out fbattocchia_likelihoob_prob..."
     COPY package.xml src/lambkin/benchmarks/beluga_vs_nav2_multi_dataset/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src \
@@ -35,7 +39,7 @@ devel:
     COPY DEFAULT_FASTRTPS_PROFILES.xml /
     ENV FASTRTPS_DEFAULT_PROFILES_FILE=/DEFAULT_FASTRTPS_PROFILES.xml
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
-    SAVE IMAGE ekumenlabs/beluga-vs-nav2:dev
+    SAVE IMAGE ekumenlabs/nav2-beam-skipping-eval:dev
 
 local-devel:
     LOCALLY
@@ -52,6 +56,10 @@ build:
     FROM lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
+    RUN cd src \
+     && git clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga \
+     && git checkout 3a800c62d4a216ee16edda8925c0486856dfb8ed && echo "Checking out fbattocchia_likelihoob_prob..."
     COPY . src/beluga_vs_nav2_multi_dataset
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \
@@ -80,4 +88,4 @@ release:
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
     ENTRYPOINT ["/bin/bash", "--login", "/opt/ros/application/entrypoint.bash"]
-    SAVE IMAGE ekumenlabs/beluga-vs-nav2:latest
+    SAVE IMAGE ekumenlabs/nav2-beam-skipping-eval:latest
