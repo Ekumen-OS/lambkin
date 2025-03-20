@@ -2,8 +2,8 @@
     :header-rows: {nrows}
 
     *
-        - :rspan:`1`  :cspan:`1`  Sensor Model
-        - :cspan:`5` Statistics
+        - :rspan:`1`  :cspan:`1`  Implementation
+        - :cspan:`5` {sensor_model} sensor model
 
     *
         - median
