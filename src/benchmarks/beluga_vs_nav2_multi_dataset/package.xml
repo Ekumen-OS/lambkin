@@ -20,13 +20,15 @@
   <exec_depend>python3-tk</exec_depend>
 
   <exec_depend>nav2_amcl</exec_depend>
+  <exec_depend>beluga_amcl</exec_depend>
   <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>nav2_map_server</exec_depend>
 
-  <exec_depend>beluga_amcl</exec_depend>
-
   <exec_depend>rosbag2_storage_default_plugins</exec_depend>
   <exec_depend>rosbag2_storage_mcap</exec_depend>
+
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>nav2_rviz_plugins</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
