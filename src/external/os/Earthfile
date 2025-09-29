@@ -51,6 +51,12 @@ ADDUSER:
     ARG uid
     ARG gid
     ARG workdir=/home/${user}
+    IF getent passwd ${uid} > /dev/null
+        RUN deluser --remove-home $(id -nu ${uid})
+    END
+    IF getent group ${gid} > /dev/null
+        RUN delgroup $(getent group ${gid})
+    END
     RUN addgroup --gid ${gid} ${user} && \
         adduser --uid ${uid} --ingroup ${user} \
         --home /home/${user} --shell /bin/bash ${user} && \
