@@ -123,6 +123,9 @@ def set_ros_2_parameter(
     ros2param = import_module('ros2param.api')
     rcl_interfaces = import_module('rcl_interfaces.msg')
     parameter = rcl_interfaces.Parameter(name=name)
+    if not hasattr(ros2param, "get_parameter_value"):
+        rclpy_param = import_module('rclpy.parameter')
+        ros2param.get_parameter_value = rclpy_param.get_parameter_value
     parameter.value = ros2param.get_parameter_value(string_value=str(value))
     with ros2cli.NodeStrategy(Namespace(**kwargs)) as node:
         known_node_names = list_nodes_with_parameters(node=node)
