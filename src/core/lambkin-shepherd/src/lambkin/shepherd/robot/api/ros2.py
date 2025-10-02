@@ -96,9 +96,15 @@ def dump_ros_2_parameters(
     with ros2cli.NodeStrategy(Namespace(**kwargs)) as node:
         output = deepdict()
         for node_name in list_nodes_with_parameters(node=node):
-            parameter_names = (
-                ros2param.call_list_parameters(
-                    node=node, node_name=node_name))
+            future = ros2param.call_list_parameters(
+                node=node, node_name=node_name)
+            list_parameters_result = future.result()
+            if list_parameters_result is None:
+                raise RuntimeError(
+                    f"Error in lambkin.shepherd.robot.api.ros2.dump_ros_2_parameters: "
+                    f"Failed to list parameters for node '{node_name}'."
+                )
+            parameter_names = list_parameters_result.result.names
             parameter_values = get_node_parameters(
                 node=node, node_name=node_name,
                 parameter_names=parameter_names)
