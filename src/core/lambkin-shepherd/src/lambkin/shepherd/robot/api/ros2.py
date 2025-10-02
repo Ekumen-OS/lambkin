@@ -90,6 +90,9 @@ def dump_ros_2_parameters(
     """
     ros2cli = import_module('ros2cli.node.strategy')
     ros2param = import_module('ros2param.api')
+    if not hasattr(ros2param, "PARAMETER_SEPARATOR_STRING"):
+        rclpy_param = import_module('rclpy.parameter')
+        ros2param.PARAMETER_SEPARATOR_STRING = rclpy_param.PARAMETER_SEPARATOR_STRING
     with ros2cli.NodeStrategy(Namespace(**kwargs)) as node:
         output = deepdict()
         for node_name in list_nodes_with_parameters(node=node):
