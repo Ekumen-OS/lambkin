@@ -4,7 +4,7 @@ set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-EARTHLY_VERSION=v0.8.14
+EARTHLY_VERSION=v0.8.17-rc-2
 
 case $(uname -s) in
     Linux*)     KERNEL=linux;;
@@ -24,12 +24,12 @@ esac
 pushd ${SCRIPT_DIR}
 
 if [ ! -d ./earthly-src ]; then
-    git clone -b ${EARTHLY_VERSION} https://github.com/earthly/earthly.git earthly-src
-    git -C ./earthly-src apply ${SCRIPT_DIR}/earthly.patch
+    git clone -b ${EARTHLY_VERSION} https://github.com/EarthBuild/earthbuild.git earthly-src
+    git -C ./earthly-src apply --3way ${SCRIPT_DIR}/earthly.patch
 fi
 
 if [ ! -x ./earthly-bootstrap ]; then 
-    wget -O ./earthly-bootstrap https://github.com/earthly/earthly/releases/download/${EARTHLY_VERSION}/earthly-${KERNEL}-${ARCH} 
+    wget -O ./earthly-bootstrap https://github.com/EarthBuild/earthbuild/releases/download/${EARTHLY_VERSION}/earthly-${KERNEL}-${ARCH}
     chmod +x ./earthly-bootstrap
 fi
 
