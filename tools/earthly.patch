@@ -35,11 +35,11 @@ index 5d4a98cc..62cf7d80 100644
  	ProjectCmd                        // "PROJECT"
  	RunCmd                            // "RUN"
 diff --git a/ast/commandflag/flags.go b/ast/commandflag/flags.go
-index 74131a63..69f72251 100644
+index f7794b43..cbdce119 100644
 --- a/ast/commandflag/flags.go
 +++ b/ast/commandflag/flags.go
 @@ -49,6 +49,13 @@ type FromOpts struct {
- 	Platform        string   `long:"platform" description:"The platform to use"`
+ 	Platform        string   `description:"The platform to use"                                           long:"platform"`         //nolint:lll
  }
  
 +type MergeOpts struct {
@@ -50,13 +50,13 @@ index 74131a63..69f72251 100644
 +}
 +
  type FromDockerfileOpts struct {
- 	AllowPrivileged bool     `long:"allow-privileged" description:"Allow command to assume privileged mode"`
- 	BuildArgs       []string `long:"build-arg" description:"A build arg override passed on to a referenced Earthly target and also to the Dockerfile build"`
+ 	AllowPrivileged bool     `description:"Allow command to assume privileged mode"                                                             long:"allow-privileged"` //nolint:lll
+ 	BuildArgs       []string `description:"A build arg override passed on to a referenced Earthly target and also to the Dockerfile build"      long:"build-arg"`        //nolint:lll
 diff --git a/ast/listener.go b/ast/listener.go
-index b4cc7600..c97c6a51 100644
+index 3d53f4e7..dfd3951e 100644
 --- a/ast/listener.go
 +++ b/ast/listener.go
-@@ -255,6 +255,10 @@ func (l *listener) EnterFromStmt(c *parser.FromStmtContext) {
+@@ -270,6 +270,10 @@ func (l *listener) EnterFromStmt(c *parser.FromStmtContext) {
  	l.command.Name = "FROM"
  }
  
@@ -5318,10 +5318,10 @@ index e40a998f..cd87b3bb 100644
  	ExitExpr(c *ExprContext)
  
 diff --git a/earthfile2llb/converter.go b/earthfile2llb/converter.go
-index 85c8a9aa..ff682ac3 100644
+index 479e8a6c..c94b6302 100644
 --- a/earthfile2llb/converter.go
 +++ b/earthfile2llb/converter.go
-@@ -95,6 +95,7 @@ const (
+@@ -97,6 +97,7 @@ const (
  	projectCmd                           // "PROJECT"
  	setCmd                               // "SET"
  	letCmd                               // "LET"
@@ -5329,7 +5329,7 @@ index 85c8a9aa..ff682ac3 100644
  )
  
  // Converter turns earthly commands to buildkit LLB representation.
-@@ -456,6 +457,90 @@ func (c *Converter) FromDockerfile(ctx context.Context, contextPath string, dfPa
+@@ -532,6 +533,90 @@ func (c *Converter) FromDockerfile(
  	return nil
  }
  
@@ -5420,7 +5420,7 @@ index 85c8a9aa..ff682ac3 100644
  // Locally applies the earthly Locally command.
  func (c *Converter) Locally(ctx context.Context) error {
  	err := c.checkAllowed(locallyCmd)
-@@ -2005,8 +2090,8 @@ func (c *Converter) prepBuildTarget(
+@@ -2368,8 +2453,8 @@ func (c *Converter) prepBuildTarget(
  	opt.parentCommandID = parentCmdID
  	opt.OnExecutionSuccess = onExecutionSuccess
  
@@ -5432,19 +5432,19 @@ index 85c8a9aa..ff682ac3 100644
  	} else {
  		// FROM/COPY commands will return a llb state, which will cause a wait to occur
 diff --git a/earthfile2llb/interpreter.go b/earthfile2llb/interpreter.go
-index 8057837d..ef2285ce 100644
+index 0d4a2970..37ea7e28 100644
 --- a/earthfile2llb/interpreter.go
 +++ b/earthfile2llb/interpreter.go
-@@ -134,7 +134,7 @@ func (i *Interpreter) handleBlockParallel(ctx context.Context, b spec.Block, sta
- 		stmt := b[index]
- 		if stmt.Command != nil {
+@@ -148,7 +148,7 @@ func (i *Interpreter) handleBlockParallel(ctx context.Context, b spec.Block, sta
+ 		switch {
+ 		case stmt.Command != nil:
  			switch stmt.Command.Name {
 -			case command.Arg, command.Locally, command.From, command.FromDockerfile, command.Let, command.Set:
 +			case command.Arg, command.Locally, command.From, command.FromDockerfile, command.Let, command.Set, command.Merge:
  				// Cannot do any further parallel builds - these commands need to be
  				// executed to ensure that they don't impact the outcome. As such,
  				// commands following these cannot be executed preemptively.
-@@ -224,6 +224,8 @@ func (i *Interpreter) handleCommand(ctx context.Context, cmd spec.Command) (err
+@@ -245,6 +245,8 @@ func (i *Interpreter) handleCommand(ctx context.Context, cmd spec.Command) (err
  	switch cmd.Name {
  	case command.From:
  		return i.handleFrom(ctx, cmd)
@@ -5453,7 +5453,7 @@ index 8057837d..ef2285ce 100644
  	case command.Run:
  		return i.handleRun(ctx, cmd)
  	case command.FromDockerfile:
-@@ -914,6 +916,65 @@ func (i *Interpreter) handleLocally(ctx context.Context, cmd spec.Command) error
+@@ -1060,6 +1062,65 @@ func (i *Interpreter) handleLocally(ctx context.Context, cmd spec.Command) error
  	return nil
  }
  
@@ -5469,7 +5469,7 @@ index 8057837d..ef2285ce 100644
 +	if len(args) < 1 {
 +		return i.errorf(cmd.SourceLocation, "invalid number of arguments for MERGE: %s", cmd.Args)
 +	}
-+	expandedArgs, err := i.expandArgsSlice(ctx, args, true, false)
++	expandedArgs, err := i.expandArgsSlice(ctx, args, false)
 +	if err != nil {
 +		return i.errorf(cmd.SourceLocation, "unable to expand args for MERGE: %v", args)
 +	}
@@ -5481,7 +5481,7 @@ index 8057837d..ef2285ce 100644
 +	if err != nil {
 +		return i.wrapError(err, cmd.SourceLocation, "parse platform %s", expandedPlatform)
 +	}
-+	expandedBuildArgs, err := i.expandArgsSlice(ctx, opts.BuildArgs, true, false)
++	expandedBuildArgs, err := i.expandArgsSlice(ctx, opts.BuildArgs, false)
 +	if err != nil {
 +		return i.errorf(cmd.SourceLocation, "unable to expand build args for MERGE: %v", opts.BuildArgs)
 +	}
@@ -5520,10 +5520,10 @@ index 8057837d..ef2285ce 100644
  	if i.pushOnlyAllowed {
  		return i.pushOnlyErr(cmd.SourceLocation)
 diff --git a/util/llbutil/pllb/state.go b/util/llbutil/pllb/state.go
-index 92eb56ff..bc94bf73 100644
+index 792986e1..0459f69e 100644
 --- a/util/llbutil/pllb/state.go
 +++ b/util/llbutil/pllb/state.go
-@@ -67,6 +67,13 @@ func Merge(sts []State, opts ...llb.ConstraintsOpt) State {
+@@ -74,6 +74,13 @@ func Merge(sts []State, opts ...llb.ConstraintsOpt) State {
  	return State{st: llb.Merge(sts2, opts...)}
  }
  
