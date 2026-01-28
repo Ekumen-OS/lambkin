@@ -23,15 +23,13 @@ esac
 
 pushd ${SCRIPT_DIR}
 
-if [ ! -d ./earthly-src ]; then
-    git clone -b ${EARTHLY_VERSION} https://github.com/EarthBuild/earthbuild.git earthly-src
-    git -C ./earthly-src apply --3way ${SCRIPT_DIR}/earthly.patch
-fi
+[ -d ./earthly-src ] && rm -rf ./earthly-src
+git clone -b ${EARTHLY_VERSION} https://github.com/EarthBuild/earthbuild.git earthly-src
+git -C ./earthly-src apply --3way ${SCRIPT_DIR}/earthly.patch
 
-if [ ! -x ./earthly-bootstrap ]; then 
-    wget -O ./earthly-bootstrap https://github.com/EarthBuild/earthbuild/releases/download/${EARTHLY_VERSION}/earthly-${KERNEL}-${ARCH}
-    chmod +x ./earthly-bootstrap
-fi
+[ -f ./earthly-bootstrap ] && rm ./earthly-bootstrap
+wget -O ./earthly-bootstrap https://github.com/EarthBuild/earthbuild/releases/download/${EARTHLY_VERSION}/earthly-${KERNEL}-${ARCH}
+chmod +x ./earthly-bootstrap
 
 ./earthly-bootstrap ./earthly-src+for-own
 ln -sTf ./earthly-src/build/own/earthly ./earthly
