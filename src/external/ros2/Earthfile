@@ -21,8 +21,9 @@ embed-ubuntu-release:
     ARG rosdistro
     FROM os+ubuntu --distro=${distro}
     COPY rosdistro.yml /etc/.
-    RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
-    RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+    LET ros_apt_source_version = $(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F 'tag_name' | awk -F\\\" '{print $4}')
+    RUN curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ros_apt_source_version}/ros2-apt-source_${ros_apt_source_version}.$(. /etc/os-release && echo $VERSION_CODENAME)_all.deb"
+    RUN dpkg -i /tmp/ros2-apt-source.deb
     LET rosdistro = "${rosdistro}"
     IF [ "$rosdistro" = "" ]
        SET rosdistro = "$(yq .ubuntu.${distro} /etc/rosdistro.yml || echo unknown)"
@@ -35,6 +36,8 @@ embed-ubuntu-devel:
     ARG distro
     ARG rosdistro  # forward
     FROM +embed-ubuntu-release --distro=${distro}  --rosdistro=${rosdistro}
-    RUN pip install colcon-common-extensions poetry colcon-poetry-ros==0.8.0
+    RUN apt update && apt install -y python3-venv && apt clean && rm -rf /var/lib/apt/lists/*
+    RUN pip install pipx colcon-common-extensions colcon-poetry-ros==0.8.0
+    RUN pipx install --global poetry
     ## NOTE(hidmic): remove colcon-poetry-ros weird script relocation
     RUN sed -i '111,131d' $(python3 -c "import colcon_poetry_ros.task.poetry.build as m; print(m.__file__)")

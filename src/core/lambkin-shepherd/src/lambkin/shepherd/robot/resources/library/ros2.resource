@@ -101,7 +101,7 @@ Start Recording ROS 2 Bag
     [Documentation]  Starts recording a ROS 2 bag in the background.
     [Arguments]  ${bag}  ${cwd}=.  &{kwargs}
     [Tags]  imperative
-    ${options} =  Convert To Command Line Options  output=${bag}  &{kwargs}
+    ${options} =  Convert To Command Line Options  output=${bag}  storage=sqlite3  &{kwargs}
     ${process} =  Start Managed Process  ros2  bag  record  @{options}  alias=RECORD:${bag}  cwd=${cwd}
     Process Should Be Running  RECORD:${bag}  msg=${bag} recording process is not running
     RETURN  ${process}

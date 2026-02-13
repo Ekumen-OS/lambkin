@@ -1761,13 +1761,13 @@ doc = ["furo", "sphinx", "sphinx-design"]
 
 [[package]]
 name = "rosbags"
-version = "0.9.23"
+version = "0.10.11"
 description = "Pure Python library to read, modify, convert, and write rosbag files."
 optional = true
-python-versions = ">=3.8.2"
+python-versions = ">=3.10"
 files = [
-    {file = "rosbags-0.9.23-py3-none-any.whl", hash = "sha256:0fd14b10ee5b2422a08b3a09d2171dc347925307716779ad6f21e398b280c56a"},
-    {file = "rosbags-0.9.23.tar.gz", hash = "sha256:89229ca8fbb6d5e1cc452045229e6e47028dc10a8724fbe86c93eda477296dc2"},
+    {file = "rosbags-0.10.11-py3-none-any.whl", hash = "sha256:6390c6d3c34471c37458d8cad16003c43371719610cb6a23513b8a1fe8b2c3d1"},
+    {file = "rosbags-0.10.11.tar.gz", hash = "sha256:6c5fcb6392f9a8e69a9e0f6420e0862e9dcb69449b3e2d3bbec5ae17b62fc201"},
 ]
 
 [package.dependencies]

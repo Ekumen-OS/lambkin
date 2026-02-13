@@ -90,12 +90,21 @@ def dump_ros_2_parameters(
     """
     ros2cli = import_module('ros2cli.node.strategy')
     ros2param = import_module('ros2param.api')
+    if not hasattr(ros2param, "PARAMETER_SEPARATOR_STRING"):
+        rclpy_param = import_module('rclpy.parameter')
+        ros2param.PARAMETER_SEPARATOR_STRING = rclpy_param.PARAMETER_SEPARATOR_STRING
     with ros2cli.NodeStrategy(Namespace(**kwargs)) as node:
         output = deepdict()
         for node_name in list_nodes_with_parameters(node=node):
-            parameter_names = (
-                ros2param.call_list_parameters(
-                    node=node, node_name=node_name))
+            future = ros2param.call_list_parameters(
+                node=node, node_name=node_name)
+            list_parameters_result = future.result()
+            if list_parameters_result is None:
+                raise RuntimeError(
+                    f"Error in lambkin.shepherd.robot.api.ros2.dump_ros_2_parameters: "
+                    f"Failed to list parameters for node '{node_name}'."
+                )
+            parameter_names = list_parameters_result.result.names
             parameter_values = get_node_parameters(
                 node=node, node_name=node_name,
                 parameter_names=parameter_names)
@@ -123,6 +132,9 @@ def set_ros_2_parameter(
     ros2param = import_module('ros2param.api')
     rcl_interfaces = import_module('rcl_interfaces.msg')
     parameter = rcl_interfaces.Parameter(name=name)
+    if not hasattr(ros2param, "get_parameter_value"):
+        rclpy_param = import_module('rclpy.parameter')
+        ros2param.get_parameter_value = rclpy_param.get_parameter_value
     parameter.value = ros2param.get_parameter_value(string_value=str(value))
     with ros2cli.NodeStrategy(Namespace(**kwargs)) as node:
         known_node_names = list_nodes_with_parameters(node=node)
