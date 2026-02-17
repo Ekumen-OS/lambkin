@@ -1,6 +1,0 @@
-    *
-        - :cspan:`1` {implementation_name}
-        - {likelihood_field_peak_cpu}%
-        - {likelihood_field_peak_rss} MB
-        - {beam_peak_cpu}%
-        - {beam_peak_rss} MB
