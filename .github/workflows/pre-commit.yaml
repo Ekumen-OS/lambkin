@@ -1,0 +1,21 @@
+name: pre-commit
+
+on:
+  push:
+    branches: [ next-gen ]
+  pull_request:
+    branches: [ next-gen ]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
