@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv-build>=0.10.0"]
+requires = ["uv_build>=0.10.3,<0.11.0"]
 build-backend = "uv_build"
 
 [project]
@@ -15,15 +15,12 @@ dependencies = [
     "pydantic>=2.0",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "ruff>=0.15.0",
     "mypy>=1.15.0",
     "pytest>=8.0",
 ]
-
-[tool.uv.build]
-source-trees = ["src"]
 
 [tool.ruff]
 line-length = 88
