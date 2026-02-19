@@ -1,9 +1,12 @@
 # Run against all the files: pre-commit run -a
 # Install the git hook scripts: pre-commit install
 
-default_language_version:
-  python: python3
 repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.10.0
+    hooks:
+      - id: uv-lock
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -14,6 +17,7 @@ repos:
       - id: check-xml
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.0
     hooks:
