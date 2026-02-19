@@ -27,7 +27,7 @@ line-length = 88
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "D", "N", "UP", "B"]
+select = ["E", "W", "F", "I", "D", "N", "UP", "B"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
