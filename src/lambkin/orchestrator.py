@@ -7,30 +7,34 @@ import subprocess
 import time
 from pathlib import Path
 # User defined variables
-input_file = "/path/to/rosbag/input.mcap"
-output_path = "/path/to/rosbag/output.mcap"
-num_iterations = 2
-
-
+input_file = "/ws/lambkin/input/hallway_localization"
+output_path = "/ws/lamkin/output/"
+num_iterations = 0
+clock_rate = 10
+qos_file_path = "/ws/beluga/beluga_example/bags/qos_override.yaml"
 # Options for the benchmark
 laser_models = ["likelihood", "beam"]
 num_particles = [1, 10, 100, 1000, 10000]
-clock_rate_options = [10, 50, 100]
+clock_rate_options = ["--clock-rate", clock_rate]
+qos_options= ["--qos-profile-overrides-path", qos_file_path]
 topics_interested = ["/pose", "/tf", "/tf_tatic"]
 
 def execute_background_process(full_cmd_list: list[str]) :
     print(f"{full_cmd_list}\n")
+    archivo_log = open("beluga.log", "w")
     return subprocess.Popen(full_cmd_list)
+    #    stdout=archivo_log,  # Guarda los textos normales
+    #     stderr=archivo_log)
     
 
 def ros_bag_record(output_path:str, options: list[str]) -> subprocess.Popen:
-    return execute_background_process(["ros2", "bag", "record", "-o", output_path] + options)
+    return execute_background_process(["ros2", "bag", "record", "-o", output_path ]+ options)
     
 def ros_bag_play(input_path: str, options: list[str]) -> subprocess.Popen:
-    return execute_background_process(["ros2", "bag", "play",input_path] + options)
+    return execute_background_process(["ros2", "bag", "play",input_path ]+ options)
     
-def beluga(sensor_model, num_particles, ) -> subprocess.Popen:
-    cmd_list = [ "ros2", "launch", "beluga_example","localization.launch.py" , f"laser_model_type:={sensor_model}", f"max_particles:={num_particles}" ]
+def beluga(sensor_model, num_particles,map_path: str ) -> subprocess.Popen:
+    cmd_list = [ "ros2", "launch", "beluga_example","localization_launch.py" , f"localizacion_map:={map_path}" , f"laser_model_type:={sensor_model}", f"max_particles:={num_particles}" ]
     return execute_background_process(cmd_list)
 
 def bag2tum(record_path: str, output_tum_path: str, topics) -> str:
@@ -68,7 +72,6 @@ def wait_for_processes(waitlist: list[subprocess.Popen], termination_list: list[
         except subprocess.TimeoutExpired:
             print("Forzando cierre de un proceso ...")
             p.kill()
-    print("Procesos cerrados de forma segura.\n")
 
 
     
@@ -82,12 +85,10 @@ def make_variations() -> list:
     variations = []
     for sensor_model in laser_models:
         for particles in num_particles:
-            for rate in clock_rate_options:
-                variations.append({
-                    "sensor_model": sensor_model,
-                    "num_particles" : particles, 
-                    "clock_rate" : rate
-                })
+            variations.append({
+                "sensor_model": sensor_model,
+                "num_particles" : particles, 
+            })
     return variations
                 
 
@@ -96,9 +97,12 @@ def run_iteration(variation: dict, iteration):
     base_dir = Path("benchmarking") / nombre_variacion / f"iter_{iteration}"
     bag_dir = base_dir / "bag"
     bag_dir.mkdir(parents=True, exist_ok=True)
-    beluga(variation["sensor_model"], variation["num_particles"])
-    ros_bag_play("/ws/beluga/beluga_example/bags/hallway_localization", ["--qos-profile-overrides-path /ws/beluga/beluga_example/bags/qos_override.yaml"])
-    ros_bag_record("/ws/lamkin/results/output", ["/tf", "/pose", "/tf_static", "--clock_rate", str(variation["clock_rate"])])
+    p_beluga = beluga(variation["sensor_model"], variation["num_particles"], "/ws/lambkin/input/map.yaml")
+    time.sleep(3)
+
+    p_play = ros_bag_play(input_file , [clock_rate_options, qos_options])
+    p_record = ros_bag_record("/ws/lamkin/results/output", topics_interested)
+    wait_for_processes([p_play], [p_beluga, p_record])
 
 
 
@@ -130,10 +134,11 @@ class TestProcessManagement(unittest.TestCase):
 
 def main():
     print("ejecucion")
-    # for variation in make_variations():
-    #     for it in range(num_iterations):
-    #         print(f"{variation}\n")
-    #         run_iteration(variation)
+    for variation in make_variations():
+        # for it in range(num_iterations):
+        print(f"{variation}\n")
+        run_iteration(variation, 0)
+        time.sleep(10000)
     #evo_ape(3)
     #plot_ape_metrics(3)
     #plot_ape_metrics(variation)
