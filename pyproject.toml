@@ -18,9 +18,13 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff>=0.15.0",
-    "mypy>=1.15.0",
+    "mypy>=1.19.1",
     "pytest>=8.0",
 ]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
 
 [tool.ruff]
 line-length = 88

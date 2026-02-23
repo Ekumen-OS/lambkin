@@ -18,5 +18,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
+      - name: Install project dependencies
+        run: uv sync --group dev
+
       - name: Run pre-commit
         uses: tox-dev/action-pre-commit-uv@v1
