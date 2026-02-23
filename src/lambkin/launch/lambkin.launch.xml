@@ -1,0 +1,10 @@
+<launch>
+  <arg name="map_filename"/>
+  <arg name="max_particles" default="2000"/>
+  <arg name="laser_max_range" default="20.0"/> <node pkg="beluga_amcl" exec="amcl_node" name="amcl">
+    <param from="$(find-pkg-share beluga_example)/params/default.ros2.yaml"/>
+    <param name="max_particles" value="$(var max_particles)"/>
+    <param name="laser_max_range" value="$(var laser_max_range)"/>
+  </node>
+  
+  </launch>
