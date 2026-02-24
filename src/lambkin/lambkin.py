@@ -19,23 +19,29 @@ NUM_PARTICLES = [1, 10, 100, 1000, 10000]
 CLOCK_RATE_OPTION = ["--clock-rate", str(clock_rate)]
 QOS_OPTION = ["--qos-profile-overrides-path", qos_file_path]
 CLOCK_OPTION = "--clock"
-RECORD_TOPIC_INTERESTED = ["/pose", "/tf", "/tf_static"]
+RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
 RESULTS_PATH = "/ws/lambkin/benchmarking_results"
+DRY_MODE = True
 
 
 def execute_background_process(
-    full_cmd_list: list[str], log_file: str = None
+    full_cmd_list: list[str], dry_mode: bool = False, log_file: str = None
 ) -> subprocess.Popen:
     """Executes a shell command in the background.
 
     Args:
         full_cmd_list (list[str]): The command and its arguments as a list of strings.
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
         log_file (str, optional): Path to a output log file.
 
     Returns:
         subprocess.Popen: The running background process.
     """
-    print(f"{full_cmd_list}\n")
+    if dry_mode:
+        print(f"{full_cmd_list}\n")
+        return None
+
     if log_file:
         file = open(log_file, "w")
         return subprocess.Popen(full_cmd_list, stdout=file, stderr=file)
@@ -43,58 +49,70 @@ def execute_background_process(
 
 
 def execute_foreground_process(
-    full_cmd_list: list[str], log_file: str = None
+    full_cmd_list: list[str], dry_mode: bool = False, log_file: str = None
 ) -> subprocess.run:
     """Executes a shell command in the foreground.
 
     Args:
         full_cmd_list (list[str]): The command and its arguments as a list of strings.
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
         log_file (str, optional): Path to a output log file.
 
     Returns:
         subprocess.run: The running foreground process.
     """
+    if dry_mode:
+        print(f"{full_cmd_list}\n")
+        return None
     if log_file:
         file = open(log_file, "w")
         return subprocess.run(full_cmd_list, stdout=file, stderr=file, check=True)
     return subprocess.run(full_cmd_list, check=True)
 
 
-def ros_bag_record(output_path: str, options: list[str]) -> subprocess.Popen:
+def ros_bag_record(
+    output_path: str, options: list[str], dry_mode: bool = False
+) -> subprocess.Popen:
     """Starts a ROS 2 process to record a bag file.
 
     Args:
         output_path (str): The base directory where the bag will be saved.
         options (list[str]): Additional options and topics.
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
 
     Returns:
         subprocess.Popen: The running ros2 bag record process.
     """
     bag_dir = Path(output_path) / "bag"
     bag_dir.mkdir(parents=True, exist_ok=True)
+
     return execute_background_process(
-        ["ros2", "bag", "record", "-o", str(output_path)] + options
+        (["ros2", "bag", "record", "-o", str(output_path)] + options), dry_mode
     )
 
 
-def ros_bag_play(input_path: str, options: list[str]) -> subprocess.Popen:
+def ros_bag_play(
+    input_path: str, options: list[str], dry_mode: bool = False
+) -> subprocess.Popen:
     """Starts a ROS 2 process to play a bag file.
 
     Args:
         input_path (str): The path to the input bag file.
         options (list[str]): Additional options for playback (e.g., clock rate, QoS).
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
 
     Returns:
         subprocess.Popen: The running ros2 bag play process.
     """
     cmd_list = ["ros2", "bag", "play", input_path] + options
-    return execute_background_process(cmd_list)
+    return execute_background_process(cmd_list, dry_mode)
 
 
 def beluga(
-    sensor_model: str,
-    num_particles: int,
-    map_path: str,
+    sensor_model: str, num_particles: int, map_path: str, dry_mode: bool = False
 ) -> subprocess.Popen:
     """Launches the Beluga AMCL node using a custom launch file.
 
@@ -102,6 +120,8 @@ def beluga(
         sensor_model (str): The laser sensor model to use.
         num_particles (int): The maximum number of particles for AMCL.
         map_path (str): The absolute path to the map file.
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
 
     Returns:
         subprocess.Popen: The running launch process.
@@ -115,7 +135,7 @@ def beluga(
         f"laser_model_type:={sensor_model}",
         f"max_particles:={num_particles}",
     ]
-    return execute_background_process(cmd_list, log_file="beluga.log")
+    return execute_background_process(cmd_list, dry_mode, log_file="beluga.log")
 
 
 def bag2tum(bag_path: str, tum_path: str, topic: str) -> str:
@@ -139,13 +159,17 @@ def bag2tum(bag_path: str, tum_path: str, topic: str) -> str:
     return str(tum_dir / tum_name)
 
 
-def evo_ape(reference_path: str, record_path: str, topic: str = "/pose"):
+def evo_ape(
+    reference_path: str, record_path: str, topic: str = "/pose", dry_mode: bool = False
+):
     """Computes the Absolute Pose Error (APE).
 
     Args:
         reference_path (str): The path to the reference TUM file.
         record_path (str): The path to the recorded bag file.
         topic (str, optional): The topic to evaluate. Defaults to "/pose".
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
     """
     record_path_obj = Path(record_path)
     iter_dir = record_path_obj.parent.parent
@@ -165,7 +189,7 @@ def evo_ape(reference_path: str, record_path: str, topic: str = "/pose"):
         "--save_results",
         str(ape_dir / "ape.zip"),
     ]
-    execute_foreground_process(cmd_list)
+    execute_foreground_process(cmd_list, dry_mode)
 
 
 def wait_for_processes(
@@ -181,26 +205,30 @@ def wait_for_processes(
         termination_list (list[subprocess.Popen]): Processes that should be terminated.
     """
     for p in waitlist:
-        p.wait()
+        if p is not None:
+            p.wait()
     for p in termination_list:
-        p.terminate()
+        if p is not None:
+            p.terminate()
     for p in termination_list:
-        try:
-            p.wait(timeout=5.0)
-        except subprocess.TimeoutExpired:
-            print("Forcing process termination...")
-            p.kill()
+        if p is not None:
+            try:
+                p.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                print("Forcing process termination...")
+                p.kill()
 
 
-def plot_ape_metrics(ape_path: str) -> None:
+def plot_ape_metrics(ape_path: str, dry_mode: bool = False) -> None:
     """Plots the Absolute Pose Error (APE) metrics using evo_res.
 
     Args:
         ape_path (str): The path to the results zip file generated by evo_ape.
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
     """
     cmd_list = ["evo_res", ape_path]
-    print(f"{cmd_list}\n")
-    execute_foreground_process(cmd_list)
+    execute_foreground_process(cmd_list, dry_mode)
 
 
 def make_variations() -> list:
@@ -224,7 +252,11 @@ def make_variations() -> list:
 
 
 def run_iteration(
-    variation: dict, iteration: int, map_reference_path: str, reference_bag_path: str
+    variation: dict,
+    iteration: int,
+    map_reference_path: str,
+    reference_bag_path: str,
+    dry_mode: bool = False,
 ) -> None:
     """Executes a single benchmark iteration with a specific configuration.
 
@@ -234,6 +266,8 @@ def run_iteration(
         iteration (int): The current iteration number.
         map_reference_path (str): The absolute path to the map file.
         reference_bag_path: The absolute path to the bag file.
+        dry_mode (bool, optional): If True, prints the command without executing it.
+                                   Defaults to False.
     """
     variation_name = f"{variation['sensor_model']}_p{variation['num_particles']}"
     base_dir = (
@@ -244,12 +278,17 @@ def run_iteration(
         variation["sensor_model"],
         variation["num_particles"],
         map_reference_path,
+        dry_mode=dry_mode,
     )
     time.sleep(3)
 
-    p_play = ros_bag_play(reference_bag_path, CLOCK_RATE_OPTION + QOS_OPTION)
+    p_play = ros_bag_play(
+        reference_bag_path, CLOCK_RATE_OPTION + QOS_OPTION, dry_mode=dry_mode
+    )
 
-    p_record = ros_bag_record(str(base_dir), RECORD_TOPIC_INTERESTED)
+    p_record = ros_bag_record(
+        str(base_dir), RECORD_TOPICS_INTERESTED, dry_mode=dry_mode
+    )
 
     wait_for_processes([p_play], [p_beluga, p_record])
 
@@ -258,7 +297,9 @@ def main():
     """Main loop that orchestrates the benchmarking process."""
     for variation in make_variations():
         for it in range(num_iterations):
-            run_iteration(variation, it)
+            run_iteration(
+                variation, it, reference_map_path, reference_bag_path, DRY_MODE
+            )
 
 
 if __name__ == "__main__":
