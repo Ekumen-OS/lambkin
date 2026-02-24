@@ -1,0 +1,16 @@
+.. flat-table:: Average CPU and peak Resident Set Size (RSS) values.
+    :header-rows: {nrows}
+
+    *
+        - :rspan:`1`  :cspan:`1`  Implementation
+        - :cspan:`1` lf
+        - :cspan:`1` lfp
+        - :cspan:`1` beam
+
+    *
+        - cpu
+        - rss
+        - cpu
+        - rss
+        - cpu
+        - rss
