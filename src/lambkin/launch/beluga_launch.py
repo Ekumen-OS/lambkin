@@ -28,6 +28,9 @@ def generate_launch_description():
     max_particles_arg = DeclareLaunchArgument(
         "max_particles", default_value="2000", description="Max number of particles"
     )
+    laser_topic_arg = DeclareLaunchArgument(
+        "laser_topic", default_value="/scan", description="Topic for laser sensor"
+    )
 
     beluga_node = Node(
         package="beluga_amcl",
@@ -38,6 +41,7 @@ def generate_launch_description():
             {
                 "laser_model_type": LaunchConfiguration("laser_model_type"),
                 "max_particles": LaunchConfiguration("max_particles"),
+                "laser_topic": LaunchConfiguration("scan_topic"),
             }
         ],
     )
@@ -66,5 +70,6 @@ def generate_launch_description():
             beluga_node,
             map_server_node,
             lifecycle_manager_node,
+            laser_topic_arg,
         ]
     )

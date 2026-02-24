@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """Unit tests for the process management functions in lambkin.py."""
 
-import os
 import subprocess
-import sys
 import time
 import unittest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 from lambkin import execute_background_process, wait_for_processes
 
 
