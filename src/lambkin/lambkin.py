@@ -5,19 +5,22 @@ import subprocess
 import time
 from pathlib import Path
 
-input_file = "/ws/lambkin/input/hallway_localization"
-output_path = "/ws/lambkin/output/"
+reference_bag_path = (
+    "/ws/rosbags/magazzino_ros2_localization_only/bagfiles/hallway_localization/"
+)
+reference_map_path = "/ws/rosbags/maps/map.yaml"
 num_iterations = 1
 clock_rate = 10
 qos_file_path = "/ws/beluga/beluga_example/bags/qos_override.yaml"
-laser_topic = "/scan_front"
 
-Laser_models = ["likelihood", "beam"]
-Num_particles = [1, 10, 100, 1000, 10000]
-Clock_rate_options = ["--clock-rate", str(clock_rate)]
-Qos_options = ["--qos-profile-overrides-path", qos_file_path]
-Clock_option = "--clock"
-Record_topics_interested = ["/pose", "/tf", "/tf_static"]
+
+LASER_MODELS = ["likelihood", "beam"]
+NUM_PARTICLES = [1, 10, 100, 1000, 10000]
+CLOCK_RATE_OPTION = ["--clock-rate", str(clock_rate)]
+QOS_OPTION = ["--qos-profile-overrides-path", qos_file_path]
+CLOCK_OPTION = "--clock"
+RECORD_TOPIC_INTERESTED = ["/pose", "/tf", "/tf_static"]
+RESULTS_PATH = "/ws/lambkin/benchmarking_results"
 
 
 def execute_background_process(
@@ -89,7 +92,9 @@ def ros_bag_play(input_path: str, options: list[str]) -> subprocess.Popen:
 
 
 def beluga(
-    sensor_model: str, num_particles: int, map_path: str, laser_topic: str
+    sensor_model: str,
+    num_particles: int,
+    map_path: str,
 ) -> subprocess.Popen:
     """Launches the Beluga AMCL node using a custom launch file.
 
@@ -97,7 +102,6 @@ def beluga(
         sensor_model (str): The laser sensor model to use.
         num_particles (int): The maximum number of particles for AMCL.
         map_path (str): The absolute path to the map file.
-        laser_topic (str): The topic for the laser sensor
 
     Returns:
         subprocess.Popen: The running launch process.
@@ -109,7 +113,7 @@ def beluga(
         "lambkin_launch.py",
         f"map_path:={map_path}",
         f"laser_model_type:={sensor_model}",
-        f"max_particles:={num_particles}laser_topic:={laser_topic}",
+        f"max_particles:={num_particles}",
     ]
     return execute_background_process(cmd_list, log_file="beluga.log")
 
@@ -208,8 +212,8 @@ def make_variations() -> list:
         list: A list of dictionaries containing configuration pairs.
     """
     variations = []
-    for sensor_model in Laser_models:
-        for particles in Num_particles:
+    for sensor_model in LASER_MODELS:
+        for particles in NUM_PARTICLES:
             variations.append(
                 {
                     "sensor_model": sensor_model,
@@ -220,7 +224,7 @@ def make_variations() -> list:
 
 
 def run_iteration(
-    variation: dict, iteration: int, map_reference_path: str, laser_topic: str
+    variation: dict, iteration: int, map_reference_path: str, reference_bag_path: str
 ) -> None:
     """Executes a single benchmark iteration with a specific configuration.
 
@@ -229,22 +233,23 @@ def run_iteration(
             sensor model and particle count.
         iteration (int): The current iteration number.
         map_reference_path (str): The absolute path to the map file.
-        laser_topic (str): The topic for the laser sensor
+        reference_bag_path: The absolute path to the bag file.
     """
     variation_name = f"{variation['sensor_model']}_p{variation['num_particles']}"
-    base_dir = Path(output_path) / "benchmarking" / variation_name / f"iter_{iteration}"
+    base_dir = (
+        Path(RESULTS_PATH) / "benchmarking" / variation_name / f"iter_{iteration}"
+    )
 
     p_beluga = beluga(
         variation["sensor_model"],
         variation["num_particles"],
         map_reference_path,
-        laser_topic,
     )
     time.sleep(3)
 
-    p_play = ros_bag_play(input_file, Clock_rate_options + Qos_options)
+    p_play = ros_bag_play(reference_bag_path, CLOCK_RATE_OPTION + QOS_OPTION)
 
-    p_record = ros_bag_record(str(base_dir), Record_topics_interested)
+    p_record = ros_bag_record(str(base_dir), RECORD_TOPIC_INTERESTED)
 
     wait_for_processes([p_play], [p_beluga, p_record])
 
@@ -253,7 +258,7 @@ def main():
     """Main loop that orchestrates the benchmarking process."""
     for variation in make_variations():
         for it in range(num_iterations):
-            run_iteration(variation, it, laser_topic)
+            run_iteration(variation, it)
 
 
 if __name__ == "__main__":
