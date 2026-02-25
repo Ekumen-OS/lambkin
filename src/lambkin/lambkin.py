@@ -22,6 +22,7 @@ CLOCK_OPTION = "--clock"
 RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
 RESULTS_PATH = "/ws/lambkin/benchmarking_results"
 DRY_MODE = True
+PROCESS_TERMINATION_TIMEOUT = 5.0
 
 
 def execute_background_process(
@@ -204,16 +205,19 @@ def wait_for_processes(
         waitlist (list[subprocess.Popen]): Processes that must complete naturally.
         termination_list (list[subprocess.Popen]): Processes that should be terminated.
     """
+    # Wait waitlist processes to finish naturally
     for p in waitlist:
         if p is not None:
             p.wait()
+    # Broadcast SIGTERM to all termination_list processes
     for p in termination_list:
         if p is not None:
             p.terminate()
+    # Wait up to timeout for them to close; force-kill if they hang
     for p in termination_list:
         if p is not None:
             try:
-                p.wait(timeout=5.0)
+                p.wait(timeout=PROCESS_TERMINATION_TIMEOUT)
             except subprocess.TimeoutExpired:
                 print("Forcing process termination...")
                 p.kill()
