@@ -14,7 +14,7 @@ clock_rate = 10
 qos_file_path = "/ws/beluga/beluga_example/bags/qos_override.yaml"
 
 
-LASER_MODELS = ["likelihood", "beam"]
+LASER_MODELS = ["likelihood_field", "beam"]
 NUM_PARTICLES = [1, 10, 100, 1000, 10000]
 CLOCK_RATE_OPTION = ["--clock-rate", str(clock_rate)]
 QOS_OPTION = ["--qos-profile-overrides-path", qos_file_path]
