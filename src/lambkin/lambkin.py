@@ -5,19 +5,19 @@ import subprocess
 import time
 from pathlib import Path
 
-reference_bag_path = (
+REFERENCE_BAG_PATH = (
     "/ws/rosbags/magazzino_ros2_localization_only/bagfiles/hallway_localization/"
 )
-reference_map_path = "/ws/rosbags/maps/map.yaml"
-num_iterations = 1
-clock_rate = 10
-qos_file_path = "/ws/beluga/beluga_example/bags/qos_override.yaml"
+REFERENCE_MAP_PATH = "/ws/rosbags/maps/map.yaml"
+NUM_ITERATIONS = 1
+CLOCK_RATE = 10
+QOS_FILE_PATH = "/ws/beluga/beluga_example/bags/qos_override.yaml"
 
 
 LASER_MODELS = ["likelihood_field", "beam"]
 NUM_PARTICLES = [1, 10, 100, 1000, 10000]
-CLOCK_RATE_OPTION = ["--clock-rate", str(clock_rate)]
-QOS_OPTION = ["--qos-profile-overrides-path", qos_file_path]
+CLOCK_RATE_OPTION = ["--clock-rate", str(CLOCK_RATE)]
+QOS_OPTION = ["--qos-profile-overrides-path", QOS_FILE_PATH]
 CLOCK_OPTION = "--clock"
 RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
 RESULTS_PATH = "/ws/lambkin/benchmarking_results"
@@ -296,9 +296,9 @@ def run_iteration(
 def main():
     """Main loop that orchestrates the benchmarking process."""
     for variation in make_variations():
-        for it in range(num_iterations):
+        for it in range(NUM_ITERATIONS):
             run_iteration(
-                variation, it, reference_map_path, reference_bag_path, DRY_MODE
+                variation, it, REFERENCE_MAP_PATH, REFERENCE_BAG_PATH, DRY_MODE
             )
 
 

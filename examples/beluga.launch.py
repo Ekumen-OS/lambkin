@@ -17,8 +17,8 @@ def generate_launch_description():
         LaunchDescription: The complete ROS 2 launch description object.
     """
     config_file_arg = DeclareLaunchArgument(
-        "beluga_config_path",
-        default_value="/example/defaul_params.ros.yaml",  # Opcional por defecto
+        "params_file",
+        default_value="/example/defaul_params.ros.yaml",
         description="Absolute YAML file path",
     )
 
@@ -41,10 +41,11 @@ def generate_launch_description():
         name="beluga_amcl",
         output="screen",
         parameters=[
+            LaunchConfiguration("params_file"),
             {
                 "laser_model_type": LaunchConfiguration("laser_model_type"),
                 "max_particles": LaunchConfiguration("max_particles"),
-            }
+            },
         ],
     )
 
