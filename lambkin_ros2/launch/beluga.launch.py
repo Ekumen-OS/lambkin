@@ -1,9 +1,16 @@
 """Launch file for the Beluga AMCL benchmarking environment."""
 
+import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+
+pkg_dir = get_package_share_directory("lambkin_ros2")
+
+default_yaml_path = os.path.join(pkg_dir, "params", "default.ros2.yaml")
 
 
 def generate_launch_description():
@@ -18,7 +25,7 @@ def generate_launch_description():
     """
     config_file_arg = DeclareLaunchArgument(
         "params_file",
-        default_value="/example/defaul_params.ros.yaml",
+        default_value=default_yaml_path,
         description="Absolute YAML file path",
     )
 

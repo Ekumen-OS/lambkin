@@ -130,8 +130,8 @@ def beluga(
     cmd_list = [
         "ros2",
         "launch",
-        "lambkin",
-        "lambkin_launch.py",
+        "lambkin_ros2",
+        "beluga.launch.py",
         f"map_path:={map_path}",
         f"laser_model_type:={sensor_model}",
         f"max_particles:={num_particles}",

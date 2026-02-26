@@ -1,4 +1,4 @@
-amcl:
+beluga_amcl:
   ros__parameters:
     # Odometry motion model type.
     robot_model_type: nav2_amcl::DifferentialMotionModel
