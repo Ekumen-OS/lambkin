@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lambkin library for executing and benchmarking Beluga AMCL."""
+"""Lambkin library for executing and benchmarking."""
 
 import subprocess
 import time
@@ -10,13 +10,13 @@ REFERENCE_BAG_PATH = (
 )
 REFERENCE_MAP_PATH = "/ws/rosbags/maps/map.yaml"
 NUM_ITERATIONS = 1
-CLOCK_RATE = 10
+RATE = 1
 QOS_FILE_PATH = "/ws/beluga/beluga_example/bags/qos_override.yaml"
 
 
 LASER_MODELS = ["likelihood_field", "beam"]
 NUM_PARTICLES = [1, 10, 100, 1000, 10000]
-CLOCK_RATE_OPTION = ["--clock-rate", str(CLOCK_RATE)]
+RATE_OPTION = ["--rate", str(RATE)]
 QOS_OPTION = ["--qos-profile-overrides-path", QOS_FILE_PATH]
 CLOCK_OPTION = "--clock"
 RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
@@ -108,7 +108,7 @@ def ros_bag_play(
     Returns:
         subprocess.Popen: The running ros2 bag play process.
     """
-    cmd_list = ["ros2", "bag", "play", input_path] + options
+    cmd_list = ["ros2", "bag", "play", input_path, CLOCK_OPTION] + options
     return execute_background_process(cmd_list, dry_mode)
 
 
@@ -287,7 +287,7 @@ def run_iteration(
     time.sleep(3)
 
     p_play = ros_bag_play(
-        reference_bag_path, CLOCK_RATE_OPTION + QOS_OPTION, dry_mode=dry_mode
+        reference_bag_path, RATE_OPTION + QOS_OPTION, dry_mode=dry_mode
     )
 
     p_record = ros_bag_record(
