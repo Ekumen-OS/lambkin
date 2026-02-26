@@ -5,13 +5,11 @@ import subprocess
 import time
 from pathlib import Path
 
-REFERENCE_BAG_PATH = (
-    "/ws/rosbags/magazzino_ros2_localization_only/bagfiles/hallway_localization/"
-)
-REFERENCE_MAP_PATH = "/ws/rosbags/maps/map.yaml"
+REFERENCE_BAG_PATH = "/ws/reference/hallway_localization"
+REFERENCE_MAP_PATH = "/ws/reference/map.yaml"
 NUM_ITERATIONS = 1
-RATE = 1
-QOS_FILE_PATH = "/ws/beluga/beluga_example/bags/qos_override.yaml"
+RATE = 100
+QOS_FILE_PATH = "/ws/reference/qos_override.yaml"
 
 
 LASER_MODELS = ["likelihood_field", "beam"]
@@ -20,8 +18,8 @@ RATE_OPTION = ["--rate", str(RATE)]
 QOS_OPTION = ["--qos-profile-overrides-path", QOS_FILE_PATH]
 CLOCK_OPTION = "--clock"
 RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
-RESULTS_PATH = "/ws/lambkin/benchmarking_results"
-DRY_MODE = True
+RESULTS_PATH = "/ws/src/lambkin/benchmarking_results"
+DRY_MODE = False
 PROCESS_TERMINATION_TIMEOUT = 5.0
 
 
@@ -89,8 +87,14 @@ def ros_bag_record(
     bag_dir = Path(output_path) / "bag"
     bag_dir.mkdir(parents=True, exist_ok=True)
 
+    if bag_dir.exists():
+        import shutil
+
+        shutil.rmtree(bag_dir)
+        print(f"Borrando carpeta antigua en {bag_dir}...")
+
     return execute_background_process(
-        (["ros2", "bag", "record", "-o", str(output_path)] + options), dry_mode
+        (["ros2", "bag", "record", "-o", str(bag_dir)] + options), dry_mode
     )
 
 
@@ -274,9 +278,7 @@ def run_iteration(
                                    Defaults to False.
     """
     variation_name = f"{variation['sensor_model']}_p{variation['num_particles']}"
-    base_dir = (
-        Path(RESULTS_PATH) / "benchmarking" / variation_name / f"iter_{iteration}"
-    )
+    base_dir = Path(RESULTS_PATH) / variation_name / f"iter_{iteration}"
 
     p_beluga = beluga(
         variation["sensor_model"],
@@ -304,6 +306,7 @@ def main():
             run_iteration(
                 variation, it, REFERENCE_MAP_PATH, REFERENCE_BAG_PATH, DRY_MODE
             )
+    # evo_ape(REFERENCE_TUM_PATH, "../benchmarking_results/")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,15 @@
+services:
+  lambkin_dev:
+    build: .
+    container_name: lambkin_developer
+    network_mode: "host"
+
+    stdin_open: true
+    tty: true
+
+    volumes:
+      - ./lambkin_ros2:/ws/lambkin_ros2
+      - ./src/lambkin:/ws/src/lambkin
+      - ./pyproject.toml:/ws/pyproject.toml
+      - ./uv.lock:/ws/uv.lock
+      - ${HOME}/ekumen/rosbags/reference_files:/ws/reference
