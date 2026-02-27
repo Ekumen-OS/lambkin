@@ -8,11 +8,6 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /ws
 
-
-COPY lambkin_ros2/ /ws/lambkin_ros_ws/src/lambkin_ros2/
-COPY /src/lambkin/ /ws/src/lambkin/
-COPY pyproject.toml uv.lock ./
-
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/bin" sh
 
 RUN rosdep init || true \

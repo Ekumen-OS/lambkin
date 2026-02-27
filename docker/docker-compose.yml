@@ -1,0 +1,12 @@
+services:
+  lambkin_dev:
+    build: .
+    container_name: lambkin_developer
+    network_mode: "host"
+
+    stdin_open: true
+    tty: true
+
+    volumes:
+      - ..:/ws
+      - ${HOME}/ekumen/rosbags/reference_files:/rosbags/reference

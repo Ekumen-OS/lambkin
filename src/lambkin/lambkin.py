@@ -7,22 +7,23 @@ import subprocess
 import time
 from pathlib import Path
 
-REFERENCE_BAG_PATH = "/rosbags/reference/hallway_localization"
-REFERENCE_MAP_PATH = "/rosbags/reference/map.yaml"
+REFERENCE_BAG_PATH = "/ws/rosbags/reference/bag_short"
+REFERENCE_MAP_PATH = "/ws/rosbags/reference/map.yaml"
+REFERENCE_TUM_PATH = "/ws/rosbags/reference/pose.tum"
 LOG_PATH = "/ws/log"
 NUM_ITERATIONS = 1
 RATE = 1
-QOS_FILE_PATH = "/rosbags/reference/qos_override.yaml"
+QOS_FILE_PATH = "/ws/rosbags/reference/qos_override.yaml"
 BELUGA_READY_DELAY = 3
 
 LASER_MODELS = ["likelihood_field", "beam"]
 NUM_PARTICLES = [1, 10, 100, 1000, 10000]
 RATE_OPTION = ["--rate", str(RATE)]
 QOS_OPTION = ["--qos-profile-overrides-path", QOS_FILE_PATH]
-CLOCK_OPTION = "--clock"
+CLOCK_OPTION = ["--clock"]
 RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
 RECORD_TOPICS_OPTION = ["--topics"] + RECORD_TOPICS_INTERESTED
-RESULTS_PATH = "/benchmarking_results"
+RESULTS_PATH = "/ws/benchmarking_results"
 DRY_MODE = False
 PROCESS_TERMINATION_TIMEOUT = 5.0
 
@@ -46,11 +47,14 @@ def execute_background_process(
         return None
 
     if log_file:
-        LOG_PATH.mkdir(parents=True, exist_ok=True)
+        log_path_parent = Path(LOG_PATH)
+        log_path_parent.mkdir(parents=True, exist_ok=True)
 
-        log_path = LOG_PATH / log_file
+        log_path = log_path_parent / log_file
+
         file = open(log_path, "w")
-        return subprocess.Popen(full_cmd_list, stdout=log_path, stderr=file)
+
+        return subprocess.Popen(full_cmd_list, stdout=file, stderr=subprocess.STDOUT)
     return subprocess.Popen(full_cmd_list)
 
 
@@ -306,9 +310,43 @@ def main():
     for variation in make_variations():
         for it in range(NUM_ITERATIONS):
             run_iteration(
-                variation, it, REFERENCE_MAP_PATH, REFERENCE_BAG_PATH, DRY_MODE
+                variation=variation,
+                iteration=it,
+                map_reference_path=REFERENCE_MAP_PATH,
+                reference_bag_path=REFERENCE_BAG_PATH,
+                dry_mode=DRY_MODE,
             )
-    # evo_ape(REFERENCE_TUM_PATH, "../benchmarking_results/")
+            # evo_ape(
+            #         reference_path=REFERENCE_TUM_PATH,
+            #         record_path=str(bag_dir),
+            #         topic="/pose",
+            #         dry_mode=DRY_MODE
+            #     )
+            # append(ape_dir)
+
+    for variation in make_variations():
+        for it in range(NUM_ITERATIONS):
+            variation_name = (
+                f"{variation['sensor_model']}_p{variation['num_particles']}"
+            )
+            bag_dir = Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "bag"
+            evo_ape(
+                reference_path=REFERENCE_TUM_PATH,
+                record_path=str(bag_dir),
+                topic="/pose",
+                dry_mode=DRY_MODE,
+            )
+
+    for variation in make_variations():
+        for it in range(NUM_ITERATIONS):
+            variation_name = (
+                f"{variation['sensor_model']}_p{variation['num_particles']}"
+            )
+            ape_dir = (
+                Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "ape" / "ape.zip"
+            )
+            # append(ape_dir)
+            plot_ape_metrics(ape_path=str(ape_dir), dry_mode=DRY_MODE)
 
 
 if __name__ == "__main__":
