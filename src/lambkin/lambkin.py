@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""Lambkin library for executing and benchmarking."""
 
+"""Lambkin library to execute and benchmark Localization and Mapping algorithms."""
+
+import shutil
 import subprocess
 import time
 from pathlib import Path
 
-REFERENCE_BAG_PATH = "/ws/reference/hallway_localization"
-REFERENCE_MAP_PATH = "/ws/reference/map.yaml"
+REFERENCE_BAG_PATH = "/rosbags/reference/hallway_localization"
+REFERENCE_MAP_PATH = "/rosbags/reference/map.yaml"
+LOG_PATH = "/ws/log"
 NUM_ITERATIONS = 1
-RATE = 100
-QOS_FILE_PATH = "/ws/reference/qos_override.yaml"
-
+RATE = 1
+QOS_FILE_PATH = "/rosbags/reference/qos_override.yaml"
+BELUGA_READY_DELAY = 3
 
 LASER_MODELS = ["likelihood_field", "beam"]
 NUM_PARTICLES = [1, 10, 100, 1000, 10000]
@@ -18,7 +21,8 @@ RATE_OPTION = ["--rate", str(RATE)]
 QOS_OPTION = ["--qos-profile-overrides-path", QOS_FILE_PATH]
 CLOCK_OPTION = "--clock"
 RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
-RESULTS_PATH = "/ws/src/lambkin/benchmarking_results"
+RECORD_TOPICS_OPTION = ["--topics"] + RECORD_TOPICS_INTERESTED
+RESULTS_PATH = "/benchmarking_results"
 DRY_MODE = False
 PROCESS_TERMINATION_TIMEOUT = 5.0
 
@@ -42,8 +46,11 @@ def execute_background_process(
         return None
 
     if log_file:
-        file = open(log_file, "w")
-        return subprocess.Popen(full_cmd_list, stdout=file, stderr=file)
+        LOG_PATH.mkdir(parents=True, exist_ok=True)
+
+        log_path = LOG_PATH / log_file
+        file = open(log_path, "w")
+        return subprocess.Popen(full_cmd_list, stdout=log_path, stderr=file)
     return subprocess.Popen(full_cmd_list)
 
 
@@ -88,10 +95,8 @@ def ros_bag_record(
     bag_dir.mkdir(parents=True, exist_ok=True)
 
     if bag_dir.exists():
-        import shutil
-
         shutil.rmtree(bag_dir)
-        print(f"Borrando carpeta antigua en {bag_dir}...")
+        print(f"Removing existing directory at {bag_dir}...")
 
     return execute_background_process(
         (["ros2", "bag", "record", "-o", str(bag_dir)] + options), dry_mode
@@ -112,7 +117,7 @@ def ros_bag_play(
     Returns:
         subprocess.Popen: The running ros2 bag play process.
     """
-    cmd_list = ["ros2", "bag", "play", input_path, CLOCK_OPTION] + options
+    cmd_list = ["ros2", "bag", "play", input_path] + options
     return execute_background_process(cmd_list, dry_mode)
 
 
@@ -286,14 +291,11 @@ def run_iteration(
         map_reference_path,
         dry_mode=dry_mode,
     )
-    time.sleep(3)
+    time.sleep(BELUGA_READY_DELAY)
 
+    p_record = ros_bag_record(str(base_dir), RECORD_TOPICS_OPTION, dry_mode=dry_mode)
     p_play = ros_bag_play(
-        reference_bag_path, RATE_OPTION + QOS_OPTION, dry_mode=dry_mode
-    )
-
-    p_record = ros_bag_record(
-        str(base_dir), RECORD_TOPICS_INTERESTED, dry_mode=dry_mode
+        reference_bag_path, CLOCK_OPTION + RATE_OPTION + QOS_OPTION, dry_mode=dry_mode
     )
 
     wait_for_processes([p_play], [p_beluga, p_record])
