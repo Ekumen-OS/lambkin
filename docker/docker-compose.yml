@@ -1,6 +1,7 @@
 services:
   lambkin_dev:
     build: .
+    image: lambkin_ros:jazzy
     container_name: lambkin_developer
     network_mode: "host"
 
@@ -10,3 +11,4 @@ services:
     volumes:
       - ..:/ws
       - ${HOME}/ekumen/rosbags/reference_files:/rosbags/reference
+      - ${HOME}/ekumen/rosbags/benchmarking_results:/benchmarking_results

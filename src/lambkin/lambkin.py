@@ -7,13 +7,13 @@ import subprocess
 import time
 from pathlib import Path
 
-REFERENCE_BAG_PATH = "/ws/rosbags/reference/bag_short"
-REFERENCE_MAP_PATH = "/ws/rosbags/reference/map.yaml"
-REFERENCE_TUM_PATH = "/ws/rosbags/reference/pose.tum"
+REFERENCE_BAG_PATH = "/rosbags/reference/bag_short"
+REFERENCE_MAP_PATH = "/rosbags/reference/map.yaml"
+REFERENCE_TUM_PATH = "/rosbags/reference/pose.tum"
 LOG_PATH = "/ws/log"
 NUM_ITERATIONS = 1
 RATE = 1
-QOS_FILE_PATH = "/ws/rosbags/reference/qos_override.yaml"
+QOS_FILE_PATH = "/rosbags/reference/qos_override.yaml"
 BELUGA_READY_DELAY = 3
 
 LASER_MODELS = ["likelihood_field", "beam"]
@@ -23,7 +23,7 @@ QOS_OPTION = ["--qos-profile-overrides-path", QOS_FILE_PATH]
 CLOCK_OPTION = ["--clock"]
 RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
 RECORD_TOPICS_OPTION = ["--topics"] + RECORD_TOPICS_INTERESTED
-RESULTS_PATH = "/ws/benchmarking_results"
+RESULTS_PATH = "/benchmarking_results"
 DRY_MODE = False
 PROCESS_TERMINATION_TIMEOUT = 5.0
 
@@ -244,7 +244,7 @@ def plot_ape_metrics(ape_path: str, dry_mode: bool = False) -> None:
         dry_mode (bool, optional): If True, prints the command without executing it.
                                    Defaults to False.
     """
-    cmd_list = ["evo_res", ape_path]
+    cmd_list = ["evo_res"] + ape_path
     execute_foreground_process(cmd_list, dry_mode)
 
 
@@ -307,46 +307,31 @@ def run_iteration(
 
 def main():
     """Main loop that orchestrates the benchmarking process."""
+    ape_directories = []
     for variation in make_variations():
         for it in range(NUM_ITERATIONS):
-            run_iteration(
-                variation=variation,
-                iteration=it,
-                map_reference_path=REFERENCE_MAP_PATH,
-                reference_bag_path=REFERENCE_BAG_PATH,
-                dry_mode=DRY_MODE,
+            # run_iteration(
+            #     variation=variation,
+            #     iteration=it,
+            #     map_reference_path=REFERENCE_MAP_PATH,
+            #     reference_bag_path=REFERENCE_BAG_PATH,
+            #     dry_mode=DRY_MODE,
+            # )
+            variation_name = (
+                f"{variation['sensor_model']}_p{variation['num_particles']}"
             )
+            # bag_dir = Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "bag"
             # evo_ape(
             #         reference_path=REFERENCE_TUM_PATH,
             #         record_path=str(bag_dir),
             #         topic="/pose",
             #         dry_mode=DRY_MODE
             #     )
-            # append(ape_dir)
-
-    for variation in make_variations():
-        for it in range(NUM_ITERATIONS):
-            variation_name = (
-                f"{variation['sensor_model']}_p{variation['num_particles']}"
-            )
-            bag_dir = Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "bag"
-            evo_ape(
-                reference_path=REFERENCE_TUM_PATH,
-                record_path=str(bag_dir),
-                topic="/pose",
-                dry_mode=DRY_MODE,
-            )
-
-    for variation in make_variations():
-        for it in range(NUM_ITERATIONS):
-            variation_name = (
-                f"{variation['sensor_model']}_p{variation['num_particles']}"
-            )
             ape_dir = (
                 Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "ape" / "ape.zip"
             )
-            # append(ape_dir)
-            plot_ape_metrics(ape_path=str(ape_dir), dry_mode=DRY_MODE)
+            ape_directories.append(ape_dir)
+    plot_ape_metrics(ape_path=ape_directories, dry_mode=DRY_MODE)
 
 
 if __name__ == "__main__":
