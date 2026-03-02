@@ -166,12 +166,10 @@ def bag2tum(bag_path: str, tum_path: str, topic: str) -> str:
     Returns:
         str: The absolute path to the generated TUM file.
     """
-    evo_traj_path = shutil.which("evo_traj")
-
     tum_dir = Path(tum_path) / "tum"
     tum_dir.mkdir(parents=True, exist_ok=True)
 
-    cmd_list = [evo_traj_path, "bag2", str(bag_path), topic, "--save_as_tum"]
+    cmd_list = ["evo_traj", "bag2", str(bag_path), topic, "--save_as_tum"]
     subprocess.run(cmd_list, cwd=tum_dir, check=True, input="y\n", text=True)
 
     tum_name = f"{topic.strip('/')}.tum"
