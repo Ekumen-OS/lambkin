@@ -12,7 +12,7 @@ REFERENCE_MAP_PATH = "/rosbags/reference/hq_files/map.yaml"
 REFERENCE_TUM_PATH = "/rosbags/reference/hq_files/groundtruth.tum"
 LOG_PATH = "/ws/log"
 NUM_ITERATIONS = 1
-RATE = 1
+RATE = 100
 QOS_FILE_PATH = "/rosbags/reference/qos_override.yaml"
 BELUGA_READY_DELAY = 3
 
@@ -32,16 +32,26 @@ APE_TOPICS_INTERESTED = "/pose"
 def execute_background_process(
     full_cmd_list: list[str], dry_mode: bool = False, log_file: str = None
 ) -> subprocess.Popen:
-    """Executes a shell command in the background.
+    """Executes a command as a background process and performs an instant death check.
+
+    Spawns the given command as a non-blocking subprocess, optionally redirecting
+    its output to a log file. After spawning, performs a quick poll to detect
+    immediate failures (e.g. command not found, missing package).
 
     Args:
         full_cmd_list (list[str]): The command and its arguments as a list of strings.
         dry_mode (bool, optional): If True, prints the command without executing it.
                                    Defaults to False.
-        log_file (str, optional): Path to a output log file.
+        log_file (str, optional): Filename for stdout/stderr redirection, saved under
+                                  LOG_PATH. If None, output is not redirected.
+                                  Defaults to None.
 
     Returns:
-        subprocess.Popen: The running background process.
+        subprocess.Popen: The running background process, or None if dry_mode is True.
+
+    Raises:
+        RuntimeError: If the process dies instantly with a non-zero return code
+                      after being spawned.
     """
     if dry_mode:
         print(f"{full_cmd_list}\n")
@@ -50,13 +60,21 @@ def execute_background_process(
     if log_file:
         log_path_parent = Path(LOG_PATH)
         log_path_parent.mkdir(parents=True, exist_ok=True)
-
         log_path = log_path_parent / log_file
-
         file = open(log_path, "w")
+        process = subprocess.Popen(full_cmd_list, stdout=file, stderr=subprocess.STDOUT)
+    else:
+        process = subprocess.Popen(full_cmd_list)
 
-        return subprocess.Popen(full_cmd_list, stdout=file, stderr=subprocess.STDOUT)
-    return subprocess.Popen(full_cmd_list)
+    # Quick check in case the process died instantly
+    process.poll()
+    if process.returncode is not None and process.returncode != 0:
+        raise RuntimeError(
+            f"Background process died instantly with return code "
+            f"{process.returncode}.\n"
+            f"Command: {full_cmd_list}"
+        )
+    return process
 
 
 def execute_foreground_process(
@@ -79,6 +97,7 @@ def execute_foreground_process(
     if log_file:
         file = open(log_file, "w")
         return subprocess.run(full_cmd_list, stdout=file, stderr=file, check=True)
+
     return subprocess.run(full_cmd_list, check=True, input="y\n", text=True)
 
 
@@ -215,23 +234,49 @@ def evo_ape(
 def wait_for_processes(
     waitlist: list[subprocess.Popen], termination_list: list[subprocess.Popen]
 ) -> None:
-    """Manages process synchronization by waiting for specific processes.
+    """Manages process synchronization and background monitoring.
 
-    It waits for processes in the waitlist to complete naturally and
-    actively terminates others in the termination_list.
+    Waits for specific processes to complete while monitoring background
+    processes for unexpected failures. Continuously polls all processes
+    while waiting for the waitlist to finish, detecting any unexpected
+    crashes in the termination_list before sending SIGTERM.
 
     Args:
-        waitlist (list[subprocess.Popen]): Processes that must complete naturally.
-        termination_list (list[subprocess.Popen]): Processes that should be terminated.
+        waitlist (list[subprocess.Popen]): Processes that must complete naturally
+                                           before termination_list is stopped.
+        termination_list (list[subprocess.Popen]): Long-running background processes
+                                                   that will be terminated once the
+                                                   waitlist finishes.
+
+    Raises:
+        RuntimeError: If any process in the termination_list dies unexpectedly
+                      during execution, or if any process in the waitlist exits
+                      with a non-zero return code.
     """
-    # Wait waitlist processes to finish naturally
+    # Wait for waitlist processes to finish naturally and check their return codes
     for p in waitlist:
         if p is not None:
             p.wait()
+            if p.returncode != 0:
+                raise RuntimeError(
+                    f"Process {p.args} failed with return code {p.returncode}."
+                )
+
+    # Check termination_list processes didn't die unexpectedly before we kill them
+    for p in termination_list:
+        if p is not None:
+            p.poll()
+            if p.returncode is not None and p.returncode != 0:
+                raise RuntimeError(
+                    f"Process {p.args} died unexpectedly with "
+                    f"return code {p.returncode}."
+                )
+
     # Broadcast SIGTERM to all termination_list processes
     for p in termination_list:
         if p is not None:
             p.terminate()
+
     # Wait up to timeout for them to close; force-kill if they hang
     for p in termination_list:
         if p is not None:
@@ -301,6 +346,7 @@ def run_iteration(
                                    Defaults to False.
     """
     variation_name = f"{variation['sensor_model']}_p{variation['num_particles']}"
+    print(f"Running iteration {iteration} with {variation_name}")
     base_dir = Path(RESULTS_PATH) / variation_name / f"iter_{iteration}"
 
     p_beluga = beluga(
