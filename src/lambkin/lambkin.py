@@ -7,9 +7,9 @@ import subprocess
 import time
 from pathlib import Path
 
-REFERENCE_BAG_PATH = "/rosbags/reference/bag_short"
-REFERENCE_MAP_PATH = "/rosbags/reference/map.yaml"
-REFERENCE_TUM_PATH = "/rosbags/reference/pose.tum"
+REFERENCE_BAG_PATH = "/rosbags/reference/hq_files/hq_simulation_segment_0"
+REFERENCE_MAP_PATH = "/rosbags/reference/hq_files/map.yaml"
+REFERENCE_TUM_PATH = "/rosbags/reference/hq_files/groundtruth.tum"
 LOG_PATH = "/ws/log"
 NUM_ITERATIONS = 1
 RATE = 1
@@ -17,7 +17,7 @@ QOS_FILE_PATH = "/rosbags/reference/qos_override.yaml"
 BELUGA_READY_DELAY = 3
 
 LASER_MODELS = ["likelihood_field", "beam"]
-NUM_PARTICLES = [1, 10, 100, 1000, 10000]
+NUM_PARTICLES = [1, 10, 1000, 2000]
 RATE_OPTION = ["--rate", str(RATE)]
 QOS_OPTION = ["--qos-profile-overrides-path", QOS_FILE_PATH]
 CLOCK_OPTION = ["--clock"]
@@ -25,7 +25,8 @@ RECORD_TOPICS_INTERESTED = ["/pose", "/tf", "/tf_static"]
 RECORD_TOPICS_OPTION = ["--topics"] + RECORD_TOPICS_INTERESTED
 RESULTS_PATH = "/benchmarking_results"
 DRY_MODE = False
-PROCESS_TERMINATION_TIMEOUT = 5.0
+PROCESS_TERMINATION_TIMEOUT = 7.0
+APE_TOPICS_INTERESTED = "/pose"
 
 
 def execute_background_process(
@@ -78,7 +79,7 @@ def execute_foreground_process(
     if log_file:
         file = open(log_file, "w")
         return subprocess.run(full_cmd_list, stdout=file, stderr=file, check=True)
-    return subprocess.run(full_cmd_list, check=True)
+    return subprocess.run(full_cmd_list, check=True, input="y\n", text=True)
 
 
 def ros_bag_record(
@@ -103,7 +104,9 @@ def ros_bag_record(
         print(f"Removing existing directory at {bag_dir}...")
 
     return execute_background_process(
-        (["ros2", "bag", "record", "-o", str(bag_dir)] + options), dry_mode
+        (["ros2", "bag", "record", "-o", str(bag_dir)] + options),
+        dry_mode,
+        log_file="bag_record.log",
     )
 
 
@@ -122,7 +125,7 @@ def ros_bag_play(
         subprocess.Popen: The running ros2 bag play process.
     """
     cmd_list = ["ros2", "bag", "play", input_path] + options
-    return execute_background_process(cmd_list, dry_mode)
+    return execute_background_process(cmd_list, dry_mode, log_file="bag_play.log")
 
 
 def beluga(
@@ -167,31 +170,34 @@ def bag2tum(bag_path: str, tum_path: str, topic: str) -> str:
     tum_dir.mkdir(parents=True, exist_ok=True)
 
     cmd_list = ["evo_traj", "bag2", str(bag_path), topic, "--save_as_tum"]
-    subprocess.run(cmd_list, cwd=tum_dir, check=True)
+    subprocess.run(cmd_list, cwd=tum_dir, check=True, input="y\n", text=True)
 
     tum_name = f"{topic.strip('/')}.tum"
     return str(tum_dir / tum_name)
 
 
 def evo_ape(
-    reference_path: str, record_path: str, topic: str = "/pose", dry_mode: bool = False
+    reference_path: str,
+    record_path: str,
+    ape_path: str,
+    topic: str = "/pose",
+    dry_mode: bool = False,
 ):
     """Computes the Absolute Pose Error (APE).
 
     Args:
         reference_path (str): The path to the reference TUM file.
         record_path (str): The path to the recorded bag file.
+        ape_path (str): The path to the ape file
         topic (str, optional): The topic to evaluate. Defaults to "/pose".
         dry_mode (bool, optional): If True, prints the command without executing it.
                                    Defaults to False.
     """
     record_path_obj = Path(record_path)
-    iter_dir = record_path_obj.parent.parent
+    iter_dir = record_path_obj.parent
 
     record_tum = bag2tum(str(record_path_obj), str(iter_dir), topic)
-
-    ape_dir = iter_dir / "ape"
-    ape_dir.mkdir(parents=True, exist_ok=True)
+    Path(ape_path).parent.mkdir(parents=True, exist_ok=True)
 
     cmd_list = [
         "evo_ape",
@@ -201,7 +207,7 @@ def evo_ape(
         "-va",
         "--align",
         "--save_results",
-        str(ape_dir / "ape.zip"),
+        str(ape_path),
     ]
     execute_foreground_process(cmd_list, dry_mode)
 
@@ -244,7 +250,15 @@ def plot_ape_metrics(ape_path: str, dry_mode: bool = False) -> None:
         dry_mode (bool, optional): If True, prints the command without executing it.
                                    Defaults to False.
     """
-    cmd_list = ["evo_res"] + ape_path
+    plot_file = Path(RESULTS_PATH) / "plots_ape" / "ape_comparison_plot.png"
+
+    if plot_file.parent.exists():
+        plot_file.unlink()
+    plot_file.parent.mkdir(parents=True, exist_ok=True)
+
+    cmd_list = (
+        ["evo_res"] + ape_path + ["--use_filenames", "--save_plot", str(plot_file)]
+    )
     execute_foreground_process(cmd_list, dry_mode)
 
 
@@ -310,27 +324,34 @@ def main():
     ape_directories = []
     for variation in make_variations():
         for it in range(NUM_ITERATIONS):
-            # run_iteration(
-            #     variation=variation,
-            #     iteration=it,
-            #     map_reference_path=REFERENCE_MAP_PATH,
-            #     reference_bag_path=REFERENCE_BAG_PATH,
-            #     dry_mode=DRY_MODE,
-            # )
+            run_iteration(
+                variation=variation,
+                iteration=it,
+                map_reference_path=REFERENCE_MAP_PATH,
+                reference_bag_path=REFERENCE_BAG_PATH,
+                dry_mode=DRY_MODE,
+            )
             variation_name = (
                 f"{variation['sensor_model']}_p{variation['num_particles']}"
             )
-            # bag_dir = Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "bag"
-            # evo_ape(
-            #         reference_path=REFERENCE_TUM_PATH,
-            #         record_path=str(bag_dir),
-            #         topic="/pose",
-            #         dry_mode=DRY_MODE
-            #     )
+            bag_dir = Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "bag"
             ape_dir = (
-                Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "ape" / "ape.zip"
+                Path(RESULTS_PATH)
+                / variation_name
+                / f"iter_{it}"
+                / "ape"
+                / f"ape_{variation_name}_iter_{it}.zip"
             )
-            ape_directories.append(ape_dir)
+            evo_ape(
+                reference_path=REFERENCE_TUM_PATH,
+                record_path=str(bag_dir),
+                ape_path=str(ape_dir),
+                topic=APE_TOPICS_INTERESTED,
+                dry_mode=DRY_MODE,
+            )
+
+            ape_directories.append(str(ape_dir))
+
     plot_ape_metrics(ape_path=ape_directories, dry_mode=DRY_MODE)
 
 
