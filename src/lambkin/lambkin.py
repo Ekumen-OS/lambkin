@@ -150,10 +150,12 @@ def ros_bag_record(
         subprocess.Popen: The running ros2 bag record process.
     """
     bag_dir = Path(output_path) / "bag"
-    bag_dir.mkdir(parents=True, exist_ok=True)
+
     if bag_dir.exists():
         shutil.rmtree(bag_dir)
         print(f"Removing existing directory at {bag_dir}...")
+
+    bag_dir.mkdir(parents=True, exist_ok=True)
 
     return execute_background_process(
         (["ros2", "bag", "record", "-o", str(bag_dir)] + options),
