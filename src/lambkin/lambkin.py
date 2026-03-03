@@ -155,8 +155,6 @@ def ros_bag_record(
         shutil.rmtree(bag_dir)
         print(f"Removing existing directory at {bag_dir}...")
 
-    bag_dir.mkdir(parents=True, exist_ok=True)
-
     return execute_background_process(
         (["ros2", "bag", "record", "-o", str(bag_dir)] + options),
         dry_mode,
