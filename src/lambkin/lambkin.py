@@ -12,7 +12,7 @@ REFERENCE_MAP_PATH = "/rosbags/reference/hq_files/map.yaml"
 REFERENCE_TUM_PATH = "/rosbags/reference/hq_files/groundtruth.tum"
 LOG_PATH = "/ws/log"
 NUM_ITERATIONS = 1
-RATE = 100
+RATE = 1
 QOS_FILE_PATH = "/rosbags/reference/qos_override.yaml"
 BELUGA_READY_DELAY = 3
 
@@ -27,6 +27,40 @@ RESULTS_PATH = "/benchmarking_results"
 DRY_MODE = False
 PROCESS_TERMINATION_TIMEOUT = 7.0
 APE_TOPICS_INTERESTED = "/pose"
+
+
+def kill_ros2_nodes() -> None:
+    """Kill any orphaned ROS2 nodes before starting the benchmark."""
+    subprocess.run(["ros2", "daemon", "stop"], capture_output=True)
+    subprocess.run(["ros2", "daemon", "start"], capture_output=True)
+    time.sleep(1)
+
+    result = subprocess.run(["ros2", "node", "list"], capture_output=True, text=True)
+
+    nodes = []
+    for line in result.stdout.splitlines():
+        node = line.strip()
+        if node:
+            nodes.append(node)
+
+    if not nodes:
+        print("No orphaned ROS2 nodes found.")
+        return
+
+    print(f"Found orphaned nodes: {nodes}")
+
+    for node in nodes:
+        subprocess.run(["pkill", "-f", node.lstrip("/")], capture_output=True)
+
+    time.sleep(7.0)
+
+    # Verify they are gone
+    result = subprocess.run(["ros2", "node", "list"], capture_output=True, text=True)
+    remaining = result.stdout.strip()
+    if remaining:
+        print(f"Warning: some nodes are still alive: {remaining}")
+    else:
+        print("All orphaned nodes cleaned up successfully.")
 
 
 def execute_background_process(
@@ -117,7 +151,6 @@ def ros_bag_record(
     """
     bag_dir = Path(output_path) / "bag"
     bag_dir.mkdir(parents=True, exist_ok=True)
-
     if bag_dir.exists():
         shutil.rmtree(bag_dir)
         print(f"Removing existing directory at {bag_dir}...")
@@ -363,11 +396,13 @@ def run_iteration(
     )
 
     wait_for_processes([p_play], [p_beluga, p_record])
+    kill_ros2_nodes()
 
 
 def main():
     """Main loop that orchestrates the benchmarking process."""
     ape_directories = []
+    kill_ros2_nodes()
     for variation in make_variations():
         for it in range(NUM_ITERATIONS):
             run_iteration(
