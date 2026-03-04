@@ -33,12 +33,10 @@ class TestProcessManagement(unittest.TestCase):
         and subsequently terminates the processes in the termination_list.
         """
         p_play = subprocess.Popen(["sleep", "2"])
-        p_record = subprocess.Popen(["sleep", "10"])
-
+        p_infinite = subprocess.Popen(["sleep", "infinity"])
         start_time = time.time()
-        wait_for_processes(waitlist=[p_play], termination_list=[p_record])
+        wait_for_processes(waitlist=[p_play], termination_list=[p_infinite])
         end_time = time.time()
-
         total_time = end_time - start_time
 
         self.assertGreaterEqual(
@@ -48,7 +46,7 @@ class TestProcessManagement(unittest.TestCase):
             total_time, 5.0, "The function got stuck waiting for the infinite process."
         )
         self.assertIsNotNone(
-            p_record.poll(),
+            p_infinite.poll(),
             "The process in the termination_list was not closed properly.",
         )
 

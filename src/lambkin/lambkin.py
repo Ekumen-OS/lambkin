@@ -48,11 +48,10 @@ def kill_ros2_nodes() -> None:
         return
 
     print(f"Found orphaned nodes: {nodes}")
-
     for node in nodes:
         subprocess.run(["pkill", "-f", node.lstrip("/")], capture_output=True)
 
-    time.sleep(7.0)
+    time.sleep(10)
 
     # Verify they are gone
     result = subprocess.run(["ros2", "node", "list"], capture_output=True, text=True)
