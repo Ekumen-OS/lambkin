@@ -11,3 +11,11 @@ wheels/
 
 # Ruff
 .ruff_cache/
+
+# ROS
+log/
+install/
+build/
+
+# Mypy cache
+.mypy_cache
