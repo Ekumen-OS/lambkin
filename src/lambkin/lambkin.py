@@ -221,7 +221,10 @@ def bag2tum(bag_path: str, tum_path: str, topic: str) -> str:
     tum_dir.mkdir(parents=True, exist_ok=True)
 
     cmd_list = ["evo_traj", "bag2", str(bag_path), topic, "--save_as_tum"]
-    subprocess.run(cmd_list, cwd=tum_dir, check=True, input="y\n", text=True)
+    if not DRY_MODE:
+        subprocess.run(cmd_list, cwd=tum_dir, check=True, input="y\n", text=True)
+    else:
+        print(cmd_list)
 
     tum_name = f"{topic.strip('/')}.tum"
     return str(tum_dir / tum_name)
@@ -330,7 +333,9 @@ def plot_ape_metrics(ape_path: str, dry_mode: bool = False) -> None:
     plot_file = Path(RESULTS_PATH) / "plots_ape" / "ape_comparison_plot.png"
 
     if plot_file.parent.exists():
-        plot_file.unlink()
+        shutil.rmtree(plot_file.parent)
+        print(f"Removing existing directory at {plot_file.parent}...")
+
     plot_file.parent.mkdir(parents=True, exist_ok=True)
 
     cmd_list = (
@@ -387,7 +392,8 @@ def run_iteration(
         map_reference_path,
         dry_mode=dry_mode,
     )
-    time.sleep(BELUGA_READY_DELAY)
+    if not DRY_MODE:
+        time.sleep(BELUGA_READY_DELAY)
 
     p_record = ros_bag_record(str(base_dir), RECORD_TOPICS_OPTION, dry_mode=dry_mode)
     p_play = ros_bag_play(
@@ -395,13 +401,15 @@ def run_iteration(
     )
 
     wait_for_processes([p_play], [p_beluga, p_record])
-    kill_ros2_nodes()
+    if not DRY_MODE:
+        kill_ros2_nodes()
 
 
 def main():
     """Main loop that orchestrates the benchmarking process."""
     ape_directories = []
-    kill_ros2_nodes()
+    if not DRY_MODE:
+        kill_ros2_nodes()
     for variation in make_variations():
         for it in range(NUM_ITERATIONS):
             run_iteration(
