@@ -412,17 +412,17 @@ def main():
         kill_ros2_nodes()
     for variation in make_variations():
         for it in range(NUM_ITERATIONS):
-            run_iteration(
-                variation=variation,
-                iteration=it,
-                map_reference_path=REFERENCE_MAP_PATH,
-                reference_bag_path=REFERENCE_BAG_PATH,
-                dry_mode=DRY_MODE,
-            )
+            # run_iteration(
+            #     variation=variation,
+            #     iteration=it,
+            #     map_reference_path=REFERENCE_MAP_PATH,
+            #     reference_bag_path=REFERENCE_BAG_PATH,
+            #     dry_mode=DRY_MODE,
+            # )
             variation_name = (
                 f"{variation['sensor_model']}_p{variation['num_particles']}"
             )
-            bag_dir = Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "bag"
+            # bag_dir = Path(RESULTS_PATH) / variation_name / f"iter_{it}" / "bag"
             ape_dir = (
                 Path(RESULTS_PATH)
                 / variation_name
@@ -430,13 +430,13 @@ def main():
                 / "ape"
                 / f"ape_{variation_name}_iter_{it}.zip"
             )
-            evo_ape(
-                reference_path=REFERENCE_TUM_PATH,
-                record_path=str(bag_dir),
-                ape_path=str(ape_dir),
-                topic=APE_TOPICS_INTERESTED,
-                dry_mode=DRY_MODE,
-            )
+            # evo_ape(
+            #     reference_path=REFERENCE_TUM_PATH,
+            #     record_path=str(bag_dir),
+            #     ape_path=str(ape_dir),
+            #     topic=APE_TOPICS_INTERESTED,
+            #     dry_mode=DRY_MODE,
+            # )
 
             ape_directories.append(str(ape_dir))
 
