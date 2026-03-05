@@ -6,50 +6,13 @@ LAMBKIN (Localization And Mapping Benchmarking) is a programmatic SDK for buildi
 It moves away from complex automation "glue" in favor of a clean, Python-first approach to benchmarking.
 
 
-### Scope
+## Scope
 
-Lambkin is a simple, sequential process orchestrator that covers the basic concepts of process lifecycle management and graceful termination for ROS2-based benchmarking pipelines. It handles each stage of a benchmark run in a strictly ordered sequence — spawning nodes, recording topics, synchronizing playback, and collecting evaluation metrics — making the execution flow explicit and easy to follow.
+In its current phase, LAMBKIN acts as a sequential process orchestrator. It provides a streamlined, Python-first approach to the fundamental lifecycle management of ROS2-based benchmarking through strictly ordered execution, synchronized playback, and graceful termination of distributed nodes.
+
+The logic handles node lifecycle management to ensure a clean ROS2 graph between iterations, synchronizes data flow between bag playback and node processing, and automates evaluation by interfacing with tools like evo to transform raw logs into standardized metrics.
 
 While Lambkin is algorithm-agnostic by design and can integrate with any ROS2-based pipeline, this repository provides a specific worked example using the [Beluga](https://github.com/Ekumen-OS/beluga) AMCL localization algorithm, including a predefined launch file and configuration files to run a complete benchmark out of the box.
-
-
-## Architecture
-
-### How it works
-
-Each benchmark iteration follows this sequence:
-
-
-``` mermaid
-flowchart TD
-
-    START(( )) --> A
-
-    A["<b>1. Clean up orphaned ROS2 nodes</b><br>pkill -f ros2 · pkill -f rviz2<br>Kill leftover processes from previous runs"]
-    B["<b>2. Launch Beluga Algorithm</b><br>ros2 launch beluga_amcl ...<br>beluga_amcl · map_server · lifecycle_manager"]
-    C["<b>3. Start Recording Topics</b><br>ros2 bag record /pose /tf /tf_static"]
-    D["<b>4. Play Reference Rosbag</b><br>ros2 bag play reference.bag<br>Publishes sensor data into live ROS2 graph"]
-    E["<b>5. Wait for Playback to End</b><br>wait $BAG_PID<br>Synchronizes all process termination"]
-    F["<b>6. Clean up All ROS2 Nodes</b><br>kill $LAUNCH_PID $RECORD_PID<br>Kill all processes before next iteration"]
-    G["<b>7. Evaluate Results</b><br>evo_traj tum ... · evo_ape tum ...<br>TUM format conversion · APE metrics"]
-    H["<b>8. Generate Aggregated Plots</b><br>evo_res results/*.zip --plot<br>APE comparison plots across all configurations"]
-
-    END(( ))
-
-    A --> B --> C --> D --> E --> F --> G --> H
-
-    style START fill:#111827,stroke:#111827
-    style END   fill:#111827,stroke:#111827
-
-    style A fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
-    style B fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
-    style C fill:#dcfce7,stroke:#16a34a,color:#14532d
-    style D fill:#fef3c7,stroke:#d97706,color:#78350f
-    style E fill:#f3f4f6,stroke:#6b7280,color:#1f2937
-    style F fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
-    style G fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
-    style H fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
-```
 
 ### ROS2 Package
 
@@ -62,6 +25,14 @@ The provided launch file brings up three ROS2 nodes:
 
 These three nodes are launched together via a ROS2 launch file, which accepts parameters such as the map path, sensor model type, and maximum number of
 particles, allowing LAMBKIN to evaluate different configurations automatically.
+
+## Architecture
+
+### How it works
+
+Each benchmark iteration follows this sequence:
+
+![Execution Diagram](doc/Lambkin_Diagram.drawio.svg)
 
 ### Output folder structure
 
@@ -187,13 +158,12 @@ Plot generated after running the benchmark with all configurations.
 
 ---
 
-## Known Bags
+## Known Bugs
 
 - Improve process management to reliably terminate all ROS2 child processes across iterations
 - Fix orphaned processes that survive after a crashed run and another iteration
 - Fix tight_layout warning in evo_res plots and overlapping axis labels
 
-        ```
-        /ws/.venv/lib/python3.12/site-packages/seaborn/axisgrid.py:123: UserWarning: The figure layout has changed to tight self._figure.tight_layout
-        (*args **kwargs)
-        ```
+```Bash
+/ws/.venv/lib/python3.12/site-packages/seaborn/axisgrid.py:123: UserWarning: The figure layout has changed to tight self._figure.tight_layout (*args **kwargs)
+```
