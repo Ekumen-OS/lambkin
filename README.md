@@ -14,25 +14,29 @@ The logic handles node lifecycle management to ensure a clean ROS2 graph between
 
 While Lambkin is algorithm-agnostic by design and can integrate with any ROS2-based pipeline, this repository provides a specific worked example using the [Beluga](https://github.com/Ekumen-OS/beluga) AMCL localization algorithm, including a predefined launch file and configuration files to run a complete benchmark out of the box.
 
-### ROS2 Beluga Example
+## ROS2 Beluga Example
 
-LAMBKIN is designed to work with any localization algorithm package.
+While Lambkin is algorithm-agnostic by design and can integrate with any ROS2-based localization algorithm, this repository provides a specific worked example using [Beluga](https://github.com/Ekumen-OS/beluga) AMCL. It includes a predefined ROS2 package with a launch file and configuration files ready to run a complete benchmark out of the box.
+
 The provided launch file brings up three ROS2 nodes:
 
-- **Beluga AMCL** — the algorithm being benchmarked (e.g. a AMCL-based node), responsible for estimating the robot pose from sensor data and a known map.
-- **map_server** — provides the static map to the localization node
-- **lifecycle_manager** — manages the lifecycle of both the localization node and map_server, handling their startup and shutdown transitions automatically
+- **`beluga_amcl`** — Particle filter-based AMCL node, responsible for estimating the robot pose from sensor data and a known map.
+- **`map_server`** — Loads a static occupancy grid from disk and provides the static map to the localization node.
+- **`lifecycle_manager`** — Manages the lifecycle transitions (`configure` → `activate`→ `deactivate` → `cleanup`) of both the localization node and `map_server`, handling their startup and shutdown ordering automatically.
 
-These three nodes are launched together via a ROS2 launch file, which accepts parameters such as the map path, sensor model type, and maximum number of
-particles, allowing LAMBKIN to evaluate different configurations automatically.
+The launch file accepts parameters such as the map path, sensor model type, and maximum number of particles, allowing Lambkin to sweep different configurations automatically.
+
+* For more details on the default configuration, see the [configuration file](https://ekumen-os.github.io/beluga/packages/beluga_amcl/docs/ros2-reference.html).
 
 ## Architecture
 
+This design describes the architecture of the Lambkin Python library.
+
 ### How it works
 
-Each benchmark iteration follows this sequence:
+The following diagram illustrates the full benchmarking execution flow:
 
-![Execution Diagram](doc/Lambkin_Diagram.drawio.svg)
+![Execution Diagram](doc/LambkinDiagram.drawio.svg)
 
 ### Output folder structure
 
