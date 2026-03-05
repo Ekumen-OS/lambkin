@@ -14,7 +14,7 @@ The logic handles node lifecycle management to ensure a clean ROS2 graph between
 
 While Lambkin is algorithm-agnostic by design and can integrate with any ROS2-based pipeline, this repository provides a specific worked example using the [Beluga](https://github.com/Ekumen-OS/beluga) AMCL localization algorithm, including a predefined launch file and configuration files to run a complete benchmark out of the box.
 
-### ROS2 Package
+### ROS2 Beluga Example
 
 LAMBKIN is designed to work with any localization algorithm package.
 The provided launch file brings up three ROS2 nodes:
