@@ -2,19 +2,14 @@
 
 ## Overview
 
-LAMBKIN (Localization And Mapping Benchmarking) is a programmatic SDK for
-building reproducible, structured, and parallelized SLAM evaluation pipelines.
-It moves away from complex automation "glue" in favor of a clean, Python-first
-approach to benchmarking.
+LAMBKIN (Localization And Mapping Benchmarking) is a programmatic SDK for building reproducible, structured, and parallelized SLAM evaluation pipelines.
+It moves away from complex automation "glue" in favor of a clean, Python-first approach to benchmarking.
 
 
-### What it does in this phase
+### Scope
 
-In this initial phase, LAMBKIN provides a simple Python script that serves as
-the foundation for the orchestration system. It automates the full benchmarking
-pipeline using **Beluga AMCL** as the localization algorithm,
-evaluating it across multiple configurations(sensor models and particle counts)
-and measuring its accuracy against a ground truth trajectory.
+In this initial phase, LAMBKIN provides a simple Python script that serves as the foundation for the orchestration system. It automates the full benchmarking
+pipeline using **Beluga AMCL** as the localization algorithm, evaluating it across multiple configurations(sensor models and particle counts) and measuring its accuracy against a ground truth trajectory.
 
 - Launches Beluga AMCL with different configurations (sensor models, particle counts)
 - Plays a reference rosbag to simulate a real robot environment
@@ -28,22 +23,36 @@ and measuring its accuracy against a ground truth trajectory.
 
 Each benchmark iteration follows this sequence:
 
-```
-1. Clean up any orphaned ROS2 nodes   (kill leftover processes from previous runs)
-        ↓
-2. Launch Beluga AMCL node            (ros2 launch → beluga_amcl + map_server + lifecycle_manager)
-        ↓
-3. Start recording topics             (ros2 bag record → /pose, /tf, /tf_static)
-        ↓
-4. Play reference rosbag              (ros2 bag play → publishes sensor data)
-        ↓
-5. Wait for playback to end           (synchronizes all process termination)
-        ↓
-6. Clean up all ROS2 nodes            (kill all processes before next iteration)
-        ↓
-7. Evaluate results                   (evo_traj → TUM format, evo_ape → APE metrics)
-        ↓
-8. Generate aggregated plots          (evo_res → APE comparison plots across all configurations)
+
+``` mermaid
+flowchart TD
+
+    START(( )) --> A
+
+    A["<b>1. Clean up orphaned ROS2 nodes</b><br>pkill -f ros2 · pkill -f rviz2<br>Kill leftover processes from previous runs"]
+    B["<b>2. Launch Beluga Algorithm</b><br>ros2 launch beluga_amcl ...<br>beluga_amcl · map_server · lifecycle_manager"]
+    C["<b>3. Start Recording Topics</b><br>ros2 bag record /pose /tf /tf_static"]
+    D["<b>4. Play Reference Rosbag</b><br>ros2 bag play reference.bag<br>Publishes sensor data into live ROS2 graph"]
+    E["<b>5. Wait for Playback to End</b><br>wait $BAG_PID<br>Synchronizes all process termination"]
+    F["<b>6. Clean up All ROS2 Nodes</b><br>kill $LAUNCH_PID $RECORD_PID<br>Kill all processes before next iteration"]
+    G["<b>7. Evaluate Results</b><br>evo_traj tum ... · evo_ape tum ...<br>TUM format conversion · APE metrics"]
+    H["<b>8. Generate Aggregated Plots</b><br>evo_res results/*.zip --plot<br>APE comparison plots across all configurations"]
+
+    END(( ))
+
+    A --> B --> C --> D --> E --> F --> G --> H
+
+    style START fill:#111827,stroke:#111827
+    style END   fill:#111827,stroke:#111827
+
+    style A fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    style B fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    style C fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style D fill:#fef3c7,stroke:#d97706,color:#78350f
+    style E fill:#f3f4f6,stroke:#6b7280,color:#1f2937
+    style F fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    style G fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+    style H fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
 ```
 
 ### Use Case
@@ -51,14 +60,11 @@ Each benchmark iteration follows this sequence:
 LAMBKIN is designed to work with any localization algorithm package. In this
 phase, it orchestrates the following ROS2 nodes:
 
-- **Beluga AMCL** — the algorithm being benchmarked (e.g. a AMCL-based node),
-  responsible for estimating the robot pose from sensor data and a known map
+- **Beluga AMCL** — the algorithm being benchmarked (e.g. a AMCL-based node), responsible for estimating the robot pose from sensor data and a known map
 - **map_server** — provides the static map to the localization node
-- **lifecycle_manager** — manages the lifecycle of both the localization node and
-  map_server, handling their startup and shutdown transitions automatically
+- **lifecycle_manager** — manages the lifecycle of both the localization node and map_server, handling their startup and shutdown transitions automatically
 
-These three nodes are launched together via a ROS2 launch file, which accepts
-parameters such as the map path, sensor model type, and maximum number of
+These three nodes are launched together via a ROS2 launch file, which accepts parameters such as the map path, sensor model type, and maximum number of
 particles, allowing LAMBKIN to evaluate different configurations automatically.
 
 ### Output folder structure
@@ -93,8 +99,9 @@ Make sure you have the following reference files available before running the be
 | Artifact | Description |
 |---|---|
 | Rosbag | Reference sensor data to replay during the benchmark |
-| Map | Static map file in `.yaml` format |
+| Map | Static map file in `.yaml` and `.pgm` format |
 | Groundtruth | Reference trajectory in `.tum` format to evaluate against |
+
 ### Setup
 
 **1. Build and start the Docker container:**
