@@ -8,14 +8,10 @@ It moves away from complex automation "glue" in favor of a clean, Python-first a
 
 ### Scope
 
-In this initial phase, LAMBKIN provides a simple Python script that serves as the foundation for the orchestration system. It automates the full benchmarking
-pipeline using **Beluga AMCL** as the localization algorithm, evaluating it across multiple configurations(sensor models and particle counts) and measuring its accuracy against a ground truth trajectory.
+Lambkin is a simple, sequential process orchestrator that covers the basic concepts of process lifecycle management and graceful termination for ROS2-based benchmarking pipelines. It handles each stage of a benchmark run in a strictly ordered sequence — spawning nodes, recording topics, synchronizing playback, and collecting evaluation metrics — making the execution flow explicit and easy to follow.
 
-- Launches Beluga AMCL with different configurations (sensor models, particle counts)
-- Plays a reference rosbag to simulate a real robot environment
-- Records the output topics and evaluates the estimated trajectory
-- Computes the Absolute Pose Error (APE) against the ground truth
-- Generates comparison plots across all configurations
+While Lambkin is algorithm-agnostic by design and can integrate with any ROS2-based pipeline, this repository provides a specific worked example using the [Beluga](https://github.com/Ekumen-OS/beluga) AMCL localization algorithm, including a predefined launch file and configuration files to run a complete benchmark out of the box.
+
 
 ## Architecture
 
@@ -55,12 +51,12 @@ flowchart TD
     style H fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
 ```
 
-### Use Case
+### ROS2 Package
 
-LAMBKIN is designed to work with any localization algorithm package. In this
-phase, it orchestrates the following ROS2 nodes:
+LAMBKIN is designed to work with any localization algorithm package.
+The provided launch file brings up three ROS2 nodes:
 
-- **Beluga AMCL** — the algorithm being benchmarked (e.g. a AMCL-based node), responsible for estimating the robot pose from sensor data and a known map
+- **Beluga AMCL** — the algorithm being benchmarked (e.g. a AMCL-based node), responsible for estimating the robot pose from sensor data and a known map.
 - **map_server** — provides the static map to the localization node
 - **lifecycle_manager** — manages the lifecycle of both the localization node and map_server, handling their startup and shutdown transitions automatically
 
