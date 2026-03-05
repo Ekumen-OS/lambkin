@@ -192,3 +192,8 @@ Plot generated after running the benchmark with all configurations.
 - Improve process management to reliably terminate all ROS2 child processes across iterations
 - Fix orphaned processes that survive after a crashed run and another iteration
 - Fix tight_layout warning in evo_res plots and overlapping axis labels
+
+        ```
+        /ws/.venv/lib/python3.12/site-packages/seaborn/axisgrid.py:123: UserWarning: The figure layout has changed to tight self._figure.tight_layout
+        (*args **kwargs)
+        ```
