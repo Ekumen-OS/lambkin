@@ -12,11 +12,11 @@ In its current phase, LAMBKIN acts as a sequential process orchestrator. It prov
 
 The logic handles node lifecycle management to ensure a clean ROS2 graph between iterations, synchronizes data flow between bag playback and node processing, and automates evaluation by interfacing with tools like evo to transform raw logs into standardized metrics.
 
-While Lambkin is algorithm-agnostic by design and can integrate with any ROS2-based pipeline, this repository provides a specific worked example using the [Beluga](https://github.com/Ekumen-OS/beluga) AMCL localization algorithm, including a predefined launch file and configuration files to run a complete benchmark out of the box.
-
 ## ROS2 Beluga Example
 
-While Lambkin is algorithm-agnostic by design and can integrate with any ROS2-based localization algorithm, this repository provides a specific worked example using [Beluga](https://github.com/Ekumen-OS/beluga) AMCL. It includes a predefined ROS2 package with a launch file and configuration files ready to run a complete benchmark out of the box.
+While Lambkin is algorithm-agnostic by design and can integrate with any localization package, this repository provides a specific worked example using [Beluga](https://github.com/Ekumen-OS/beluga) AMCL. It includes a ROS2 package with a launch file and a configuration file ready to run a complete benchmark out of the box.
+
+To simplify deployment, the repository provides a dockerized setup (see [docker](docker/) folder) that includes all necessary dependencies and tools pre-configured for immediate use.
 
 The provided launch file brings up three ROS2 nodes:
 
