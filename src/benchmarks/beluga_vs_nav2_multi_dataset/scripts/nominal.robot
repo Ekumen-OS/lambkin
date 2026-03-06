@@ -1,4 +1,4 @@
-#!/usr/bin/env -S shepherd robot --skip-all -f
+#!/usr/bin/env -S shepherd robot -f
 
 # Copyright 2024 Ekumen, Inc.
 #
@@ -155,16 +155,16 @@ ${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
 @{OMNI_DRIVE_SIM_BAGS}        simulated_bookstore_robomaster_24hs
 
 @{HQ_SIMULATION_DIR}            hq_simulation
-@{HQ_SIMULATION_BAGS}           hq_simulation_segment_0
-...                             hq_simulation_segment_1
-...                             hq_simulation_segment_2
-...                             hq_simulation_segment_3
-...                             hq_simulation_segment_4
-...                             hq_simulation_segment_5
-...                             hq_simulation_segment_6
-...                             hq_simulation_segment_7
-...                             hq_simulation_segment_8
-...                             hq_simulation_segment_9
+@{HQ_SIMULATION_BAGS}           hq_simulation_segment_00
+...                             hq_simulation_segment_01
+...                             hq_simulation_segment_02
+...                             hq_simulation_segment_03
+...                             hq_simulation_segment_04
+...                             hq_simulation_segment_05
+...                             hq_simulation_segment_06
+...                             hq_simulation_segment_07
+...                             hq_simulation_segment_08
+...                             hq_simulation_segment_09
 ...                             hq_simulation_segment_10
 ...                             hq_simulation_segment_12
 ...                             hq_simulation_segment_13
@@ -204,14 +204,30 @@ ${WILLOW_DSET_DIR}           willow_garage_dataset_ros2_localization_only
 
 *** Test Cases ***        DATASET                         BASEDIR                   ODOM_FRAME     MAP_FRAME  BASE_FRAME      SCAN_TOPIC     ITERATION      INITIAL_POSE_X  INITIAL_POSE_Y  INITIAL_POSE_YAW   ROBOT_MODEL_TYPE
 Magazino Datasets         ${{MAGAZINO_BAGS}}              ${{MAGAZINO_DIR}}         odom           map        base_footprint  /scan_front    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}        base_odom      map        base_link       /scan          5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
-Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      odom_combined  map        base_footprint  /base_scan     1              0.0             0.0             0.0                nav2_amcl::OmniMotionModel
-Omni Drive Sim 24hs       ${{OMNI_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    odom           map        base_link       /scan          1              3.2             9.0             0.7                nav2_amcl::OmniMotionModel
+# Openloris Office          ${{OPENLORIS_OFFICE_BAGS}}      ${{OPENLORIS_DIR}}        base_odom      map        base_link       /scan          5              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+# TorWIC Mapping            ${{TORWIC_MAPPING_BAGS}}        ${{TORWIC_MAPPING_DIR}}   odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+# TorWIC SLAM               ${{TORWIC_SLAM_BAGS}}           ${{TORWIC_SLAM_DIR}}      odom           map        base_link       /front/scan    1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
+# Willow Garage             ${{WILLOW_DSET_BAGS}}           ${{WILLOW_DSET_DIR}}      odom_combined  map        base_footprint  /base_scan     1              0.0             0.0             0.0                nav2_amcl::OmniMotionModel
+# Omni Drive Sim 24hs       ${{OMNI_DRIVE_SIM_BAGS}}        ${{LONG_DURATION_DIR}}    odom           map        base_link       /scan          1              3.2             9.0             0.7                nav2_amcl::OmniMotionModel
 HQ Simulation             ${{HQ_SIMULATION_BAGS}}         ${{HQ_SIMULATION_DIR}}    odom           map        base_link       /scan          1              0.0             0.0             0.0                nav2_amcl::DifferentialMotionModel
 
 *** Keywords ***
+Read Initial Pose From File
+    [Documentation]  Read initial pose from YAML file if it exists, otherwise return defaults
+    [Arguments]  ${pose_file_path}  ${default_x}  ${default_y}  ${default_yaw}
+    ${file_exists} =  Run Keyword And Return Status  File Should Exist  ${pose_file_path}
+    IF  ${file_exists}
+        ${pose_data} =  yaml.Safe Load  ${{open('${pose_file_path}').read()}}
+        # Support both flat structure and nested under 'initial_pose' key
+        ${pose_dict} =  Set Variable If  'initial_pose' in ${pose_data}  ${pose_data['initial_pose']}  ${pose_data}
+        ${x} =  Set Variable  ${pose_dict['x']}
+        ${y} =  Set Variable  ${pose_dict['y']}
+        ${yaw} =  Set Variable  ${pose_dict['yaw']}
+        RETURN  ${x}  ${y}  ${yaw}
+    ELSE
+        RETURN  ${default_x}  ${default_y}  ${default_yaw}
+    END
+
 Beluga vs Nav2 benchmark suite
     Extends ROS 2 system benchmark suite
     Extends ROS 2 2D SLAM system benchmark suite
@@ -229,6 +245,9 @@ Beluga vs Nav2 benchmark case
     ${package_share_path} =  Find ROS 2 Package  beluga_vs_nav2_multi_dataset  share=yes
     ${qos_override_path} =  Join Path  ${package_share_path}  config  qos_override.yml
     Configures QoS overrides from ${qos_override_path} for input to ROS 2 system
+    # Read initial pose from file if available, otherwise use defaults from test case
+    ${pose_file_path} =  Set Variable  ${artifacts_path}/initial_pose.yaml
+    ${pose_x}  ${pose_y}  ${pose_yaw} =  Read Initial Pose From File  ${pose_file_path}  ${initial_pose_x}  ${initial_pose_y}  ${initial_pose_yaw}
     # Setup benchmark rig
     Uses beluga_vs_nav2_multi_dataset.launch in beluga_vs_nav2_multi_dataset ROS package as rig
     Sets map_filename launch argument to ${artifacts_path}/map.yaml
@@ -236,9 +255,9 @@ Beluga vs Nav2 benchmark case
     Sets odom_frame_id launch argument to ${odom_frame}
     Sets base_frame_id launch argument to ${base_frame}
     Sets scan_topic launch argument to ${scan_topic}
-    Sets initial_pose_x launch argument to ${initial_pose_x}
-    Sets initial_pose_y launch argument to ${initial_pose_y}
-    Sets initial_pose_yaw launch argument to ${initial_pose_yaw}
+    Sets initial_pose_x launch argument to ${pose_x}
+    Sets initial_pose_y launch argument to ${pose_y}
+    Sets initial_pose_yaw launch argument to ${pose_yaw}
     Sets robot_model_type launch argument to ${robot_model_type}
     Sets use_sim_time launch argument to true
     # Setup benchmark profiling
