@@ -38,4 +38,4 @@ convention = "google"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
-pythonpath = ["src"]
+pythonpath = ["examples"]

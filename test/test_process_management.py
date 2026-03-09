@@ -5,7 +5,7 @@ import subprocess
 import time
 import unittest
 
-from lambkin import execute_background_process, wait_for_processes
+from examples.lambkin_benchmarking import execute_background_process, wait_for_processes
 
 
 class TestProcessManagement(unittest.TestCase):
