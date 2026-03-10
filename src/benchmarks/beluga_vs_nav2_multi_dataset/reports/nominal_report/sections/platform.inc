@@ -5,7 +5,7 @@ Datasets used
 ^^^^^^^^^^^^^
 
 A number of pre-recorded datasets were selected to evaluate the performance of the Beluga AMCL and Nav2 AMCL localization systems.
-A number of public datasets were considered for this evaluation, looking for a variety of environments and robots that were representative of a wide range of real-world scenarios.
+A number of public datasets were considered for this evaluation, looking for a diversity of environments and robots that were representative of a wide range of real-world scenarios.
 
 The following datasets were selected based on their characteristics and availability for this evaluation:
 
@@ -43,7 +43,7 @@ These real-world datasets have two more limitations worth mentioning:
 - The longest run-time of any of the real-world datasets listed above is around 30 minutes, which may fail to flag longer-term resource usage issues, such as memory leaks.
 - In all cases the datasets were recorded using differential-drive robots.
 
-To somewhat mitigate these issues an additional synthetic dataset was added to the evaluation:
+To somewhat mitigate these issues two additional synthetic datasets were added to the evaluation:
 
 .. list-table:: Synthetic datasets
    :widths: 25 70
@@ -51,11 +51,14 @@ To somewhat mitigate these issues an additional synthetic dataset was added to t
 
    * - Name
      - Description
-   * - Omni Drive Sim 24hs
-     - Gazebo Sim simulation of a omni-drive robot randomly wandering around the `AWS Robomaker Bookstore World <https://github.com/aws-robotics/aws-robomaker-bookstore-world>`_ with both mapped and unmapped furniture for just over 24hs. The simulated robot is modelled after a customized Robomaster EP with a mounted RPLidar A2 M12.
+   * - Diff Drive Sim 60m
+     - Gazebo Classic simulation of a diff-drive robot randomly wandering around a 450m^2 office environment with both mapped and unmapped furniture for just over 30m. The simulated robot is modelled on a Kobuki platform with a mounted RPLidar A1.
+   * - Omni Drive Sim 30m
+     - Gazebo Sim simulation of a omni-drive robot randomly wandering around the `AWS Robomaker Bookstore World <https://github.com/aws-robotics/aws-robomaker-bookstore-world>`_ with both mapped and unmapped furniture for just over 30m. The simulated robot is modelled after a customized Robomaster EP with a mounted RPLidar A2 M12.
 
-For these simulations, small imperfections were added to the robot models to cause a small amount of drift in the odometry. Ground-truth was generated from actual
-world-state information, and the occupancy grid maps were generated using `SLAM Toolbox <https://github.com/SteveMacenski/slam_toolbox>`_.
+In both cases small imperfections were added to the simulated models to cause a small amount of drift in the odometry. Ground-truth was provided by Gazebo plugins from
+world state information, and the occupancy grid maps were generated with using `SLAM Toolbox <https://github.com/SteveMacenski/slam_toolbox>`_.
+
 
 
 Alterations to the real robot datasets
@@ -72,32 +75,34 @@ such as map/odom transforms, were removed to prevent conflicts with the systems 
 Additionally, all topics not related to lidar-based 2D localization were removed to reduce file size. This was needed because
 the evaluation process is very intensive in terms of storage requirements.
 
+The two synthetic datasets were constructed for this evaluation and therefore were ROS 2 native with no missing data.
+
 Evaluation procedure
 ^^^^^^^^^^^^^^^^^^^^
 
-The evaluation was performed using the `LAMBKIN <https://gitlab.com/ternaris/lambkin>`_ toolkit,
-which provides a mixture of automation tools and conventions to facilitate reproducible
-benchmarking and evaluation of localization and mapping systems.
+The evaluation was performed using the `LAMBKIN <https://gitlab.com/ternaris/lambkin>`_ framework,
+which is tool described as "a mixture of automation and conventions to facilitate reproducible
+benchmarking and evaluation of localization and mapping systems".
 
 For each bagfile in each dataset and each tested configuration (likelihood or beam), LAMBKIN
 replays the data through both Beluga AMCL and Nav2 AMCL at the same time, recording the output of both
 in a new bagfile. This bagfile is then processed using the `evo <https://github.com/MichaelGrupp/evo>`_ tool to
 summarize the localization performance of both systems against the ground-truth data.
 
-During execution LAMBKIN also wraps both localization nodes using the `timem` command line tool from
-the `timememory <https://timemory.readthedocs.io/en/develop/>`_ toolkit to
-collect average CPU and peak RSS (Resident Set Size). This information is stored along with the results of the evo.
+During execution LAMBKIN also instruments both localization nodes using `timememory <https://timemory.readthedocs.io/en/develop/>`_ to
+collect resource usage metrics such as CPU time, memory usage, and other system-level metrics. This information is stored along with the
+results of the evo.
 
 Each evaluation can be iterated multiple times to improve the statistical significance of the results. This comes
 at the expense of increased execution time and storage requirements for the results, which can be substantial. As a
-compromise, the results in this report are based on a single iteration of each bagfile/configuration combination
-for real robot datasets. The one exception to this is the Open LORIS dataset, which was evaluated using 5 independent 
-iterations due to the very short duration of the bagfiles.
+compromise, the results in this report are based on 3 iterations of each bagfile/configuration combination for real robot datasets,
+and a single iteration for the synthetic datasets accounting for their very long length.
 
 For each bagfile/configuration combination, the resulting APE metrics for all iterations are processed to produce
 the median, mean, standard deviation and worst-case value. These are the values reported in the following pages.
 
-The maximum values of both peak RSS and average CPU usage across all iterations are reported as well.
+We also reported the peak RSS (Resident Set Size) and CPU use across all iterations for each bagfile/configuration combination, as
+recorded by timememory.
 
 
 Evaluation Host Platform
