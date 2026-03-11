@@ -35,7 +35,7 @@ def named_product(**parameters):
         A list of dicts, each mapping parameter names to a specific value.
     """
     # Example:
-    # kwargs == (sensor_model = [likelihood_field,beam],
+    # parameters == (sensor_model = [likelihood_field,beam],
     #            num_particles = [1, 10, 1000, 2000])
 
     # keys = ("sensor_model", "num_particles")
