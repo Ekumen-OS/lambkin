@@ -12,4 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Common utilities and primitives shared across the lambkin SDK.
+
+Exposes named_product and all base exceptions for convenience.
+"""

@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Process execution utilities for benchmark runs.
+
+Provides two execution modes:
+- background: non-blocking process launch.
+- foreground: blocking process execution.
+"""

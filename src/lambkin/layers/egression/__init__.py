@@ -12,4 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Result egression layer for lambkin benchmarks.
+
+Handles all result evaluation and reporting concerns after a benchmark run
+completes, outputting metrics and analysis to external tools or storage.
+"""

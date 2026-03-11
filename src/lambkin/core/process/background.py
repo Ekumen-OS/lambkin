@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Non-blocking process execution for lambkin benchmarks.
+
+Wraps subprocess.Popen to launch processes in the background, allowing the
+benchmark to continue while the process runs. Useful for starting long-running
+services or ROS nodes that must run alongside the benchmark.
+"""

@@ -12,4 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Utility modules for the lambkin SDK.
+
+Provides standalone conversion and helper tools used across the SDK layers, with
+no dependencies on core or layers internals.
+"""

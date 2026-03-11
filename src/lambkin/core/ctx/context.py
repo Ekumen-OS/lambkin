@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Benchmark run context.
+
+Holds the state and lifecycle of a single benchmark execution, including
+configuration, runtime metadata, and cleanup hooks. Shared across the process
+layer and decorators during a run.
+"""

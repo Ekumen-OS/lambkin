@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Core internals of the lambkin SDK.
+
+Contains the benchmark execution engine: context lifecycle, process management,
+shell utilities, and decorators. Not intended to be imported directly by end
+users — use the top-level lambkin package instead.
+"""
