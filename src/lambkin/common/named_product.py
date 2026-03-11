@@ -17,3 +17,44 @@
 Provides named_product(), a utility to generate combinatorial parameter sets.
 Used to define benchmark configurations in a readable and structured way.
 """
+
+import itertools
+
+
+def named_product(**parameters):
+    """Generate all combinations of named parameters.
+
+    Takes parameters where each value is a list of options
+    and returns a list of dictionaries representing every possible
+    combination, one dictionary per benchmark run configuration.
+
+    Args:
+        **parameters: Named parameter lists to combine. Each value must be a list.
+
+    Returns:
+        A list of dicts, each mapping parameter names to a specific value.
+    """
+    # Example:
+    # parameters == (sensor_model = [likelihood_field,beam],
+    #            num_particles = [1, 10, 1000, 2000])
+
+    # keys = ("sensor_model", "num_particles")
+    keys = list(parameters.keys())
+
+    # values = ( [likelihood_field,beam],[1, 10, 1000, 2000] )
+    values = list(parameters.values())
+
+    # TODO(teresa-ortega): Empty list exception
+
+    # Make combinations
+    combinations = itertools.product(*values)
+
+    # Create the dictionary
+    variants = []
+    for combination in combinations:
+        # Re-attach the parameter labels to the generated values.
+        # zip() pairs keys with values; dict() creates the mapping.
+        variant = dict(zip(keys, combination, strict=True))
+        # TODO(teresa-ortega) : combination fails
+        variants.append(variant)
+    return variants

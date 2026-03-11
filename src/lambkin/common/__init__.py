@@ -16,3 +16,9 @@
 
 Exposes named_product and all base exceptions for convenience.
 """
+
+from .named_product import named_product
+
+__all__ = [
+    "named_product",
+]
