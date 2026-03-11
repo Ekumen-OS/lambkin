@@ -21,7 +21,7 @@ Used to define benchmark configurations in a readable and structured way.
 import itertools
 
 
-def named_product(**kwargs):
+def named_product(**parameters):
     """Generate all combinations of named parameters.
 
     Takes keyword arguments where each value is a list of options
@@ -29,7 +29,7 @@ def named_product(**kwargs):
     combination, one dictionary per benchmark run configuration.
 
     Args:
-        **kwargs: Named parameter lists to combine. Each value must be a list.
+        **parameters: Named parameter lists to combine. Each value must be a list.
 
     Returns:
         A list of dicts, each mapping parameter names to a specific value.
@@ -39,19 +39,21 @@ def named_product(**kwargs):
     #            num_particles = [1, 10, 1000, 2000])
 
     # keys = ("sensor_model", "num_particles")
-    keys = list(kwargs.keys())
+    keys = list(parameters.keys())
 
     # values = ( [likelihood_field,beam],[1, 10, 1000, 2000] )
-    values = list(kwargs.values())
+    values = list(parameters.values())
+
+    # TO_DO: Empty list exception
 
     # Make combinations
     combinations = itertools.product(*values)
 
     # Create the dictionary
-    result = []
+    variants = []
     for combination in combinations:
         # {"sensor_model" : "likelihood_field", "num_particles" : "1"}
-        single_run = dict(zip(keys, combination, strict=True))
-        result.append(single_run)
-
-    return result
+        variant = dict(zip(keys, combination, strict=True))
+        # TO_DO : combination fails
+        variants.append(variant)
+    return variants

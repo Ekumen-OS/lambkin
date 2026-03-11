@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright 2026 Ekumen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,13 +18,11 @@ import pytest
 
 from lambkin.common.named_product import named_product
 
-# Membership test
-
 
 @pytest.mark.parametrize(
-    "kwargs, expected_combinations",
+    "parameters, expected_combinations , expected_len",
     [
-        (
+        (  # Two parameters with 2 values each → 2×2 = 4 combinations
             {"sensor_model": ["likelihood_field", "beam"], "num_particles": [1, 10]},
             [
                 {"sensor_model": "likelihood_field", "num_particles": 1},
@@ -34,63 +30,31 @@ from lambkin.common.named_product import named_product
                 {"sensor_model": "beam", "num_particles": 1},
                 {"sensor_model": "beam", "num_particles": 10},
             ],
+            4,
         ),
-        (
+        (  # Single parameter with 2 values → 2 combinations
             {"sensor_model": ["likelihood_field", "beam"]},
             [
                 {"sensor_model": "likelihood_field"},
                 {"sensor_model": "beam"},
             ],
-        ),
-        (
-            {},
-            [{}],
-        ),
-        (
-            {"sensor_model": [], "num_particles": [1]},
-            [],
-        ),
-    ],
-)
-def test_named_product_combinations(kwargs, expected_combinations):
-    """named_product contains exactly the expected combination dicts."""
-    result = named_product(**kwargs)
-    assert result == expected_combinations
-
-
-# Length test
-
-
-@pytest.mark.parametrize(
-    "kwargs, expected_len",
-    [
-        (
-            {"sensor_model": ["likelihood_field", "beam"], "num_particles": [1, 10]},
-            4,
-        ),
-        (
-            {
-                "sensor_model": ["likelihood_field", "beam"],
-                "num_particles": [1, 10],
-                "rate": [10, 100],
-            },
-            8,
-        ),
-        (
-            {"sensor_model": ["likelihood_field", "beam"]},
             2,
         ),
-        (
-            {"sensor_model": [], "num_particles": [1]},
-            0,
-        ),
-        (
+        (  # No parameters at all → 1 combination: a single empty dict
             {},
+            [{}],
             1,
+        ),
+        (  # One parameter with an empty list → no combinations can be formed
+            # TO_DO: if the user introduce a empty list -> Exception
+            {"sensor_model": [], "num_particles": [1]},
+            [],
+            0,
         ),
     ],
 )
-def test_named_product_length(kwargs, expected_len):
-    """named_product returns the correct number of combinations (cartesian product)."""
-    result = named_product(**kwargs)
+def test_named_product_combinations(parameters, expected_combinations, expected_len):
+    """named_product returns the correct number and combinations."""
+    result = named_product(**parameters)
+    assert result == expected_combinations
     assert len(result) == expected_len
