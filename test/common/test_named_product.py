@@ -22,7 +22,7 @@ from lambkin.common.named_product import named_product
 @pytest.mark.parametrize(
     "parameters, expected_combinations , expected_len",
     [
-        (  # Two parameters with 2 values each → 2×2 = 4 combinations
+        (  # Two parameters with 2 values each -> 2×2 = 4 combinations
             {"sensor_model": ["likelihood_field", "beam"], "num_particles": [1, 10]},
             [
                 {"sensor_model": "likelihood_field", "num_particles": 1},
@@ -32,7 +32,7 @@ from lambkin.common.named_product import named_product
             ],
             4,
         ),
-        (  # Single parameter with 2 values → 2 combinations
+        (  # Single parameter with 2 values -> 2 combinations
             {"sensor_model": ["likelihood_field", "beam"]},
             [
                 {"sensor_model": "likelihood_field"},
@@ -40,13 +40,13 @@ from lambkin.common.named_product import named_product
             ],
             2,
         ),
-        (  # No parameters at all → 1 combination: a single empty dict
+        (  # No parameters at all -> 1 combination: a single empty dict
             {},
             [{}],
             1,
         ),
-        (  # One parameter with an empty list → no combinations can be formed
-            # TO_DO: if the user introduce a empty list -> Exception
+        (  # One parameter with an empty list -> no combinations can be formed
+            # TODO(teresa-ortega): if the user introduce a empty list -> Exception
             {"sensor_model": [], "num_particles": [1]},
             [],
             0,

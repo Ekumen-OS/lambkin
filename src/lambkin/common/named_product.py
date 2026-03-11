@@ -24,7 +24,7 @@ import itertools
 def named_product(**parameters):
     """Generate all combinations of named parameters.
 
-    Takes keyword arguments where each value is a list of options
+    Takes parameters where each value is a list of options
     and returns a list of dictionaries representing every possible
     combination, one dictionary per benchmark run configuration.
 
@@ -44,7 +44,7 @@ def named_product(**parameters):
     # values = ( [likelihood_field,beam],[1, 10, 1000, 2000] )
     values = list(parameters.values())
 
-    # TO_DO: Empty list exception
+    # TODO(teresa-ortega): Empty list exception
 
     # Make combinations
     combinations = itertools.product(*values)
@@ -55,6 +55,6 @@ def named_product(**parameters):
         # Re-attach the parameter labels to the generated values.
         # zip() pairs keys with values; dict() creates the mapping.
         variant = dict(zip(keys, combination, strict=True))
-        # TO_DO : combination fails
+        # TODO(teresa-ortega) : combination fails
         variants.append(variant)
     return variants
