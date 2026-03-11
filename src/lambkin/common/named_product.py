@@ -52,7 +52,8 @@ def named_product(**parameters):
     # Create the dictionary
     variants = []
     for combination in combinations:
-        # {"sensor_model" : "likelihood_field", "num_particles" : "1"}
+        # Re-attach the parameter labels to the generated values.
+        # zip() pairs keys with values; dict() creates the mapping.
         variant = dict(zip(keys, combination, strict=True))
         # TO_DO : combination fails
         variants.append(variant)
