@@ -12,4 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Shell proxy for lambkin benchmark execution.
+
+Provides an abstraction over shell command dispatch, allowing benchmark
+processes to be launched and managed through a consistent interface.
+"""

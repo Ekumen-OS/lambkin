@@ -12,4 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Context management for lambkin benchmark runs.
+
+Provides the benchmark execution context and shell utilities for process
+interaction and proxy handling.
+"""

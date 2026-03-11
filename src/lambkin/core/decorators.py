@@ -12,4 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Decorators for the lambkin benchmark API.
+
+Provides @lambkin.benchmark, @lambkin.option decorators.
+"""
