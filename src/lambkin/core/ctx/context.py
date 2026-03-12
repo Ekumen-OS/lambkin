@@ -23,8 +23,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from shell.proxy import Shell
-
 
 @dataclass
 class VariationInfo:
@@ -157,10 +155,10 @@ class Context:
         self,
         variation: dict[str, Any],
         iteration: int,
-        source_path: Path | str,
-        dataset_path: Path | str,
         output_dir: Path | str,
         options: dict[str, Any],
+        source_path: Path | str | None = None,
+        dataset_path: Path | str | None = None,
     ) -> None:
         """Initialize a Context for one (variation, iteration) benchmark run.
 
@@ -201,7 +199,7 @@ class Context:
         # ctx.options
         self.options = OptionsInfo(
             clock=options.get("clock", False),
-            qos_option=options.get("qos_option", "system_default"),
+            qos_option_path=options.get("qos_option_path", "system_default"),
             rate=float(options.get("rate", 1.0)),
         )
 
@@ -229,7 +227,7 @@ class Context:
         self._setup_directories()
 
         # ctx.shell
-        self.shell = Shell(self)
+        # TODO(teresa-ortega): self.shell = Shell(self)
 
     def add_variation(self, variation: dict) -> None:
         """Set variation parameters from a dict onto ctx.variation."""

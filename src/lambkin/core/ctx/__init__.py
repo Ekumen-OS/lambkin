@@ -17,3 +17,9 @@
 Provides the benchmark execution context and shell utilities for process
 interaction and proxy handling.
 """
+
+from .context import Context
+
+__all__ = [
+    "Context",
+]
