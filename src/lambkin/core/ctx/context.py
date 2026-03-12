@@ -23,6 +23,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from shell.proxy import Shell
+
 
 @dataclass
 class VariationInfo:
@@ -116,9 +118,9 @@ class OutputInfo:
         return self._make(self.iteration_dir / "bag")
 
     @property
-    def ape_dir(self) -> Path:
-        """Path to ape/ subfolder. Created on first access."""
-        return self._make(self.iteration_dir / "ape")
+    def metrics_dir(self) -> Path:
+        """Path to metrics/ subfolder. Created on first access."""
+        return self._make(self.iteration_dir / "metrics")
 
 
 def _variation_folder_name(sensor_model: str, num_particles: int) -> str:
@@ -225,6 +227,9 @@ class Context:
         )
 
         self._setup_directories()
+
+        # ctx.shell
+        self.shell = Shell(self)
 
     def add_variation(self, variation: dict) -> None:
         """Set variation parameters from a dict onto ctx.variation."""
