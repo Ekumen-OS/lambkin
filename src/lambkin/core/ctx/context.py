@@ -19,12 +19,12 @@ configuration, runtime metadata, and cleanup hooks. Shared across the process
 layer and decorators during a run.
 """
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
 
-@dataclass(frozen=True)
+@dataclass
 class VariationInfo:
     """Algorithm parameters for this benchmark variation."""
 
@@ -32,10 +32,103 @@ class VariationInfo:
     num_particles: int
 
 
-# Source path TO DO
-# Dataset path TO DO
-# Base Output Dir TO DO
-# Options TO DO
+@dataclass
+class OptionsInfo:
+    """Runtime options for this benchmark run."""
+
+    clock: bool
+    qos_option_path: str
+    rate: int
+
+
+@dataclass(frozen=True)
+class SourceInfo:
+    """ROS source package path."""
+
+    path: Path
+
+    def __post_init__(self) -> None:
+        """Convert path to a Path object after dataclass construction."""
+        object.__setattr__(self, "path", Path(self.path))
+
+
+@dataclass(frozen=True)
+class InputsInfo:
+    """Input data paths."""
+
+    dataset: Path
+
+    def __post_init__(self) -> None:
+        """Convert dataset to a Path object after dataclass construction."""
+        object.__setattr__(self, "dataset", Path(self.dataset))
+
+
+class OutputInfo:
+    """Output paths for this variation + iteration.
+
+    Folders are created lazily — only when the path is first accessed.
+    This means a bag/ folder is only created if the user accesses
+    ctx.output.bag_dir, and same for ape/ and any other subfolder.
+
+    Attributes:
+    ----------
+    variation_dir:
+        Root folder for this variation (e.g. results/beam_p100/).
+        Created eagerly on Context instantiation.
+    iteration_dir:
+        Folder for the current iteration (e.g. results/beam_p100/iter_0/).
+        Created eagerly on Context instantiation.
+    bag_dir:
+        Subfolder for rosbag output (iter_N/bag/).
+        Created on first access.
+    ape_dir:
+        Subfolder for APE results (iter_N/ape/).
+        Created on first access.
+    """
+
+    def __init__(self, variation_dir: Path, iteration_dir: Path) -> None:
+        """Initialize the output paths for one (variation, iteration) pair.
+
+        Only the base folders (variation_dir and iteration_dir) are stored
+        at construction time. Subfolders like bag/ and ape/ are created
+        lazily on first access via their respective properties.
+
+        Parameters
+        ----------
+        variation_dir : Path
+            Root output folder for this variation
+            (e.g. results/beam_p100/).
+        iteration_dir : Path
+            Output folder for the current iteration
+            (e.g. results/beam_p100/iter_0/).
+        """
+        self.variation_dir = Path(variation_dir)
+        self.iteration_dir = Path(iteration_dir)
+
+    def _make(self, path: Path) -> Path:
+        """Create a directory and return its path."""
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def bag_dir(self) -> Path:
+        """Path to bag/ subfolder. Created on first access."""
+        return self._make(self.iteration_dir / "bag")
+
+    @property
+    def ape_dir(self) -> Path:
+        """Path to ape/ subfolder. Created on first access."""
+        return self._make(self.iteration_dir / "ape")
+
+
+def _variation_folder_name(sensor_model: str, num_particles: int) -> str:
+    """Build the per-variation folder name."""
+    return f"{sensor_model}_p{num_particles}"
+
+
+def _iteration_folder_name(iteration: int) -> str:
+    """Build the per-iteration folder name."""
+    return f"iter_{iteration}"
 
 
 class Context:
@@ -54,7 +147,7 @@ class Context:
     base_output_dir:
         Root directory where all benchmark results are written.
     options:
-        Dict with ``clock``, ``qos_option``, and ``rate``.
+        Dict with ``clock``, ``qos_option_path``, and ``rate``.
 
     """
 
@@ -64,12 +157,12 @@ class Context:
         iteration: int,
         source_path: Path | str,
         dataset_path: Path | str,
-        base_output_dir: Path | str,
+        output_dir: Path | str,
         options: dict[str, Any],
     ) -> None:
         """Initialize a Context for one (variation, iteration) benchmark run.
 
-        Builds all namespaced sub-objects (variation, source, inputs, options,
+        Builds all namespaced sub-objects (variation, source, inputs, option,
         output) from the given parameters and automatically creates the
         required output folders on disk.
 
@@ -88,10 +181,10 @@ class Context:
         dataset_path : Path or str
             Path to the rosbag file used as input by the algorithm
             (e.g. ``data/rosbags/run_01.bag``).
-        base_output_dir : Path or str
+        output_dir : Path or str
             Root directory where all benchmark results are written.
             The variation and iteration subfolders are created inside it.
-        options : dict
+        option : dict
             ROS runtime options. Recognised keys:
             - ``clock`` (bool or str): use sim clock or a clock topic name.
             - ``qos_option`` (str): ROS QoS profile (e.g. ``"sensor_data"``).
@@ -103,15 +196,63 @@ class Context:
             num_particles=variation["num_particles"],
         )
 
+        # ctx.options
+        self.options = OptionsInfo(
+            clock=options.get("clock", False),
+            qos_option=options.get("qos_option", "system_default"),
+            rate=float(options.get("rate", 1.0)),
+        )
+
+        # ctx.source — may be overridden by @nomida.input
+        self.source = SourceInfo(path=Path(source_path) if source_path else Path())
+
+        # ctx.inputs — may be overridden by @nomida.input
+        self.inputs = InputsInfo(dataset=Path(dataset_path) if dataset_path else Path())
+
+        # ctx.iteration
         self.iteration = iteration
 
-    def add_variation(self, variation: dict) -> None:
-        """Set variation parameters from a dict onto ctx.variation.
+        # ctx.output
+        base = Path(output_dir)
+        variation_dir = base / _variation_folder_name(
+            self.variation.sensor_model,
+            self.variation.num_particles,
+        )
+        iteration_dir = variation_dir / _iteration_folder_name(iteration)
+        self.output = OutputInfo(
+            variation_dir=variation_dir,
+            iteration_dir=iteration_dir,
+        )
 
-        Examples:
-        --------
-        ctx.add_variation({"sensor_model": "beam", "num_particles": 10})
-        ctx.variation.sensor_model ==> 'beam'
-        """
+        self._setup_directories()
+
+    def add_variation(self, variation: dict) -> None:
+        """Set variation parameters from a dict onto ctx.variation."""
         for key, value in variation.items():
             setattr(self.variation, key, value)
+
+    def add_options(self, options: dict) -> None:
+        """Set option parameters from a dict onto ctx.options."""
+        for key, value in options.items():
+            setattr(self.options, key, value)
+
+    def _setup_directories(self) -> None:
+        """Create variation and iteration output folders on disk."""
+        self.output.variation_dir.mkdir(parents=True, exist_ok=True)
+        self.output.iteration_dir.mkdir(parents=True, exist_ok=True)
+
+    def __repr__(self) -> str:
+        """Return a human-readable summary of the Context state."""
+        source = getattr(self, "source", None)
+        inputs = getattr(self, "inputs", None)
+        return (
+            f"Context(\n"
+            f"  variation    = {asdict(self.variation)},\n"
+            f"  iteration    = {self.iteration},\n"
+            f"  source       = {source.path if source else 'not set'},\n"
+            f"  inputs       = {inputs.dataset if inputs else 'not set'},\n"
+            f"  options      = {asdict(self.options)},\n"
+            f"  variation_dir= {self.output.variation_dir},\n"
+            f"  iteration_dir= {self.output.iteration_dir}\n"
+            f")"
+        )
