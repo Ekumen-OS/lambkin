@@ -21,6 +21,7 @@ layer and decorators during a run.
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 
@@ -30,29 +31,6 @@ class VariationInfo:
 
     sensor_model: str
     num_particles: int
-
-
-class OptionsInfo:
-    """Dynamic namespace for CLI options."""
-
-    def __init__(self, **options: Any) -> None:
-        """Initialize OptionsInfo from any keyword arguments.
-
-        Each keyword argument becomes an attribute on the instance,
-        mirroring how click derives attribute names from CLI flags.
-
-        Parameters
-        ----------
-        **options : Any
-            Option names (already converted from --flag-name to flag_name)
-            and their values as parsed by click.
-        """
-        for key, value in options.items():
-            setattr(self, key, value)
-
-    def as_dict(self) -> dict[str, Any]:
-        """Return all options as a plain dict."""
-        return dict(self.__dict__)
 
 
 @dataclass(frozen=True)
@@ -211,12 +189,12 @@ class Context:
         )
 
         # ctx.options
-        self.options = OptionsInfo(**options)
+        self.options = SimpleNamespace(**options)
 
-        # ctx.source — may be overridden by @nomida.input
+        # ctx.source — may be overridden by @nominal.input
         self.source = SourceInfo(path=Path(source_path) if source_path else Path())
 
-        # ctx.inputs — may be overridden by @nomida.input
+        # ctx.inputs — may be overridden by @nominal.input
         self.inputs = InputsInfo(dataset=Path(dataset_path) if dataset_path else Path())
 
         # ctx.iteration
@@ -264,7 +242,7 @@ class Context:
             f"  iteration    = {self.iteration},\n"
             f"  source       = {source.path if source else 'not set'},\n"
             f"  inputs       = {inputs.dataset if inputs else 'not set'},\n"
-            f"  options      = {self.options.as_dict()},\n"
+            f"  options      = {vars(self.options)},\n"
             f"  variation_dir= {self.output.variation_dir},\n"
             f"  iteration_dir= {self.output.iteration_dir}\n"
             f")"
