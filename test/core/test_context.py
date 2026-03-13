@@ -145,21 +145,21 @@ def test_bag_dir_not_created_before_access(ctx):
     assert not (ctx.output.iteration_dir / "bag").exists()
 
 
-def test_ape_dir_not_created_before_access(ctx):
-    """ape/ folder does not exist before ctx.output.ape_dir is accessed."""
+def test_metrics_dir_not_created_before_access(ctx):
+    """metrics/ folder does not exist before ctx.output.metrics_dir is accessed."""
     assert not (ctx.output.iteration_dir / "metrics").exists()
 
 
 def test_bag_dir_created_on_access(ctx):
-    """bag/ folder is created on disk when ctx.output.bag_dir is first accessed."""
+    """bag/ folder is created when ctx.output.bag_dir is first accessed."""
     bag_dir = ctx.output.bag_dir
     assert bag_dir.exists()
     assert bag_dir == ctx.output.iteration_dir / "bag"
     assert ctx.output.bag_dir == ctx.output.bag_dir
 
 
-def test_ape_dir_created_on_access(ctx):
-    """ape/ folder is created on disk when ctx.output.ape_dir is first accessed."""
+def test_metrics_dir_created_on_access(ctx):
+    """metrics/ folder is created when ctx.output.metrics_dir is first accessed."""
     metrics_dir = ctx.output.metrics_dir
     assert metrics_dir.exists()
     assert metrics_dir == ctx.output.iteration_dir / "metrics"
