@@ -33,26 +33,26 @@ class VariationInfo:
     num_particles: int
 
 
-@dataclass(frozen=True)
+@dataclass
 class SourceInfo:
     """Source package path."""
 
     path: Path
 
     def __post_init__(self) -> None:
-        """Convert path to a Path object after dataclass construction."""
-        object.__setattr__(self, "path", Path(self.path))
+        """Convert path to a Path object."""
+        self.path = Path(self.path)
 
 
-@dataclass(frozen=True)
+@dataclass
 class InputsInfo:
     """Input data paths."""
 
     dataset: Path
 
     def __post_init__(self) -> None:
-        """Convert dataset to a Path object after dataclass construction."""
-        object.__setattr__(self, "dataset", Path(self.dataset))
+        """Convert dataset to a Path object."""
+        self.dataset = Path(self.dataset)
 
 
 class OutputInfo:
