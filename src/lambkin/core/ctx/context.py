@@ -19,7 +19,7 @@ configuration, runtime metadata, and cleanup hooks. Shared across the process
 layer and decorators during a run.
 """
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -113,9 +113,13 @@ class OutputInfo:
         return self._make(self.iteration_dir / "metrics")
 
 
-def _variation_folder_name(sensor_model: str, num_particles: int) -> str:
-    """Build the per-variation folder name."""
-    return f"{sensor_model}_p{num_particles}"
+def _variation_folder_name(variation: SimpleNamespace) -> str:
+    parts = []
+    for value in vars(variation).values():
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)
+        parts.append(str(value))
+    return "_".join(parts)
 
 
 def _iteration_folder_name(iteration: int) -> str:
@@ -183,10 +187,7 @@ class Context:
             - ``rate`` (float): rate multiplier.
         """
         # ctx.variation
-        self.variation = VariationInfo(
-            sensor_model=variation["sensor_model"],
-            num_particles=variation["num_particles"],
-        )
+        self.variation = SimpleNamespace(**variation)
 
         # ctx.options
         self.options = SimpleNamespace(**options)
@@ -202,10 +203,7 @@ class Context:
 
         # ctx.output
         base = Path(output_dir)
-        variation_dir = base / _variation_folder_name(
-            self.variation.sensor_model,
-            self.variation.num_particles,
-        )
+        variation_dir = base / _variation_folder_name(self.variation)
         iteration_dir = variation_dir / _iteration_folder_name(iteration)
         self.output = OutputInfo(
             variation_dir=variation_dir,
@@ -238,7 +236,7 @@ class Context:
         inputs = getattr(self, "inputs", None)
         return (
             f"Context(\n"
-            f"  variation    = {asdict(self.variation)},\n"
+            f"  variation    = {vars(self.variation)},\n"
             f"  iteration    = {self.iteration},\n"
             f"  source       = {source.path if source else 'not set'},\n"
             f"  inputs       = {inputs.dataset if inputs else 'not set'},\n"
