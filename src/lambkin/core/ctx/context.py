@@ -32,13 +32,27 @@ class VariationInfo:
     num_particles: int
 
 
-@dataclass
 class OptionsInfo:
-    """Runtime options for this benchmark run."""
+    """Dynamic namespace for CLI options."""
 
-    clock: bool
-    qos_option_path: str
-    rate: int
+    def __init__(self, **options: Any) -> None:
+        """Initialize OptionsInfo from any keyword arguments.
+
+        Each keyword argument becomes an attribute on the instance,
+        mirroring how click derives attribute names from CLI flags.
+
+        Parameters
+        ----------
+        **options : Any
+            Option names (already converted from --flag-name to flag_name)
+            and their values as parsed by click.
+        """
+        for key, value in options.items():
+            setattr(self, key, value)
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return all options as a plain dict."""
+        return dict(self.__dict__)
 
 
 @dataclass(frozen=True)
@@ -197,11 +211,7 @@ class Context:
         )
 
         # ctx.options
-        self.options = OptionsInfo(
-            clock=options.get("clock", False),
-            qos_option_path=options.get("qos_option_path", "system_default"),
-            rate=float(options.get("rate", 1.0)),
-        )
+        self.options = OptionsInfo(**options)
 
         # ctx.source — may be overridden by @nomida.input
         self.source = SourceInfo(path=Path(source_path) if source_path else Path())
@@ -254,7 +264,7 @@ class Context:
             f"  iteration    = {self.iteration},\n"
             f"  source       = {source.path if source else 'not set'},\n"
             f"  inputs       = {inputs.dataset if inputs else 'not set'},\n"
-            f"  options      = {asdict(self.options)},\n"
+            f"  options      = {self.options.as_dict()},\n"
             f"  variation_dir= {self.output.variation_dir},\n"
             f"  iteration_dir= {self.output.iteration_dir}\n"
             f")"

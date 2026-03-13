@@ -112,7 +112,6 @@ def test_output_dirs_are_created_on_instantiation(
             "system_default",
             2.0,
         ),
-        ({}, False, "system_default", 1.0),
     ],
 )
 def test_options_attributes(
@@ -133,11 +132,6 @@ def test_options_attributes(
     assert ctx.options.clock == expected_clock
     assert ctx.options.qos_option_path == expected_qos
     assert ctx.options.rate == expected_rate
-
-
-# ---------------------------------------------------------------------------
-# ctx.output — lazy dirs
-# ---------------------------------------------------------------------------
 
 
 def test_bag_dir_not_created_before_access(ctx):
