@@ -35,7 +35,7 @@ class VariationInfo:
 
 @dataclass(frozen=True)
 class SourceInfo:
-    """ROS source package path."""
+    """Source package path."""
 
     path: Path
 
@@ -132,19 +132,17 @@ class Context:
 
     Parameters
     ----------
-    variation:
-        Dict with at least ``sensor_model`` and ``num_particles``.
-    iteration:
-        Current iteration index (0-based).
-    source_path:
-        Filesystem path to the ROS source package under test.
-    dataset_path:
-        Path to the rosbag file used as input.
-    base_output_dir:
-        Root directory where all benchmark results are written.
-    options:
-        Dict with ``clock``, ``qos_option_path``, and ``rate``.
+    variation : dict
 
+    iteration : int
+
+    source_path : Path or str, optional
+
+    dataset_path : Path or str, optional
+
+    output_dir : Path or str
+
+    options : dict
     """
 
     def __init__(
@@ -165,26 +163,28 @@ class Context:
         Parameters
         ----------
         variation : dict
-            Algorithm parameters for this run. Must contain:
-            - ``sensor_model`` (str): e.g. ``"beam"`` or ``"likelihood_field"``.
-            - ``num_particles`` (int): number of particles for the algorithm.
+            Algorithm parameters for this run, as defined by the user.
+            All key-value pairs are exposed as attributes on ``ctx.variation``.
+
         iteration : int
-            Zero-based index of the current repetition within this variation.
-            Determines the ``iter_<N>`` subfolder under the variation directory.
-        source_path : Path or str
-            Filesystem path to the ROS source package under test
-            (e.g. ``/opt/ros/overlay/amcl``).
-        dataset_path : Path or str
-            Path to the rosbag file used as input by the algorithm
-            (e.g. ``data/rosbags/run_01.bag``).
+            Zero-based repetition index within this variation.
+            Controls the ``iter_<N>`` subfolder name under the variation directory.
+
+        source_path : Path or str, optional
+            Path to the ROS source package under test
+            (e.g. ``/opt/ros/overlay/amcl``). Defaults to an empty path.
+
+        dataset_path : Path or str, optional
+            Path to the rosbag file used as algorithm input
+            (e.g. ``data/rosbags/run_01.bag``). Defaults to an empty path.
+
         output_dir : Path or str
-            Root directory where all benchmark results are written.
-            The variation and iteration subfolders are created inside it.
-        option : dict
-            ROS runtime options. Recognised keys:
-            - ``clock`` (bool or str): use sim clock or a clock topic name.
-            - ``qos_option`` (str): ROS QoS profile (e.g. ``"sensor_data"``).
-            - ``rate`` (float): rate multiplier.
+            Root directory for all benchmark results.
+            Variation and iteration subfolders are created inside it.
+
+        options : dict
+            Runtime options, as defined by the user.
+            All key-value pairs are exposed as attributes on ``ctx.options``.
         """
         # ctx.variation
         self.variation = SimpleNamespace(**variation)
