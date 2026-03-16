@@ -14,6 +14,8 @@
 
 """Unit tests for the context function in lambkin.core.ctx."""
 
+from pathlib import Path
+
 import pytest
 
 from lambkin.core.ctx.context import Context
@@ -97,43 +99,6 @@ def test_output_dirs_are_created_on_instantiation(
     assert ctx.variation.num_particles == expected_particles
 
 
-@pytest.mark.parametrize(
-    "options, expected_clock, expected_qos, expected_rate",
-    [
-        (
-            {"clock": True, "qos_option_path": "sensor_data", "rate": 1.0},
-            True,
-            "sensor_data",
-            1.0,
-        ),
-        (
-            {"clock": False, "qos_option_path": "system_default", "rate": 2.0},
-            False,
-            "system_default",
-            2.0,
-        ),
-    ],
-)
-def test_options_attributes(
-    tmp_path,
-    base_variation,
-    options,
-    expected_clock,
-    expected_qos,
-    expected_rate,
-):
-    """ctx.options exposes clock, qos_option and rate correctly, with safe defaults."""
-    ctx = Context(
-        variation=base_variation,
-        iteration=0,
-        output_dir=tmp_path,
-        options=options,
-    )
-    assert ctx.options.clock == expected_clock
-    assert ctx.options.qos_option_path == expected_qos
-    assert ctx.options.rate == expected_rate
-
-
 def test_bag_dir_not_created_before_access(ctx):
     """bag/ folder does not exist before ctx.output.bag_dir is accessed."""
     assert not (ctx.output.iteration_dir / "bag").exists()
@@ -161,30 +126,129 @@ def test_metrics_dir_created_on_access(ctx):
 
 
 @pytest.mark.parametrize(
-    "extra_variation",
+    "variation, expected_attrs",
     [
-        {"map_resolution": 0.05},
-        {"sensor_model": "likelihood_field", "num_particles": 200},
-        {"sensor_model": "beam", "num_particles": 50, "rate": 10},
+        (
+            {"sensor_model": "beam", "num_particles": 10},
+            {"sensor_model": "beam", "num_particles": 10},
+        ),
+        (
+            {
+                "sensor_model": "likelihood_field",
+                "num_particles": 500,
+                "map_resolution": 0.05,
+            },
+            {
+                "sensor_model": "likelihood_field",
+                "num_particles": 500,
+                "map_resolution": 0.05,
+            },
+        ),
     ],
 )
-def test_add_variation_sets_attributes(ctx, extra_variation):
-    """add_variation() sets all key-value pairs onto ctx.variation."""
-    ctx.add_variation(extra_variation)
-    for key, value in extra_variation.items():
+def test_variation_attributes(tmp_path, base_options, variation, expected_attrs):
+    """ctx.variation exposes all key-value pairs from the variation dict."""
+    ctx = Context(
+        variation=variation,
+        iteration=0,
+        output_dir=tmp_path,
+        options=base_options,
+    )
+    for key, value in expected_attrs.items():
         assert getattr(ctx.variation, key) == value
 
 
 @pytest.mark.parametrize(
-    "extra_options",
+    "options, expected_clock, expected_qos, expected_rate",
     [
-        {"rate": 2.0},
-        {"clock": False, "qos_option_path": "system_default"},
-        {"clock": True, "qos_option_path": "sensor_data", "rate": 0.5},
+        (
+            {"clock": True, "qos_option_path": "sensor_data", "rate": 1.0},
+            True,
+            "sensor_data",
+            1.0,
+        ),
+        (
+            {"clock": False, "qos_option_path": "system_default", "rate": 2.0},
+            False,
+            "system_default",
+            2.0,
+        ),
     ],
 )
-def test_add_options_sets_attributes(ctx, extra_options):
-    """add_options() sets all key-value pairs onto ctx.options."""
-    ctx.add_options(extra_options)
-    for key, value in extra_options.items():
-        assert getattr(ctx.options, key) == value
+def test_options_attributes(
+    tmp_path,
+    base_variation,
+    options,
+    expected_clock,
+    expected_qos,
+    expected_rate,
+):
+    """ctx.options exposes clock, qos_option_path and rate correctly."""
+    ctx = Context(
+        variation=base_variation,
+        iteration=0,
+        output_dir=tmp_path,
+        options=options,
+    )
+    assert ctx.options.clock == expected_clock
+    assert ctx.options.qos_option_path == expected_qos
+    assert ctx.options.rate == expected_rate
+
+
+@pytest.mark.parametrize(
+    "source_path, expected",
+    [
+        ("/opt/ros/overlay/amcl", Path("/opt/ros/overlay/amcl")),
+        ("relative/path/pkg", Path("relative/path/pkg")),
+    ],
+)
+def test_source_path_set_correctly(
+    tmp_path, base_variation, base_options, source_path, expected
+):
+    """ctx.source.path reflects the source_path argument passed at construction."""
+    ctx = Context(
+        variation=base_variation,
+        iteration=0,
+        output_dir=tmp_path,
+        options=base_options,
+        source_path=source_path,
+    )
+    assert ctx.source.path == expected
+
+
+def test_inputs_defaults_to_empty_path(ctx):
+    """ctx.inputs.dataset defaults to Path() when dataset_path is not provided."""
+    assert ctx.inputs.dataset == Path()
+
+
+@pytest.mark.parametrize(
+    "dataset_path, expected",
+    [
+        ("/data/bags/run1.bag", Path("/data/bags/run1.bag")),
+        ("bags/my_bag", Path("bags/my_bag")),
+    ],
+)
+def test_inputs_dataset_set_correctly(
+    tmp_path, base_variation, base_options, dataset_path, expected
+):
+    """ctx.inputs.dataset reflects the dataset_path argument passed at construction."""
+    ctx = Context(
+        variation=base_variation,
+        iteration=0,
+        output_dir=tmp_path,
+        options=base_options,
+        dataset_path=dataset_path,
+    )
+    assert ctx.inputs.dataset == expected
+
+
+@pytest.mark.parametrize("iteration", [0, 1, 5, 42])
+def test_iteration_stored(tmp_path, base_variation, base_options, iteration):
+    """ctx.iteration stores the zero-based repetition index."""
+    ctx = Context(
+        variation=base_variation,
+        iteration=iteration,
+        output_dir=tmp_path,
+        options=base_options,
+    )
+    assert ctx.iteration == iteration

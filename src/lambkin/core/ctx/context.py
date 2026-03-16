@@ -175,6 +175,9 @@ class Context:
         source_path : Path or str, optional
             Path to the ROS source package under test
             (e.g. ``/opt/ros/overlay/amcl``). Defaults to an empty path.
+        dataset_path : Path or str, optional
+            Path to the rosbag file used as input for this run
+            (e.g. ``/data/bags/run1.bag``). Defaults to an empty path.
         """
         # ctx.variation
         self.variation = SimpleNamespace(**variation)
