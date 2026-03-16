@@ -182,51 +182,17 @@ def test_options_attributes(
     assert ctx.options.rate == expected_rate
 
 
-@pytest.mark.parametrize(
-    "source_path, expected",
-    [
-        ("/opt/ros/overlay/amcl", Path("/opt/ros/overlay/amcl")),
-        ("relative/path/pkg", Path("relative/path/pkg")),
-    ],
-)
-def test_source_path_set_correctly(
-    tmp_path, base_variation, base_options, source_path, expected
-):
-    """ctx.source.path reflects the source_path argument passed at construction."""
-    ctx = Context(
-        variation=base_variation,
-        iteration=0,
-        output_dir=tmp_path,
-        options=base_options,
-        source_path=source_path,
-    )
-    assert ctx.source.path == expected
+def test_source_is_cwd(ctx):
+    """ctx.source is set to the current working directory at instantiation time."""
+    assert ctx.source == Path.cwd()
 
 
-def test_inputs_defaults_to_empty_path(ctx):
-    """ctx.inputs.dataset defaults to Path() when dataset_path is not provided."""
-    assert ctx.inputs.dataset == Path()
+def test_inputs_defaults_to_empty_namespace(ctx):
+    """ctx.inputs is an empty SimpleNamespace when no inputs are registered."""
+    from types import SimpleNamespace
 
-
-@pytest.mark.parametrize(
-    "dataset_path, expected",
-    [
-        ("/data/bags/run1.bag", Path("/data/bags/run1.bag")),
-        ("bags/my_bag", Path("bags/my_bag")),
-    ],
-)
-def test_inputs_dataset_set_correctly(
-    tmp_path, base_variation, base_options, dataset_path, expected
-):
-    """ctx.inputs.dataset reflects the dataset_path argument passed at construction."""
-    ctx = Context(
-        variation=base_variation,
-        iteration=0,
-        output_dir=tmp_path,
-        options=base_options,
-        dataset_path=dataset_path,
-    )
-    assert ctx.inputs.dataset == expected
+    assert isinstance(ctx.inputs, SimpleNamespace)
+    assert vars(ctx.inputs) == {}
 
 
 @pytest.mark.parametrize("iteration", [0, 1, 5, 42])

@@ -19,32 +19,9 @@ configuration, runtime metadata, and cleanup hooks. Shared across the process
 layer and decorators during a run.
 """
 
-from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-
-
-@dataclass
-class SourceInfo:
-    """Source package path."""
-
-    path: Path
-
-    def __post_init__(self) -> None:
-        """Convert path to a Path object."""
-        self.path = Path(self.path)
-
-
-@dataclass
-class InputsInfo:
-    """Input data paths."""
-
-    dataset: Path
-
-    def __post_init__(self) -> None:
-        """Convert dataset to a Path object."""
-        self.dataset = Path(self.dataset)
 
 
 class OutputInfo:
@@ -128,7 +105,8 @@ class Context:
         Namespaced algorithm parameters for this run.
         All key-value pairs from the variation dict are exposed as attributes.
     source:
-        Namespaced source package information (path to the ROS package under test).
+        Path to the directory where the script is being executed.
+        Automatically set at instantiation time.
     inputs:
         Namespaced input/dataset information (path to the rosbag file).
     option:
@@ -146,8 +124,6 @@ class Context:
         output_dir: Path | str,
         options: dict[str, Any],
         variation_index: int = 0,
-        source_path: Path | str | None = None,
-        dataset_path: Path | str | None = None,
     ) -> None:
         """Initialize a Context for one (variation, iteration) benchmark run.
 
@@ -172,12 +148,6 @@ class Context:
         variation_index : int, optional
             Zero-based index of this variation within the benchmark sweep.
             Controls the "var_<N>" subfolder name under the output directory,
-        source_path : Path or str, optional
-            Path to the ROS source package under test
-            (e.g. ``/opt/ros/overlay/amcl``). Defaults to an empty path.
-        dataset_path : Path or str, optional
-            Path to the rosbag file used as input for this run
-            (e.g. ``/data/bags/run1.bag``). Defaults to an empty path.
         """
         # ctx.variation
         self.variation = SimpleNamespace(**variation)
@@ -186,10 +156,10 @@ class Context:
         self.options = SimpleNamespace(**options)
 
         # ctx.source — may be overridden by @nominal.input
-        self.source = SourceInfo(path=Path(source_path) if source_path else Path())
+        self.source = Path.cwd()
 
         # ctx.inputs — may be overridden by @nominal.input
-        self.inputs = InputsInfo(dataset=Path(dataset_path) if dataset_path else Path())
+        self.inputs = SimpleNamespace()
 
         # ctx.iteration
         self.iteration = iteration
