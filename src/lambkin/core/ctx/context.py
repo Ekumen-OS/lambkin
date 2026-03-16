@@ -26,14 +26,6 @@ from typing import Any
 
 
 @dataclass
-class VariationInfo:
-    """Algorithm parameters for this benchmark variation."""
-
-    sensor_model: str
-    num_particles: int
-
-
-@dataclass
 class SourceInfo:
     """Source package path."""
 
@@ -130,19 +122,25 @@ def _iteration_folder_name(iteration: int) -> str:
 class Context:
     """Carries all namespaced information for one benchmark variation.
 
-    Parameters
+    Builds all namespaced sub-objects (variation, source, inputs, option,
+    output) from the given parameters and automatically creates the
+    required output folders on disk.
+
+    Attributes:
     ----------
-    variation : dict
-
-    iteration : int
-
-    source_path : Path or str, optional
-
-    dataset_path : Path or str, optional
-
-    output_dir : Path or str
-
-    options : dict
+    variation:
+        Namespaced algorithm parameters for this run.
+        All key-value pairs from the variation dict are exposed as attributes.
+    source:
+        Namespaced source package information (path to the ROS package under test).
+    inputs:
+        Namespaced input/dataset information (path to the rosbag file).
+    option:
+        Namespaced runtime options.
+        All key-value pairs from the options dict are exposed as attributes.
+    output:
+        Namespaced output paths and metadata.
+        Variation and iteration subfolders are created inside output_dir.
     """
 
     def __init__(
@@ -156,35 +154,27 @@ class Context:
     ) -> None:
         """Initialize a Context for one (variation, iteration) benchmark run.
 
-        Builds all namespaced sub-objects (variation, source, inputs, option,
-        output) from the given parameters and automatically creates the
-        required output folders on disk.
+        Only the parameters needed to build the namespaced sub-objects are
+        stored at construction time. Output subfolders are created eagerly
+        for variation and iteration, and lazily for any other subfolder.
 
         Parameters
         ----------
         variation : dict
             Algorithm parameters for this run, as defined by the user.
             All key-value pairs are exposed as attributes on ``ctx.variation``.
-
         iteration : int
             Zero-based repetition index within this variation.
             Controls the ``iter_<N>`` subfolder name under the variation directory.
-
-        source_path : Path or str, optional
-            Path to the ROS source package under test
-            (e.g. ``/opt/ros/overlay/amcl``). Defaults to an empty path.
-
-        dataset_path : Path or str, optional
-            Path to the rosbag file used as algorithm input
-            (e.g. ``data/rosbags/run_01.bag``). Defaults to an empty path.
-
         output_dir : Path or str
             Root directory for all benchmark results.
             Variation and iteration subfolders are created inside it.
-
         options : dict
             Runtime options, as defined by the user.
             All key-value pairs are exposed as attributes on ``ctx.options``.
+        source_path : Path or str, optional
+            Path to the ROS source package under test
+            (e.g. ``/opt/ros/overlay/amcl``). Defaults to an empty path.
         """
         # ctx.variation
         self.variation = SimpleNamespace(**variation)
@@ -214,16 +204,6 @@ class Context:
 
         # ctx.shell
         # TODO(teresa-ortega): self.shell = Shell(self)
-
-    def add_variation(self, variation: dict) -> None:
-        """Set variation parameters from a dict onto ctx.variation."""
-        for key, value in variation.items():
-            setattr(self.variation, key, value)
-
-    def add_options(self, options: dict) -> None:
-        """Set option parameters from a dict onto ctx.options."""
-        for key, value in options.items():
-            setattr(self.options, key, value)
 
     def _setup_directories(self) -> None:
         """Create variation and iteration output folders on disk."""
