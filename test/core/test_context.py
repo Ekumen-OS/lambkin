@@ -45,33 +45,17 @@ def ctx(tmp_path, base_variation, base_options):
 
 
 @pytest.mark.parametrize(
-    "variation, iteration, expected_variation_dir, expected_iteration_dir, "
-    "expected_sensor, expected_particles",
+    "variation, iteration, variation_index, expected_sensor, expected_particles",
     [
-        (
-            {"sensor_model": "beam", "num_particles": 10},
-            0,
-            "beam_10",
-            "beam_10/iter_0",
-            "beam",
-            10,
-        ),
+        ({"sensor_model": "beam", "num_particles": 10}, 0, 0, "beam", 10),
         (
             {"sensor_model": "likelihood_field", "num_particles": 500},
             2,
-            "likelihood_field_500",
-            "likelihood_field_500/iter_2",
+            1,
             "likelihood_field",
             500,
         ),
-        (
-            {"sensor_model": "beam", "num_particles": 1},
-            10,
-            "beam_1",
-            "beam_1/iter_10",
-            "beam",
-            1,
-        ),
+        ({"sensor_model": "beam", "num_particles": 1}, 10, 2, "beam", 1),
     ],
 )
 def test_output_dirs_are_created_on_instantiation(
@@ -79,8 +63,7 @@ def test_output_dirs_are_created_on_instantiation(
     base_options,
     variation,
     iteration,
-    expected_variation_dir,
-    expected_iteration_dir,
+    variation_index,
     expected_sensor,
     expected_particles,
 ):
@@ -90,9 +73,13 @@ def test_output_dirs_are_created_on_instantiation(
         iteration=iteration,
         output_dir=tmp_path,
         options=base_options,
+        variation_index=variation_index,
     )
-    assert ctx.output.variation_dir == tmp_path / expected_variation_dir
-    assert ctx.output.iteration_dir == tmp_path / expected_iteration_dir
+    expected_variation_dir = tmp_path / f"var_{variation_index + 1}"
+    expected_iteration_dir = expected_variation_dir / f"iter_{iteration}"
+
+    assert ctx.output.variation_dir == expected_variation_dir
+    assert ctx.output.iteration_dir == expected_iteration_dir
     assert ctx.output.variation_dir.exists()
     assert ctx.output.iteration_dir.exists()
     assert ctx.variation.sensor_model == expected_sensor

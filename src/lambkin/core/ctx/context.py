@@ -105,13 +105,9 @@ class OutputInfo:
         return self._make(self.iteration_dir / "metrics")
 
 
-def _variation_folder_name(variation: SimpleNamespace) -> str:
-    parts = []
-    for value in vars(variation).values():
-        if isinstance(value, float) and value.is_integer():
-            value = int(value)
-        parts.append(str(value))
-    return "_".join(parts)
+def _variation_folder_name(index: int) -> str:
+    """Build the variation folder name from its index."""
+    return f"var_{index + 1}"
 
 
 def _iteration_folder_name(iteration: int) -> str:
@@ -149,6 +145,7 @@ class Context:
         iteration: int,
         output_dir: Path | str,
         options: dict[str, Any],
+        variation_index: int = 0,
         source_path: Path | str | None = None,
         dataset_path: Path | str | None = None,
     ) -> None:
@@ -172,6 +169,9 @@ class Context:
         options : dict
             Runtime options, as defined by the user.
             All key-value pairs are exposed as attributes on ``ctx.options``.
+        variation_index : int, optional
+            Zero-based index of this variation within the benchmark sweep.
+            Controls the "var_<N>" subfolder name under the output directory,
         source_path : Path or str, optional
             Path to the ROS source package under test
             (e.g. ``/opt/ros/overlay/amcl``). Defaults to an empty path.
@@ -196,7 +196,7 @@ class Context:
 
         # ctx.output
         base = Path(output_dir)
-        variation_dir = base / _variation_folder_name(self.variation)
+        variation_dir = base / _variation_folder_name(variation_index)
         iteration_dir = variation_dir / _iteration_folder_name(iteration)
         self.output = OutputInfo(
             variation_dir=variation_dir,
@@ -204,12 +204,14 @@ class Context:
         )
 
         self._setup_directories()
+        # TODO(teresa-ortega): Implement a metadata file to remap folder names
+        # as parameters.
 
         # ctx.shell
         # TODO(teresa-ortega): self.shell = Shell(self)
 
     def _setup_directories(self) -> None:
-        """Create variation and iteration output folders on disk."""
+        """Create variation and iteration directories, and write metadata."""
         self.output.variation_dir.mkdir(parents=True, exist_ok=True)
         self.output.iteration_dir.mkdir(parents=True, exist_ok=True)
 
