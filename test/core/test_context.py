@@ -15,10 +15,12 @@
 """Unit tests for the context function in lambkin.core.ctx."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from lambkin.core.ctx.context import Context
+from lambkin.core.ctx.source import Source
 
 
 @pytest.fixture
@@ -34,13 +36,20 @@ def base_options():
 
 
 @pytest.fixture
-def ctx(tmp_path, base_variation, base_options):
+def base_source():
+    """Return a base Source instance for testing."""
+    return Source(path=Path(__file__))
+
+
+@pytest.fixture
+def ctx(tmp_path, base_variation, base_options, base_source):
     """Return a fully constructed Context instance for testing."""
     return Context(
         variation=base_variation,
         iteration=0,
         output_dir=tmp_path,
         options=base_options,
+        source=base_source,
     )
 
 
@@ -61,6 +70,7 @@ def ctx(tmp_path, base_variation, base_options):
 def test_output_dirs_are_created_on_instantiation(
     tmp_path,
     base_options,
+    base_source,
     variation,
     iteration,
     variation_index,
@@ -73,6 +83,7 @@ def test_output_dirs_are_created_on_instantiation(
         iteration=iteration,
         output_dir=tmp_path,
         options=base_options,
+        source=base_source,
         variation_index=variation_index,
     )
     expected_variation_dir = tmp_path / f"var_{variation_index + 1}"
@@ -133,13 +144,16 @@ def test_metrics_dir_created_on_access(ctx):
         ),
     ],
 )
-def test_variation_attributes(tmp_path, base_options, variation, expected_attrs):
+def test_variation_attributes(
+    tmp_path, base_options, base_source, variation, expected_attrs
+):
     """ctx.variation exposes all key-value pairs from the variation dict."""
     ctx = Context(
         variation=variation,
         iteration=0,
         output_dir=tmp_path,
         options=base_options,
+        source=base_source,
     )
     for key, value in expected_attrs.items():
         assert getattr(ctx.variation, key) == value
@@ -165,6 +179,7 @@ def test_variation_attributes(tmp_path, base_options, variation, expected_attrs)
 def test_options_attributes(
     tmp_path,
     base_variation,
+    base_source,
     options,
     expected_clock,
     expected_qos,
@@ -176,32 +191,47 @@ def test_options_attributes(
         iteration=0,
         output_dir=tmp_path,
         options=options,
+        source=base_source,
     )
     assert ctx.options.clock == expected_clock
     assert ctx.options.qos_option_path == expected_qos
     assert ctx.options.rate == expected_rate
 
 
-def test_source_is_cwd(ctx):
-    """ctx.source is set to the current working directory at instantiation time."""
-    assert ctx.source == Path.cwd()
+def test_source_path_is_set_correctly(ctx):
+    """ctx.source.path reflects the path passed at construction."""
+    assert ctx.source.path == Path(__file__)
 
 
 def test_inputs_defaults_to_empty_namespace(ctx):
     """ctx.inputs is an empty SimpleNamespace when no inputs are registered."""
-    from types import SimpleNamespace
-
     assert isinstance(ctx.inputs, SimpleNamespace)
     assert vars(ctx.inputs) == {}
 
 
+def test_inputs_can_be_dynamically_populated(ctx):
+    """ctx.inputs correctly accepts dynamic attribute assignments via setattr().
+
+    This verifies the behavior required by the @nominal.input system,
+    which injects data post-instantiation via setattr(ctx.inputs, name, value).
+    """
+    ctx.inputs.dataset = Path("/data/bags/run1.bag")
+    ctx.inputs.my_folder = Path("/data/my_folder")
+
+    assert ctx.inputs.dataset == Path("/data/bags/run1.bag")
+    assert ctx.inputs.my_folder == Path("/data/my_folder")
+
+
 @pytest.mark.parametrize("iteration", [0, 1, 5, 42])
-def test_iteration_stored(tmp_path, base_variation, base_options, iteration):
+def test_iteration_stored(
+    tmp_path, base_variation, base_options, base_source, iteration
+):
     """ctx.iteration stores the zero-based repetition index."""
     ctx = Context(
         variation=base_variation,
         iteration=iteration,
         output_dir=tmp_path,
         options=base_options,
+        source=base_source,
     )
     assert ctx.iteration == iteration

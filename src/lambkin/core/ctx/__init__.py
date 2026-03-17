@@ -19,7 +19,9 @@ interaction and proxy handling.
 """
 
 from .context import Context
+from .source import Source
 
 __all__ = [
     "Context",
+    "Source",
 ]

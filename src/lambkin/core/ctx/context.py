@@ -23,6 +23,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+from .source import Source
+
 
 class OutputInfo:
     """Output paths for this variation + iteration.
@@ -34,16 +36,14 @@ class OutputInfo:
     Attributes:
     ----------
     variation_dir:
-        Root folder for this variation (e.g. results/var_1/).
-        Created eagerly on Context instantiation.
+        Root folder for this variation (e.g. <source.path.parent>/var_1/).
     iteration_dir:
-        Folder for the current iteration (e.g. results/var_1/iter_0/).
-        Created eagerly on Context instantiation.
+        Folder for the current iteration (e.g. <source.path.parent>/var_1/iter_0/).
     bag_dir:
-        Subfolder for rosbag output (iter_N/bag/).
+        Subfolder for rosbag output (iter_<N>/bag/).
         Created on first access.
     metrics_dir:
-        Subfolder for metrics results (iter_N/metrics/).
+        Subfolder for metrics results (iter_<N>/metrics/).
         Created on first access.
     """
 
@@ -58,10 +58,10 @@ class OutputInfo:
         ----------
         variation_dir : Path
             Root output folder for this variation
-            (e.g. results/var_1/).
+            (e.g. <source.path.parent>/var_1/).
         iteration_dir : Path
             Output folder for the current iteration
-            (e.g. results/var_1/iter_0/).
+            (e.g. <source.path.parent>/var_1/iter_0/).
         """
         self.variation_dir = Path(variation_dir)
         self.iteration_dir = Path(iteration_dir)
@@ -123,6 +123,7 @@ class Context:
         iteration: int,
         output_dir: Path | str,
         options: dict[str, Any],
+        source: Source,
         variation_index: int = 0,
     ) -> None:
         """Initialize a Context for one (variation, iteration) benchmark run.
@@ -135,16 +136,16 @@ class Context:
         ----------
         variation : dict
             Algorithm parameters for this run, as defined by the user.
-            All key-value pairs are exposed as attributes on ``ctx.variation``.
+            All key-value pairs are exposed as attributes on "ctx.variation".
         iteration : int
             Zero-based repetition index within this variation.
-            Controls the ``iter_<N>`` subfolder name under the variation directory.
+            Controls the "iter_<N>" subfolder name under the variation directory.
         output_dir : Path or str
             Root directory for all benchmark results.
             Variation and iteration subfolders are created inside it.
         options : dict
             Runtime options, as defined by the user.
-            All key-value pairs are exposed as attributes on ``ctx.options``.
+            All key-value pairs are exposed as attributes on "ctx.options".
         variation_index : int, optional
             Zero-based index of this variation within the benchmark sweep.
             Controls the "var_<N>" subfolder name under the output directory,
@@ -155,17 +156,17 @@ class Context:
         # ctx.options
         self.options = SimpleNamespace(**options)
 
-        # ctx.source — may be overridden by @nominal.input
-        self.source = Path.cwd()
+        # ctx.source
+        self.source = source
 
-        # ctx.inputs — may be overridden by @nominal.input
+        # ctx.inputs
         self.inputs = SimpleNamespace()
 
         # ctx.iteration
         self.iteration = iteration
 
         # ctx.output
-        base = Path(output_dir)
+        base = Path(output_dir) if output_dir else source.path.parent
         variation_dir = base / _variation_folder_name(variation_index)
         iteration_dir = variation_dir / _iteration_folder_name(iteration)
         self.output = OutputInfo(
