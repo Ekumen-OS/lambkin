@@ -35,4 +35,4 @@ def test_source_path_is_converted_to_path():
 def test_source_repr():
     """Source.__repr__ returns a human-readable string."""
     source = Source(path=Path("/home/user/benchmarks/test.py"))
-    assert repr(source) == "Source(path=/home/user/benchmarks/test.py)"
+    assert repr(source) == "Source( path = /home/user/benchmarks/test.py)"

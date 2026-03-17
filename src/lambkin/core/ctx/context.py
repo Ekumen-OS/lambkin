@@ -95,9 +95,9 @@ def _iteration_folder_name(iteration: int) -> str:
 class Context:
     """Carries all namespaced information for one benchmark variation.
 
-    Builds all namespaced sub-objects (variation, source, inputs, option,
-    output) from the given parameters and automatically creates the
-    required output folders on disk.
+    Builds all namespaced sub-objects (variation, inputs, options, output)
+    from the given parameters and automatically creates the required output
+    folders on disk.
 
     Attributes:
     ----------
@@ -105,16 +105,14 @@ class Context:
         Namespaced algorithm parameters for this run.
         All key-value pairs from the variation dict are exposed as attributes.
     source:
-        Describes the benchmark source.
-        Automatically set at instantiation time.
+        Source object describing the benchmark script being executed.
     inputs:
-        Namespaced input/dataset information (e.g. path to the mcap file).
-    option:
+        Namespaced input information.
+    options:
         Namespaced runtime options.
         All key-value pairs from the options dict are exposed as attributes.
     output:
-        Namespaced output paths and metadata.
-        Variation and iteration subfolders are created inside output_dir.
+        Namespaced output paths.
     """
 
     def __init__(
@@ -129,26 +127,30 @@ class Context:
         """Initialize a Context for one (variation, iteration) benchmark run.
 
         Only the parameters needed to build the namespaced sub-objects are
-        stored at construction time. Output subfolders are created eagerly
-        for variation and iteration, and lazily for any other subfolder.
+        stored at construction time. Output subfolders for variation and iteration
+        are created immediately, while any other subfolder is created on first access.
 
         Parameters
         ----------
         variation : dict
             Algorithm parameters for this run, as defined by the user.
-            All key-value pairs are exposed as attributes on "ctx.variation".
+            All key-value pairs are exposed as attributes on ``ctx.variation``.
         iteration : int
             Zero-based repetition index within this variation.
-            Controls the "iter_<N>" subfolder name under the variation directory.
-        output_dir : Path or str
-            Root directory for all benchmark results.
-            Variation and iteration subfolders are created inside it.
+            Controls the ``iter_<N>`` subfolder name under the variation directory.
+        source : Source
+            Source object describing the benchmark script being executed.
+            Its parent directory is used as the default output directory.
         options : dict
             Runtime options, as defined by the user.
-            All key-value pairs are exposed as attributes on "ctx.options".
+            All key-value pairs are exposed as attributes on ``ctx.options``.
         variation_index : int, optional
             Zero-based index of this variation within the benchmark sweep.
-            Controls the "var_<N>" subfolder name under the output directory,
+            Controls the ``variation_<N>`` subfolder name under the output directory,
+            where ``N = variation_index + 1``. Defaults to 0.
+        output_dir : Path or str, optional
+            Root directory for all benchmark results. If not provided,
+            defaults to ``source.path.parent``.
         """
         # ctx.variation
         self.variation = SimpleNamespace(**variation)
@@ -182,7 +184,7 @@ class Context:
         # TODO(teresa-ortega): self.shell = Shell(self)
 
     def _setup_directories(self) -> None:
-        """Create variation and iteration directories, and write metadata."""
+        """Create variation and iteration directories."""
         self.output.variation_dir.mkdir(parents=True, exist_ok=True)
         self.output.iteration_dir.mkdir(parents=True, exist_ok=True)
 
@@ -190,12 +192,12 @@ class Context:
         """Return a human-readable summary of the Context state."""
         return (
             f"Context(\n"
-            f"  variation    = {vars(self.variation)},\n"
-            f"  iteration    = {self.iteration},\n"
-            f"  source       = {self.source},\n"
-            f"  inputs       = {vars(self.inputs)},\n"
-            f"  options      = {vars(self.options)},\n"
-            f"  variation_dir= {self.output.variation_dir},\n"
-            f"  iteration_dir= {self.output.iteration_dir}\n"
+            f"  variation     = {vars(self.variation)},\n"
+            f"  iteration     = {self.iteration},\n"
+            f"  source        = {self.source},\n"
+            f"  inputs        = {vars(self.inputs)},\n"
+            f"  options       = {vars(self.options)},\n"
+            f"  variation_dir = {self.output.variation_dir},\n"
+            f"  iteration_dir = {self.output.iteration_dir}\n"
             f")"
         )
