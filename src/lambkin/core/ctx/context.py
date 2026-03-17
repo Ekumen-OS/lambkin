@@ -29,21 +29,21 @@ class OutputInfo:
 
     Folders are created lazily — only when the path is first accessed.
     This means a bag/ folder is only created if the user accesses
-    ctx.output.bag_dir, and same for ape/ and any other subfolder.
+    ctx.output.bag_dir, and same for metrics/ and any other subfolder.
 
     Attributes:
     ----------
     variation_dir:
-        Root folder for this variation (e.g. results/beam_p100/).
+        Root folder for this variation (e.g. results/var_1/).
         Created eagerly on Context instantiation.
     iteration_dir:
-        Folder for the current iteration (e.g. results/beam_p100/iter_0/).
+        Folder for the current iteration (e.g. results/var_1/iter_0/).
         Created eagerly on Context instantiation.
     bag_dir:
         Subfolder for rosbag output (iter_N/bag/).
         Created on first access.
-    ape_dir:
-        Subfolder for APE results (iter_N/ape/).
+    metrics_dir:
+        Subfolder for metrics results (iter_N/metrics/).
         Created on first access.
     """
 
@@ -51,17 +51,17 @@ class OutputInfo:
         """Initialize the output paths for one (variation, iteration) pair.
 
         Only the base folders (variation_dir and iteration_dir) are stored
-        at construction time. Subfolders like bag/ and ape/ are created
+        at construction time. Subfolders like bag/ and metrics/ are created
         lazily on first access via their respective properties.
 
         Parameters
         ----------
         variation_dir : Path
             Root output folder for this variation
-            (e.g. results/beam_p100/).
+            (e.g. results/var_1/).
         iteration_dir : Path
             Output folder for the current iteration
-            (e.g. results/beam_p100/iter_0/).
+            (e.g. results/var_1/iter_0/).
         """
         self.variation_dir = Path(variation_dir)
         self.iteration_dir = Path(iteration_dir)
@@ -105,10 +105,10 @@ class Context:
         Namespaced algorithm parameters for this run.
         All key-value pairs from the variation dict are exposed as attributes.
     source:
-        Path to the directory where the script is being executed.
+        Describes the benchmark source.
         Automatically set at instantiation time.
     inputs:
-        Namespaced input/dataset information (path to the rosbag file).
+        Namespaced input/dataset information (e.g. path to the mcap file).
     option:
         Namespaced runtime options.
         All key-value pairs from the options dict are exposed as attributes.
@@ -187,14 +187,12 @@ class Context:
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the Context state."""
-        source = getattr(self, "source", None)
-        inputs = getattr(self, "inputs", None)
         return (
             f"Context(\n"
             f"  variation    = {vars(self.variation)},\n"
             f"  iteration    = {self.iteration},\n"
-            f"  source       = {source.path if source else 'not set'},\n"
-            f"  inputs       = {inputs.dataset if inputs else 'not set'},\n"
+            f"  source       = {self.source},\n"
+            f"  inputs       = {vars(self.inputs)},\n"
             f"  options      = {vars(self.options)},\n"
             f"  variation_dir= {self.output.variation_dir},\n"
             f"  iteration_dir= {self.output.iteration_dir}\n"
