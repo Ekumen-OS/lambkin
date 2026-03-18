@@ -89,7 +89,7 @@ def _variation_folder_name(index: int) -> str:
 
 def _iteration_folder_name(iteration: int) -> str:
     """Build the per-iteration folder name."""
-    return f"iter_{iteration}"
+    return f"iter_{iteration + 1}"
 
 
 class Context:
