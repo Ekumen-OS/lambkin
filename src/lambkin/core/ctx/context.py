@@ -113,7 +113,7 @@ class Context:
         iteration : int
             Zero-based repetition index within this variation.
             Controls the "iter_<N>" subfolder name under the variation directory.
-            where "N = iteration + 1". Defaults to 0.
+            where "N = iteration + 1".
         source : Source
             Source object describing the benchmark script being executed.
             Its parent directory is used as the default output directory.
