@@ -30,56 +30,29 @@ class OutputInfo:
     """Output paths for this variation + iteration.
 
     Folders are created lazily — only when the path is first accessed.
-    This means a bag/ folder is only created if the user accesses
-    ctx.output.bag_dir, and same for metrics/ and any other subfolder.
 
     Attributes:
     ----------
     variation_dir:
         Root folder for this variation (e.g. <source.path.parent>/var_1/).
     iteration_dir:
-        Folder for the current iteration (e.g. <source.path.parent>/var_1/iter_0/).
-    bag_dir:
-        Subfolder for rosbag output (iter_<N>/bag/).
-        Created on first access.
-    metrics_dir:
-        Subfolder for metrics results (iter_<N>/metrics/).
-        Created on first access.
+        Folder for the current iteration (e.g. <source.path.parent>/var_1/iter_1/).
     """
 
     def __init__(self, variation_dir: Path, iteration_dir: Path) -> None:
         """Initialize the output paths for one (variation, iteration) pair.
 
-        Only the base folders (variation_dir and iteration_dir) are stored
-        at construction time. Subfolders like bag/ and metrics/ are created
-        lazily on first access via their respective properties.
-
         Parameters
         ----------
         variation_dir : Path
             Root output folder for this variation
-            (e.g. <source.path.parent>/var_1/).
+            (e.g. <source.path.parent>/results/var_1/).
         iteration_dir : Path
             Output folder for the current iteration
-            (e.g. <source.path.parent>/var_1/iter_0/).
+            (e.g. <source.path.parent>/results/var_1/iter_1/).
         """
         self.variation_dir = Path(variation_dir)
         self.iteration_dir = Path(iteration_dir)
-
-    def _make(self, path: Path) -> Path:
-        """Create a directory and return its path."""
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
-    @property
-    def bag_dir(self) -> Path:
-        """Path to bag/ subfolder. Created on first access."""
-        return self._make(self.iteration_dir / "bag")
-
-    @property
-    def metrics_dir(self) -> Path:
-        """Path to metrics/ subfolder. Created on first access."""
-        return self._make(self.iteration_dir / "metrics")
 
 
 def _variation_folder_name(index: int) -> str:
@@ -168,7 +141,7 @@ class Context:
         self.iteration = iteration
 
         # ctx.output
-        base = Path(output_dir) if output_dir else source.path.parent
+        base = Path(output_dir) if output_dir else source.path.parent / "results"
         variation_dir = base / _variation_folder_name(variation_index)
         iteration_dir = variation_dir / _iteration_folder_name(iteration)
         self.output = OutputInfo(

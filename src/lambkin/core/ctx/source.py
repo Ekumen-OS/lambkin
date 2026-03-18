@@ -30,7 +30,7 @@ class Source:
         Path to the source file of the benchmark.
     """
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path | str) -> None:
         """Initialize a Source with the path to the benchmark script.
 
         Parameters

@@ -97,32 +97,6 @@ def test_output_dirs_are_created_on_instantiation(
     assert ctx.variation.num_particles == expected_particles
 
 
-def test_bag_dir_not_created_before_access(ctx):
-    """bag/ folder does not exist before ctx.output.bag_dir is accessed."""
-    assert not (ctx.output.iteration_dir / "bag").exists()
-
-
-def test_metrics_dir_not_created_before_access(ctx):
-    """metrics/ folder does not exist before ctx.output.metrics_dir is accessed."""
-    assert not (ctx.output.iteration_dir / "metrics").exists()
-
-
-def test_bag_dir_created_on_access(ctx):
-    """bag/ folder is created when ctx.output.bag_dir is first accessed."""
-    bag_dir = ctx.output.bag_dir
-    assert bag_dir.exists()
-    assert bag_dir == ctx.output.iteration_dir / "bag"
-    assert ctx.output.bag_dir == ctx.output.bag_dir
-
-
-def test_metrics_dir_created_on_access(ctx):
-    """metrics/ folder is created when ctx.output.metrics_dir is first accessed."""
-    metrics_dir = ctx.output.metrics_dir
-    assert metrics_dir.exists()
-    assert metrics_dir == ctx.output.iteration_dir / "metrics"
-    assert ctx.output.metrics_dir == ctx.output.metrics_dir
-
-
 @pytest.mark.parametrize(
     "variation, expected_attrs",
     [
