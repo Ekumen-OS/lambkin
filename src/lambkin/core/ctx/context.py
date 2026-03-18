@@ -34,9 +34,11 @@ class OutputInfo:
     Attributes:
     ----------
     variation_dir:
-        Root folder for this variation (e.g. <source.path.parent>/var_1/).
+        Root folder for this variation (e.g.
+        <source.path.parent>/results/var_1/).
     iteration_dir:
-        Folder for the current iteration (e.g. <source.path.parent>/var_1/iter_1/).
+        Folder for the current iteration (e.g.
+        <source.path.parent>/results/var_1/iter_1/).
     """
 
     def __init__(self, variation_dir: Path, iteration_dir: Path) -> None:
@@ -107,23 +109,24 @@ class Context:
         ----------
         variation : dict
             Algorithm parameters for this run, as defined by the user.
-            All key-value pairs are exposed as attributes on ``ctx.variation``.
+            All key-value pairs are exposed as attributes on "ctx.variation".
         iteration : int
             Zero-based repetition index within this variation.
-            Controls the ``iter_<N>`` subfolder name under the variation directory.
+            Controls the "iter_<N>" subfolder name under the variation directory.
+            where "N = iteration + 1". Defaults to 0.
         source : Source
             Source object describing the benchmark script being executed.
             Its parent directory is used as the default output directory.
         options : dict
             Runtime options, as defined by the user.
-            All key-value pairs are exposed as attributes on ``ctx.options``.
+            All key-value pairs are exposed as attributes on "ctx.options".
         variation_index : int, optional
             Zero-based index of this variation within the benchmark sweep.
-            Controls the ``variation_<N>`` subfolder name under the output directory,
-            where ``N = variation_index + 1``. Defaults to 0.
+            Controls the "var_<N>" subfolder name under the output directory,
+            where "N = variation_index + 1". Defaults to 0.
         output_dir : Path or str, optional
             Root directory for all benchmark results. If not provided,
-            defaults to ``source.path.parent``.
+            defaults to "source.path.parent".
         """
         # ctx.variation
         self.variation = SimpleNamespace(**variation)

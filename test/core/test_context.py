@@ -186,8 +186,7 @@ def test_inputs_defaults_to_empty_namespace(ctx):
 def test_inputs_can_be_dynamically_populated(ctx):
     """ctx.inputs correctly accepts dynamic attribute assignments via setattr().
 
-    This verifies the behavior required by the @nominal.input system,
-    which injects data post-instantiation via setattr(ctx.inputs, name, value).
+    This verifies the behavior required by the @nominal.input system.
     """
     ctx.inputs.dataset = Path("/data/bags/run1.bag")
     ctx.inputs.my_folder = Path("/data/my_folder")
