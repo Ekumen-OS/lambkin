@@ -21,18 +21,30 @@ from lambkin.core.ctx.source import Source
 
 def test_source_path_is_set_correctly():
     """ctx.source.path reflects the path passed at construction."""
-    source = Source(path=Path(__file__))
-    assert source.path == Path(__file__)
+    test_file = Path(__file__)
+    source = Source(path=test_file)
+    assert source.path == test_file
 
 
 def test_source_path_is_converted_to_path():
     """Source converts a string path to a Path object."""
-    source = Source(path="/home/user/benchmarks/test.py")
+    test_path_str = "/home/user/benchmarks/test.py"
+    source = Source(path=test_path_str)
     assert isinstance(source.path, Path)
-    assert source.path == Path("/home/user/benchmarks/test.py")
+    assert source.path == Path(test_path_str)
+
+
+def test_source_parent_anchor():
+    """Verify that source.path.parent can be used to anchor relative paths."""
+    test_path = Path("/home/user/benchmarks/my_benchmark.py")
+    source = Source(path=test_path)
+    dataset_path = source.path.parent / "datasets" / "output.mcap"
+
+    assert dataset_path == test_path.parent / "datasets" / "output.mcap"
 
 
 def test_source_repr():
     """Source.__repr__ returns a human-readable string."""
-    source = Source(path=Path("/home/user/benchmarks/test.py"))
-    assert repr(source) == "Source( path = /home/user/benchmarks/test.py)"
+    test_path = Path("/home/user/benchmarks/test.py")
+    source = Source(path=test_path)
+    assert repr(source) == f"Source(path={test_path})"
