@@ -188,11 +188,14 @@ def test_inputs_can_be_dynamically_populated(ctx):
 
     This verifies the behavior required by the @nominal.input system.
     """
-    ctx.inputs.dataset = Path("/data/bags/run1.bag")
-    ctx.inputs.my_folder = Path("/data/my_folder")
+    test_dataset = "/data/bags/run1.bag"
+    test_folder = "/data/my_folder"
 
-    assert ctx.inputs.dataset == Path("/data/bags/run1.bag")
-    assert ctx.inputs.my_folder == Path("/data/my_folder")
+    ctx.inputs.dataset = test_dataset
+    ctx.inputs.my_folder = test_folder
+
+    assert ctx.inputs.dataset == test_dataset
+    assert ctx.inputs.my_folder == test_folder
 
 
 @pytest.mark.parametrize("iteration", [0, 1, 5, 42])

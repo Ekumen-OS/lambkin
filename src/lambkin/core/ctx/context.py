@@ -35,10 +35,10 @@ class OutputInfo:
     ----------
     variation_dir:
         Root folder for this variation (e.g.
-        <source.path.parent>/results/var_1/).
+        results/var_1/).
     iteration_dir:
         Folder for the current iteration (e.g.
-        <source.path.parent>/results/var_1/iter_1/).
+        results/var_1/iter_1/).
     """
 
     def __init__(self, variation_dir: Path, iteration_dir: Path) -> None:
@@ -48,10 +48,10 @@ class OutputInfo:
         ----------
         variation_dir : Path
             Root output folder for this variation
-            (e.g. <source.path.parent>/results/var_1/).
+            (e.g. results/var_1/).
         iteration_dir : Path
             Output folder for the current iteration
-            (e.g. <source.path.parent>/results/var_1/iter_1/).
+            (e.g. results/var_1/iter_1/).
         """
         self.variation_dir = Path(variation_dir)
         self.iteration_dir = Path(iteration_dir)

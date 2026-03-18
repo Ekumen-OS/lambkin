@@ -42,4 +42,4 @@ class Source:
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the Source state."""
-        return f"Source( path = {self.path})"
+        return f"Source(path={self.path})"
