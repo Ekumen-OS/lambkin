@@ -87,7 +87,7 @@ def test_output_dirs_are_created_on_instantiation(
         variation_index=variation_index,
     )
     expected_variation_dir = tmp_path / f"var_{variation_index + 1}"
-    expected_iteration_dir = expected_variation_dir / f"iter_{iteration}"
+    expected_iteration_dir = expected_variation_dir / f"iter_{iteration + 1}"
 
     assert ctx.output.variation_dir == expected_variation_dir
     assert ctx.output.iteration_dir == expected_iteration_dir
