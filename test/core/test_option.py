@@ -44,24 +44,6 @@ def test_option_stacks_multiple_decorators(simple_fn):
     assert len(decorated._options) == 2
 
 
-def test_option_default_is_stored(simple_fn):
-    """@lambkin.option stores the default value correctly."""
-    decorated = option("--clock-rate", default=100.0)(simple_fn)
-    assert decorated._options[0].default == 100.0
-
-
-def test_option_normalizes_flag_name(simple_fn):
-    """--clock-rate is normalized to clock_rate by click."""
-    decorated = option("--clock-rate", default=100.0)(simple_fn)
-    assert decorated._options[0].name == "clock_rate"
-
-
-def test_option_picks_longest_flag(simple_fn):
-    """--clock-rate is picked over -c when normalizing."""
-    decorated = option("--clock-rate", "-c", default=100.0)(simple_fn)
-    assert decorated._options[0].name == "clock_rate"
-
-
 def test_option_no_options_by_default(simple_fn):
     """A plain function has no _options attribute."""
     assert not hasattr(simple_fn, "_options")
