@@ -16,7 +16,7 @@
 
 Provides the decorators used to define and configure benchmark functions:
 
-- @lambkin.option : registers CLI options so the benchmark decorator can inject
+- @lambkin.option : registers CLI options so the @benchmark decorator can inject
   them into "ctx.options".
 """
 

@@ -14,12 +14,11 @@
 
 """CLI option registration for benchmark.
 
-Provides the option decorator. Instead of parsing arguments immediately, it
-stores option definitions on the function so that later can parse and inject
-them into "ctx.options".
+Provides the @option decorator. Instead of parsing arguments immediately, it
+stores option definitions on the function.
 
 The @benchmark orchestrator later collects these definitions to construct a
-unified CLI parser and inject the resulting values into ctx.options.
+unified CLI parser and inject the resulting values into "ctx.options".
 """
 
 
