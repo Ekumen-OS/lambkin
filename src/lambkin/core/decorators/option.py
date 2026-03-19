@@ -22,7 +22,7 @@ later and inject the resulting values into "ctx.options".
 Flag names are normalized by click: "--clock-rate" becomes "clock_rate".
 """
 
-import click
+from click import Option
 
 
 def option(*param_decls, **attrs):
@@ -36,7 +36,7 @@ def option(*param_decls, **attrs):
     def decorator(fn):
         if not hasattr(fn, "_options"):
             fn._options = []
-        fn._options.append(click.Option(param_decls, **attrs))
+        fn._options.append(Option(param_decls, **attrs))
         return fn
 
     return decorator
