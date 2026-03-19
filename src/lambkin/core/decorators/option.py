@@ -32,13 +32,13 @@ def option(*param_decls, **attrs):
         @lambkin.option("--clock-rate", default=100.0)
         @lambkin.option("--sensor-topic", default="/scan")
     """
+    for decl in param_decls:
+        if not decl.startswith("-"):
+            raise ValueError(
+                f"Invalid flag name: {decl!r}. Must start with '-' or '--'."
+            )
 
     def decorator(fn):
-        for decl in param_decls:
-            if not decl.startswith("-"):
-                raise ValueError(
-                    f"Invalid flag name: {decl!r}. Must start with '-' or '--'."
-                )
         if not hasattr(fn, "__lambkin_options__"):
             fn.__lambkin_options__ = []
         fn.__lambkin_options__.append(Option(param_decls, **attrs))
