@@ -16,7 +16,7 @@
 
 Provides the @option decorator, modeled directly after click.option. Instead of
 parsing arguments immediately, it creates a class click.Option object and stores
-it on "fn._options" so that @benchmark can collect and parse them later and
+it on "fn.__lambkin_options__" so that @benchmark can collect and parse them later and
 inject the resulting values into "ctx.options".
 
 Flag names are normalized by click: "--clock-rate" becomes "clock_rate".
@@ -34,9 +34,14 @@ def option(*param_decls, **attrs):
     """
 
     def decorator(fn):
-        if not hasattr(fn, "_options"):
-            fn._options = []
-        fn._options.append(Option(param_decls, **attrs))
+        for decl in param_decls:
+            if not decl.startswith("-"):
+                raise ValueError(
+                    f"Invalid flag name: {decl!r}. Must start with '-' or '--'."
+                )
+        if not hasattr(fn, "__lambkin_options__"):
+            fn.__lambkin_options__ = []
+        fn.__lambkin_options__.append(Option(param_decls, **attrs))
         return fn
 
     return decorator
