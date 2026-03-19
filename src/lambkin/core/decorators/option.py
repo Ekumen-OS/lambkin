@@ -14,12 +14,15 @@
 
 """CLI option registration for benchmark.
 
-Provides the @option decorator. Instead of parsing arguments immediately, it
-stores option definitions on the function.
+Provides the @option decorator, modeled directly after click.option. Instead of
+parsing arguments immediately, it creates a class click.Option object and stores
+it on "fn._options" so that @benchmark can collect and parse them
+later and inject the resulting values into "ctx.options".
 
-The @benchmark orchestrator later collects these definitions to construct a
-unified CLI parser and inject the resulting values into "ctx.options".
+Flag names are normalized by click: "--clock-rate" becomes "clock_rate".
 """
+
+import click
 
 
 def option(*param_decls, **attrs):
@@ -33,7 +36,7 @@ def option(*param_decls, **attrs):
     def decorator(fn):
         if not hasattr(fn, "_options"):
             fn._options = []
-        fn._options.append((param_decls, attrs))
+        fn._options.append(click.Option(param_decls, **attrs))
         return fn
 
     return decorator

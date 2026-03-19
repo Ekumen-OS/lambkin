@@ -14,6 +14,7 @@
 
 """Unit tests for the option decorator in lambkin.core.decorators."""
 
+import click
 import pytest
 
 from lambkin.core.decorators.option import option
@@ -30,10 +31,10 @@ def simple_fn():
 
 
 def test_option_stores_single_option(simple_fn):
-    """@lambkin.option stores one option definition on the function."""
+    """@lambkin.option stores one click.Option on the function."""
     decorated = option("--clock-rate", default=100.0)(simple_fn)
     assert len(decorated._options) == 1
-    assert decorated._options[0] == (("--clock-rate",), {"default": 100.0})
+    assert isinstance(decorated._options[0], click.Option)
 
 
 def test_option_stacks_multiple_decorators(simple_fn):
@@ -43,27 +44,22 @@ def test_option_stacks_multiple_decorators(simple_fn):
     assert len(decorated._options) == 2
 
 
-def test_option_stores_attrs_correctly(simple_fn):
-    """@lambkin.option stores all kwargs correctly."""
+def test_option_default_is_stored(simple_fn):
+    """@lambkin.option stores the default value correctly."""
     decorated = option("--clock-rate", default=100.0)(simple_fn)
-    _, attrs = decorated._options[0]
-    assert attrs["default"] == 100.0
+    assert decorated._options[0].default == 100.0
 
 
-def test_option_normalization_single_flag(simple_fn):
-    """--clock-rate normalizes to clock_rate."""
+def test_option_normalizes_flag_name(simple_fn):
+    """--clock-rate is normalized to clock_rate by click."""
     decorated = option("--clock-rate", default=100.0)(simple_fn)
-    param_decls, _ = decorated._options[0]
-    key = max(param_decls, key=len).lstrip("-").replace("-", "_")
-    assert key == "clock_rate"
+    assert decorated._options[0].name == "clock_rate"
 
 
-def test_option_normalization_picks_longest_flag(simple_fn):
+def test_option_picks_longest_flag(simple_fn):
     """--clock-rate is picked over -c when normalizing."""
     decorated = option("--clock-rate", "-c", default=100.0)(simple_fn)
-    param_decls, _ = decorated._options[0]
-    key = max(param_decls, key=len).lstrip("-").replace("-", "_")
-    assert key == "clock_rate"
+    assert decorated._options[0].name == "clock_rate"
 
 
 def test_option_no_options_by_default(simple_fn):
