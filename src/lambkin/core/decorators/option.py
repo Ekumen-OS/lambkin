@@ -16,8 +16,8 @@
 
 Provides the @option decorator, modeled directly after click.option. Instead of
 parsing arguments immediately, it creates a class click.Option object and stores
-it on "fn._options" so that @benchmark can collect and parse them
-later and inject the resulting values into "ctx.options".
+it on "fn._options" so that @benchmark can collect and parse them later and
+inject the resulting values into "ctx.options".
 
 Flag names are normalized by click: "--clock-rate" becomes "clock_rate".
 """
