@@ -30,21 +30,21 @@ def simple_fn():
 
 
 def test_option_stores_single_option(simple_fn):
-    """@l.option stores one option definition on the function."""
+    """@lambkin.option stores one option definition on the function."""
     decorated = option("--clock-rate", default=100.0)(simple_fn)
     assert len(decorated._options) == 1
     assert decorated._options[0] == (("--clock-rate",), {"default": 100.0})
 
 
 def test_option_stacks_multiple_decorators(simple_fn):
-    """Multiple @l.option decorators each add one entry to fn._options."""
+    """Multiple @lambkin.option decorators each add one entry to fn._options."""
     decorated = option("--clock-rate", default=100.0)(simple_fn)
     decorated = option("--sensor-topic", default="/scan")(decorated)
     assert len(decorated._options) == 2
 
 
 def test_option_stores_attrs_correctly(simple_fn):
-    """@l.option stores all kwargs correctly."""
+    """@lambkin.option stores all kwargs correctly."""
     decorated = option("--clock-rate", default=100.0)(simple_fn)
     _, attrs = decorated._options[0]
     assert attrs["default"] == 100.0

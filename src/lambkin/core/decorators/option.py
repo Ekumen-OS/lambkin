@@ -14,12 +14,12 @@
 
 """CLI option registration for benchmark.
 
-Provides the option decorator.. Instead of parsing arguments immediately, it
+Provides the option decorator. Instead of parsing arguments immediately, it
 stores option definitions on the function so that later can parse and inject
-them into "ctx.options" later.
+them into "ctx.options".
 
-Flag names are normalized to Python attributes:
-"--clock-rate"->"ctx.options.clock_rate".
+The @benchmark orchestrator later collects these definitions to construct a
+unified CLI parser and inject the resulting values into ctx.options.
 """
 
 
@@ -27,8 +27,8 @@ def option(*param_decls, **attrs):
     """Registers a CLI option on the benchmark function.
 
     Example:
-        @l.option("--clock-rate", default=100.0)
-        @l.option("--sensor-topic", default="/scan")
+        @lambkin.option("--clock-rate", default=100.0)
+        @lambkin.option("--sensor-topic", default="/scan")
     """
 
     def decorator(fn):

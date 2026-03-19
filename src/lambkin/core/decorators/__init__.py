@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Benchmark decorators for lambkin.
+"""Decorators for lambkin.
 
 Provides the decorators used to define and configure benchmark functions:
 
-- @lambkin.option : registers CLI options and injects them into "ctx.options".
+- @lambkin.option : registers CLI options so the benchmark decorator can inject
+  them into "ctx.options".
 """
 
 from .option import option
