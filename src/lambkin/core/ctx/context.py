@@ -94,10 +94,10 @@ class Context:
         self,
         variant: dict[str, Any],
         iteration: int,
-        output_dir: Path | str,
         options: dict[str, Any],
         source: Source,
         variant_index: int = 0,
+        output_dir: Path | str | None = None,
     ) -> None:
         """Initialize a Context for one (variant, iteration) benchmark run.
 
