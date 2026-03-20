@@ -36,7 +36,7 @@ def benchmark(variants, num_iterations):
     """Drive the benchmark execution loop over all variants and iterations.
 
     Parses CLI options registered by @lambkin.option once before the loop,
-    then creates a Context for each (variation, iteration) pair and calls
+    then creates a Context for each (variants, iteration) pair and calls
     the decorated function with it.
 
     Parameters
@@ -58,6 +58,7 @@ def benchmark(variants, num_iterations):
                     ctx = Context(
                         variation=variation,
                         iteration=iteration,
+                        output_dir=".",
                         options=options,
                         source=source,
                         variation_index=variation_index,
