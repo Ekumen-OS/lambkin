@@ -102,17 +102,17 @@ class Context:
         """Initialize a Context for one (variant, iteration) benchmark run.
 
         Only the parameters needed to build the namespaced sub-objects are
-        stored at construction time. Output subfolders for variation and iteration
+        stored at construction time. Output subfolders for variant and iteration
         are created immediately, while any other subfolder is created on first access.
 
         Parameters
         ----------
         variant : dict
             Algorithm parameters for this run, as defined by the user.
-            All key-value pairs are exposed as attributes on "ctx.variation".
+            All key-value pairs are exposed as attributes on "ctx.variant".
         iteration : int
-            Zero-based repetition index within this variation.
-            Controls the "iter_<N>" subfolder name under the variation directory.
+            Zero-based repetition index within this variant.
+            Controls the "iter_<N>" subfolder name under the variant directory.
             where "N = iteration + 1".
         source : Source
             Source object describing the benchmark script being executed.
