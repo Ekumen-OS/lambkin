@@ -20,8 +20,10 @@ Provides the decorators used to define and configure benchmark functions:
   them into "ctx.options".
 """
 
-from .option import option
+# from .option import option
+# from .benchmark import benchmark
 
-__all__ = [
-    "option",
-]
+# __all__ = [
+#     "option",
+#     "benchmark",
+# ]
