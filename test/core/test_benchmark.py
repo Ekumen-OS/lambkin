@@ -117,3 +117,16 @@ def test_benchmark_source_path_points_to_benchmark_script(variants):
 
     fn()
     assert contexts[0].source.path == Path(__file__)
+
+
+def test_benchmark_options_injected_via_args(variants):
+    """CLI args passed explicitly to wrapper() override decorator defaults."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    @option("--clock-rate", default=100.0)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(args=["--clock-rate", "50.0"])
+    assert contexts[0].options.clock_rate == 50.0
