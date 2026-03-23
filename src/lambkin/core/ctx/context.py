@@ -121,7 +121,7 @@ class Context:
             Runtime options, as defined by the user.
             All key-value pairs are exposed as attributes on "ctx.options".
         variant_index : int, optional
-            Zero-based index of this variation within the benchmark sweep.
+            Zero-based index of this variant within the benchmark sweep.
             Controls the "var_<N>" subfolder name under the output directory,
             where "N = variant_index + 1". Defaults to 0.
         output_dir : Path or str, optional
