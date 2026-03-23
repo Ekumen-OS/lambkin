@@ -151,6 +151,12 @@ class Context:
         # ctx.iteration
         self.iteration = iteration
 
+        # TODO: Consider moving path construction logic into OutputInfo itself,
+        # giving it a constructor that takes base_dir, variation_index, and
+        # iteration and derives variation_dir and iteration_dir internally. This
+        # would make OutputInfo a cohesive object that owns everything
+        # path-related.
+
         # ctx.output
         base = (
             Path(output_dir)

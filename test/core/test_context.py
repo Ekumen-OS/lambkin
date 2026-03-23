@@ -212,9 +212,10 @@ def test_iteration_stored(tmp_path, base_variant, base_options, base_source, ite
 
 
 def test_context_default_output_dir(tmp_path):
-    """When output_dir is not provided.
+    """Default output_dir resolves relative to the benchmark script.
 
-    It defaults to source.path.parent / OutputInfo.BENCHMARKS_DIRNAME.
+    When output_dir is not provided, it defaults to source.path.parent /
+    OutputInfo.BENCHMARKS_DIRNAME.
     """
     script = tmp_path / "my_benchmark.py"
     script.touch()
