@@ -24,8 +24,8 @@ from lambkin.core.ctx.source import Source
 
 
 @pytest.fixture
-def base_variation():
-    """Return a base variation dict for testing."""
+def base_variant():
+    """Return a base variant dict for testing."""
     return {"sensor_model": "beam", "num_particles": 10}
 
 
@@ -42,10 +42,10 @@ def base_source():
 
 
 @pytest.fixture
-def ctx(tmp_path, base_variation, base_options, base_source):
+def ctx(tmp_path, base_variant, base_options, base_source):
     """Return a fully constructed Context instance for testing."""
     return Context(
-        variation=base_variation,
+        variant=base_variant,
         iteration=0,
         output_dir=tmp_path,
         options=base_options,
@@ -54,7 +54,7 @@ def ctx(tmp_path, base_variation, base_options, base_source):
 
 
 @pytest.mark.parametrize(
-    "variation, iteration, variation_index, expected_sensor, expected_particles",
+    "variant, iteration, variant_index, expected_sensor, expected_particles",
     [
         ({"sensor_model": "beam", "num_particles": 10}, 0, 0, "beam", 10),
         (
@@ -71,34 +71,34 @@ def test_output_dirs_are_created_on_instantiation(
     tmp_path,
     base_options,
     base_source,
-    variation,
+    variant,
     iteration,
-    variation_index,
+    variant_index,
     expected_sensor,
     expected_particles,
 ):
     """variation_dir and iteration_dir are created on disk on instantiation."""
     ctx = Context(
-        variation=variation,
+        variant=variant,
         iteration=iteration,
         output_dir=tmp_path,
         options=base_options,
         source=base_source,
-        variation_index=variation_index,
+        variant_index=variant_index,
     )
-    expected_variation_dir = tmp_path / f"var_{variation_index + 1}"
-    expected_iteration_dir = expected_variation_dir / f"iter_{iteration + 1}"
+    expected_variant_dir = tmp_path / f"var_{variant_index + 1}"
+    expected_iteration_dir = expected_variant_dir / f"iter_{iteration + 1}"
 
-    assert ctx.output.variation_dir == expected_variation_dir
+    assert ctx.output.variant_dir == expected_variant_dir
     assert ctx.output.iteration_dir == expected_iteration_dir
-    assert ctx.output.variation_dir.exists()
+    assert ctx.output.variant_dir.exists()
     assert ctx.output.iteration_dir.exists()
-    assert ctx.variation.sensor_model == expected_sensor
-    assert ctx.variation.num_particles == expected_particles
+    assert ctx.variant.sensor_model == expected_sensor
+    assert ctx.variant.num_particles == expected_particles
 
 
 @pytest.mark.parametrize(
-    "variation, expected_attrs",
+    "variant, expected_attrs",
     [
         (
             {"sensor_model": "beam", "num_particles": 10},
@@ -119,18 +119,18 @@ def test_output_dirs_are_created_on_instantiation(
     ],
 )
 def test_variation_attributes(
-    tmp_path, base_options, base_source, variation, expected_attrs
+    tmp_path, base_options, base_source, variant, expected_attrs
 ):
     """ctx.variation exposes all key-value pairs from the variation dict."""
     ctx = Context(
-        variation=variation,
+        variant=variant,
         iteration=0,
         output_dir=tmp_path,
         options=base_options,
         source=base_source,
     )
     for key, value in expected_attrs.items():
-        assert getattr(ctx.variation, key) == value
+        assert getattr(ctx.variant, key) == value
 
 
 @pytest.mark.parametrize(
@@ -152,7 +152,7 @@ def test_variation_attributes(
 )
 def test_options_attributes(
     tmp_path,
-    base_variation,
+    base_variant,
     base_source,
     options,
     expected_clock,
@@ -161,7 +161,7 @@ def test_options_attributes(
 ):
     """ctx.options exposes clock, qos_option_path and rate correctly."""
     ctx = Context(
-        variation=base_variation,
+        variant=base_variant,
         iteration=0,
         output_dir=tmp_path,
         options=options,
@@ -199,12 +199,10 @@ def test_inputs_can_be_dynamically_populated(ctx):
 
 
 @pytest.mark.parametrize("iteration", [0, 1, 5, 42])
-def test_iteration_stored(
-    tmp_path, base_variation, base_options, base_source, iteration
-):
+def test_iteration_stored(tmp_path, base_variant, base_options, base_source, iteration):
     """ctx.iteration stores the zero-based repetition index."""
     ctx = Context(
-        variation=base_variation,
+        variant=base_variant,
         iteration=iteration,
         output_dir=tmp_path,
         options=base_options,
