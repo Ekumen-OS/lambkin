@@ -22,6 +22,7 @@ pair.
 
 """
 
+import functools
 import inspect
 import sys
 
@@ -59,6 +60,7 @@ def benchmark(variants, num_iterations):
     """
 
     def decorator(fn):
+        @functools.wraps(fn)
         def wrapper(args=None):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
