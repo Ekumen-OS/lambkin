@@ -33,27 +33,31 @@ class OutputInfo:
 
     Attributes:
     ----------
+    base_dir :
+        Base output folder for benchmark.(e.g. results/).
     variant_dir:
         Root folder for this variant (e.g.
         results/var_1/).
     iteration_dir:
-        Folder for the current iteration (e.g.
-        results/var_1/iter_1/).
+        Folder for the current iteration (e.g. results/var_1/iter_1/).
     """
 
-    def __init__(self, variant_dir: Path, iteration_dir: Path) -> None:
+    def __init__(self, base_dir: Path, variant_dir: Path, iteration_dir: Path) -> None:
         """Initialize the output paths for one (variant, iteration) pair.
 
         Parameters
         ----------
+        base_dir : Path
+            Base output folder for benchmark.(e.g. results/).
         variant_dir : Path
             Root output folder for this variant
             (e.g. results/var_1/).
         iteration_dir : Path
-            Output folder for the current iteration
-            (e.g. results/var_1/iter_1/).
+            Output folder for the current iteration (e.g.
+            results/var_1/iter_1/).
         """
         self.variant_dir = Path(variant_dir)
+        self.base_dir = Path(base_dir)
         self.iteration_dir = Path(iteration_dir)
 
 
@@ -76,7 +80,9 @@ class Context:
 
     Attributes:
     ----------
-    variant:
+    BENCHMARKS_DIRNAME : str
+        Name for the benchmarks directory.
+    variation:
         Namespaced algorithm parameters for this run.
         All key-value pairs from the variant dict are exposed as attributes.
     source:
@@ -90,14 +96,16 @@ class Context:
         Namespaced output paths.
     """
 
+    BENCHMARKS_DIRNAME = "results"
+
     def __init__(
         self,
         variant: dict[str, Any],
         iteration: int,
-        output_dir: Path | str,
         options: dict[str, Any],
         source: Source,
         variant_index: int = 0,
+        output_dir: Path | str | None = None,
     ) -> None:
         """Initialize a Context for one (variant, iteration) benchmark run.
 
@@ -143,11 +151,22 @@ class Context:
         # ctx.iteration
         self.iteration = iteration
 
+        # TODO: Consider moving path construction logic into OutputInfo itself,
+        # giving it a constructor that takes base_dir, variation_index, and
+        # iteration and derives variation_dir and iteration_dir internally. This
+        # would make OutputInfo a cohesive object that owns everything
+        # path-related.
+
         # ctx.output
-        base = Path(output_dir) if output_dir else source.path.parent / "results"
+        base = (
+            Path(output_dir)
+            if output_dir
+            else source.path.parent / Context.BENCHMARKS_DIRNAME
+        )
         variant_dir = base / _variant_folder_name(variant_index)
         iteration_dir = variant_dir / _iteration_folder_name(iteration)
         self.output = OutputInfo(
+            base_dir=base,
             variant_dir=variant_dir,
             iteration_dir=iteration_dir,
         )
