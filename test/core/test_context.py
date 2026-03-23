@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from lambkin.core.ctx.context import Context
+from lambkin.core.ctx.context import Context, OutputInfo
 from lambkin.core.ctx.source import Source
 
 
@@ -214,7 +214,7 @@ def test_iteration_stored(tmp_path, base_variant, base_options, base_source, ite
 def test_context_default_output_dir(tmp_path):
     """When output_dir is not provided.
 
-    It defaults to source.path.parent /"results".
+    It defaults to source.path.parent / OutputInfo.BENCHMARKS_DIRNAME.
     """
     script = tmp_path / "my_benchmark.py"
     script.touch()
@@ -226,4 +226,4 @@ def test_context_default_output_dir(tmp_path):
         options={},
         source=source,
     )
-    assert ctx.output.variation_dir.parent == tmp_path / "results"
+    assert ctx.output.base_dir == tmp_path / OutputInfo.BENCHMARKS_DIRNAME

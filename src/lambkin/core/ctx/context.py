@@ -33,27 +33,31 @@ class OutputInfo:
 
     Attributes:
     ----------
+    base_dir :
+        Base output folder for benchmark.(e.g. results/).
     variant_dir:
         Root folder for this variant (e.g.
         results/var_1/).
     iteration_dir:
-        Folder for the current iteration (e.g.
-        results/var_1/iter_1/).
+        Folder for the current iteration (e.g. results/var_1/iter_1/).
     """
 
-    def __init__(self, variant_dir: Path, iteration_dir: Path) -> None:
+    def __init__(self, base_dir: Path, variant_dir: Path, iteration_dir: Path) -> None:
         """Initialize the output paths for one (variant, iteration) pair.
 
         Parameters
         ----------
+        base_dir : Path
+            Base output folder for benchmark.(e.g. results/).
         variant_dir : Path
             Root output folder for this variant
             (e.g. results/var_1/).
         iteration_dir : Path
-            Output folder for the current iteration
-            (e.g. results/var_1/iter_1/).
+            Output folder for the current iteration (e.g.
+            results/var_1/iter_1/).
         """
         self.variant_dir = Path(variant_dir)
+        self.base_dir = Path(base_dir)
         self.iteration_dir = Path(iteration_dir)
 
 
@@ -144,10 +148,15 @@ class Context:
         self.iteration = iteration
 
         # ctx.output
-        base = Path(output_dir) if output_dir else source.path.parent / "results"
+        base = (
+            Path(output_dir)
+            if output_dir
+            else source.path.parent / Context.BENCHMARKS_DIRNAME
+        )
         variant_dir = base / _variant_folder_name(variant_index)
         iteration_dir = variant_dir / _iteration_folder_name(iteration)
         self.output = OutputInfo(
+            base_dir=base,
             variant_dir=variant_dir,
             iteration_dir=iteration_dir,
         )
