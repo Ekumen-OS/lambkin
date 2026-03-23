@@ -209,3 +209,22 @@ def test_iteration_stored(tmp_path, base_variant, base_options, base_source, ite
         source=base_source,
     )
     assert ctx.iteration == iteration
+
+
+def test_context_default_output_dir(tmp_path):
+    """Default output_dir resolves relative to the benchmark script.
+
+    When output_dir is not provided, it defaults to source.path.parent /
+    Context.BENCHMARKS_DIRNAME.
+    """
+    script = tmp_path / "my_benchmark.py"
+    script.touch()
+
+    source = Source(path=script)
+    ctx = Context(
+        variant={"sensor_model": "beam", "num_particles": 10},
+        iteration=0,
+        options={},
+        source=source,
+    )
+    assert ctx.output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
