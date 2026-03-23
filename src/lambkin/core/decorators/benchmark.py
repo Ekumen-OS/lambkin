@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Benchmark loop decorator for lambkin."""
+"""Benchmark loop decorator for lambkin.
+
+Provides the @benchmark decorator, which drives the execution loopover all
+variants and iterations. It collects CLI option definitions registered by
+@option, parses them once before the loop using an internal click parser, and
+injects the resulting values into a Context class on each (variation, iteration)
+pair.
+
+"""
 
 import inspect
 import sys
