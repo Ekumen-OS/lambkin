@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from lambkin.core.decorators.benchmark import benchmark
+from lambkin.core.decorators.benchmark import _parse_options, benchmark
 from lambkin.core.decorators.option import option
 
 
@@ -29,6 +29,40 @@ def variants():
         {"sensor_model": "beam", "num_particles": 10},
         {"sensor_model": "likelihood", "num_particles": 100},
     ]
+
+
+def test_parse_options_returns_empty_dict_when_no_options():
+    """_parse_options returns empty dict when fn has no __lambkin_options__."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert result == {}
+
+
+def test_parse_options_returns_defaults_when_no_args():
+    """_parse_options returns default values when no CLI args are provided."""
+
+    @option("--clock-rate", default=100.0)
+    @option("--sensor-topic", default="/scan")
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert result == {"clock_rate": 100.0, "sensor_topic": "/scan"}
+
+
+def test_parse_options_returns_cli_values_when_provided():
+    """_parse_options returns CLI values when args are provided."""
+
+    @option("--clock-rate", default=100.0)
+    @option("--sensor-topic", default="/scan")
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--clock-rate", "50.0"])
+    assert result == {"clock_rate": 50.0, "sensor_topic": "/scan"}
 
 
 def test_benchmark_loops_over_variants_and_iterations(variants):
