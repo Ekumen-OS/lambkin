@@ -63,19 +63,17 @@ def benchmark(variants, num_iterations):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             source = Source(path=inspect.getfile(fn))
-            for variation_index, variation in enumerate(variants):
+            for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
                     ctx = Context(
-                        # TODO(teresa-ortega): change the name variation.
-                        # variation-> variant.
-                        variation=variation,
+                        variant=variant,
                         iteration=iteration,
                         output_dir=".",
                         # TODO(teresa-ortega): change the output_dir
                         # implementation.
                         options=options,
                         source=source,
-                        variation_index=variation_index,
+                        variant_index=variant_index,
                     )
                     fn(ctx)
 

@@ -66,7 +66,7 @@ def test_parse_options_returns_cli_values_when_provided():
 
 
 def test_benchmark_loops_over_variants_and_iterations(variants):
-    """Benchmark calls fn once per (variation, iteration) pair."""
+    """Benchmark calls fn once per (variant, iteration) pair."""
     calls = []
 
     @benchmark(variants=variants, num_iterations=3)
@@ -77,8 +77,8 @@ def test_benchmark_loops_over_variants_and_iterations(variants):
     assert len(calls) == 6
 
 
-def test_benchmark_variation_attributes_are_correct(variants):
-    """ctx.variation exposes the variant dict as attributes."""
+def test_benchmark_variant_attributes_are_correct(variants):
+    """ctx.variant exposes the variant dict as attributes."""
     contexts = []
 
     @benchmark(variants=variants, num_iterations=1)
@@ -86,10 +86,10 @@ def test_benchmark_variation_attributes_are_correct(variants):
         contexts.append(ctx)
 
     fn()
-    assert contexts[0].variation.sensor_model == "beam"
-    assert contexts[0].variation.num_particles == 10
-    assert contexts[1].variation.sensor_model == "likelihood"
-    assert contexts[1].variation.num_particles == 100
+    assert contexts[0].variant.sensor_model == "beam"
+    assert contexts[0].variant.num_particles == 10
+    assert contexts[1].variant.sensor_model == "likelihood"
+    assert contexts[1].variant.num_particles == 100
 
 
 def test_benchmark_options_defaults_injected(variants):
