@@ -66,9 +66,13 @@ def benchmark(variants, num_iterations):
             for variation_index, variation in enumerate(variants):
                 for iteration in range(num_iterations):
                     ctx = Context(
+                        # TODO(teresa-ortega): change the name variation.
+                        # variation-> variant.
                         variation=variation,
                         iteration=iteration,
                         output_dir=".",
+                        # TODO(teresa-ortega): change the output_dir
+                        # implementation.
                         options=options,
                         source=source,
                         variation_index=variation_index,
