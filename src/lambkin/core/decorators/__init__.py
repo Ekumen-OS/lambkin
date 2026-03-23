@@ -18,12 +18,8 @@ Provides the decorators used to define and configure benchmark functions:
 
 - @lambkin.option : registers CLI options so the @benchmark decorator can inject
   them into "ctx.options".
+
+- @lambkin.benchmark : It collects CLI option definitions registered by @option,
+  parses them once before the loop using an internal click parser, and injects
+  the resulting values into a Context class on each (variation, iteration)
 """
-
-# from .option import option
-# from .benchmark import benchmark
-
-# __all__ = [
-#     "option",
-#     "benchmark",
-# ]
