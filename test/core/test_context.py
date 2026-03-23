@@ -215,14 +215,14 @@ def test_context_default_output_dir(tmp_path):
     """Default output_dir resolves relative to the benchmark script.
 
     When output_dir is not provided, it defaults to source.path.parent /
-    OutputInfo.BENCHMARKS_DIRNAME.
+    Context.BENCHMARKS_DIRNAME.
     """
     script = tmp_path / "my_benchmark.py"
     script.touch()
 
     source = Source(path=script)
     ctx = Context(
-        variation={"sensor_model": "beam", "num_particles": 10},
+        variant={"sensor_model": "beam", "num_particles": 10},
         iteration=0,
         options={},
         source=source,
