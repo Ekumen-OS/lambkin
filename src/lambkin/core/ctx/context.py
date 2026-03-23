@@ -80,7 +80,9 @@ class Context:
 
     Attributes:
     ----------
-    variant:
+    BENCHMARKS_DIRNAME : str
+        Name for the benchmarks directory.
+    variation:
         Namespaced algorithm parameters for this run.
         All key-value pairs from the variant dict are exposed as attributes.
     source:
@@ -93,6 +95,8 @@ class Context:
     output:
         Namespaced output paths.
     """
+
+    BENCHMARKS_DIRNAME = "results"
 
     def __init__(
         self,

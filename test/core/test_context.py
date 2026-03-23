@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from lambkin.core.ctx.context import Context, OutputInfo
+from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 
 
@@ -226,4 +226,4 @@ def test_context_default_output_dir(tmp_path):
         options={},
         source=source,
     )
-    assert ctx.output.base_dir == tmp_path / OutputInfo.BENCHMARKS_DIRNAME
+    assert ctx.output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
