@@ -25,9 +25,9 @@ Provides the decorators used to define and configure benchmark functions:
 """
 
 from .benchmark import benchmark
-from .option import Option
+from .option import option
 
 __all__ = [
-    "Option",
+    "option",
     "benchmark",
 ]
