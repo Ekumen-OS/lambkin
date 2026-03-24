@@ -15,9 +15,12 @@
 """Unit tests for the benchmark decorator in lambkin.core.decorators."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from lambkin.core.ctx.context import Context
+from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.benchmark import _parse_options, benchmark
 from lambkin.core.decorators.option import option
 
@@ -65,7 +68,19 @@ def test_parse_options_returns_cli_values_when_provided():
     assert result == {"clock_rate": 50.0, "sensor_topic": "/scan"}
 
 
-def test_benchmark_loops_over_variants_and_iterations(variants):
+def test_benchmark_preserves_metadata(variants, tmp_path):
+    """@benchmark preserves the decorated function's name and docstring."""
+
+    @benchmark(variants=variants, num_iterations=1)
+    def my_cool_benchmark(ctx):
+        """Standard docstring."""
+        pass
+
+    assert my_cool_benchmark.__name__ == "my_cool_benchmark"
+    assert my_cool_benchmark.__doc__ == "Standard docstring."
+
+
+def test_benchmark_loops_over_variants_and_iterations(variants, tmp_path):
     """Benchmark calls fn once per (variant, iteration) pair."""
     calls = []
 
@@ -73,11 +88,11 @@ def test_benchmark_loops_over_variants_and_iterations(variants):
     def fn(ctx):
         calls.append(ctx)
 
-    fn()
+    fn(output_dir=tmp_path)
     assert len(calls) == 6
 
 
-def test_benchmark_variant_attributes_are_correct(variants):
+def test_benchmark_variant_attributes_are_correct(variants, tmp_path):
     """ctx.variant exposes the variant dict as attributes."""
     contexts = []
 
@@ -85,14 +100,14 @@ def test_benchmark_variant_attributes_are_correct(variants):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn()
+    fn(output_dir=tmp_path)
     assert contexts[0].variant.sensor_model == "beam"
     assert contexts[0].variant.num_particles == 10
     assert contexts[1].variant.sensor_model == "likelihood"
     assert contexts[1].variant.num_particles == 100
 
 
-def test_benchmark_options_defaults_injected(variants):
+def test_benchmark_options_defaults_injected(variants, tmp_path):
     """Default option values are injected into ctx.options."""
     contexts = []
 
@@ -102,24 +117,12 @@ def test_benchmark_options_defaults_injected(variants):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn()
+    fn(output_dir=tmp_path)
     assert contexts[0].options.clock_rate == 100.0
     assert contexts[0].options.sensor_topic == "/scan"
 
 
-def test_benchmark_source_path_points_to_benchmark_script(variants):
-    """Source.path points to the file where the benchmark function is defined."""
-    contexts = []
-
-    @benchmark(variants=variants, num_iterations=1)
-    def fn(ctx):
-        contexts.append(ctx)
-
-    fn()
-    assert contexts[0].source.path == Path(__file__)
-
-
-def test_benchmark_options_injected_via_args(variants):
+def test_benchmark_options_injected_via_args(variants, tmp_path):
     """CLI args passed explicitly to wrapper() override decorator defaults."""
     contexts = []
 
@@ -128,5 +131,35 @@ def test_benchmark_options_injected_via_args(variants):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn(args=["--clock-rate", "50.0"])
+    fn(args=["--clock-rate", "50.0"], output_dir=tmp_path)
     assert contexts[0].options.clock_rate == 50.0
+
+
+def test_benchmark_source_path_points_to_benchmark_script(variants, tmp_path):
+    """Source.path points to the file where the benchmark function is defined."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(output_dir=tmp_path)
+    assert contexts[0].source.path == Path(__file__)
+
+
+def test_benchmark_default_output_dir_uses_source_path(variants, tmp_path):
+    """When output_dir=None, output is resolved relative to the source path."""
+    contexts = []
+    fake_script = tmp_path / "my_benchmark.py"
+    fake_script.touch()
+    fake_source = Source(path=fake_script)
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    with patch("lambkin.core.decorators.benchmark.Source", return_value=fake_source):
+        fn()
+
+    assert contexts[0].output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
+    assert contexts[0].source.path == fake_script
