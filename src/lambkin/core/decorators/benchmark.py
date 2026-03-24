@@ -61,7 +61,7 @@ def benchmark(variants, num_iterations):
 
     def decorator(fn):
         @functools.wraps(fn)
-        def wrapper(args=None):
+        def wrapper(args=None, output_dir=None):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             source = Source(path=inspect.getfile(fn))
@@ -70,9 +70,7 @@ def benchmark(variants, num_iterations):
                     ctx = Context(
                         variant=variant,
                         iteration=iteration,
-                        output_dir=".",
-                        # TODO(teresa-ortega): change the output_dir
-                        # implementation.
+                        output_dir=output_dir,
                         options=options,
                         source=source,
                         variant_index=variant_index,
