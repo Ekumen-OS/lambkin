@@ -21,5 +21,5 @@ Provides the decorators used to define and configure benchmark functions:
 
 - @lambkin.benchmark : It collects CLI option definitions registered by @option,
   parses them once before the loop using an internal click parser, and injects
-  the resulting values into a Context class on each (variation, iteration)
+  the resulting values into a Context class on each (variant, iteration)
 """
