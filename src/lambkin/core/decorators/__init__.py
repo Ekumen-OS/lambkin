@@ -23,3 +23,11 @@ Provides the decorators used to define and configure benchmark functions:
   parses them once before the loop using an internal click parser, and injects
   the resulting values into a Context class on each (variant, iteration)
 """
+
+from .benchmark import benchmark
+from .option import Option
+
+__all__ = [
+    "Option",
+    "benchmark",
+]
