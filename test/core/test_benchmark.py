@@ -163,3 +163,17 @@ def test_benchmark_default_output_dir_uses_source_path(variants, tmp_path):
 
     assert contexts[0].output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
     assert contexts[0].source.path == fake_script
+
+
+def test_benchmark_empty_variants_raises_error(tmp_path):
+    """Calling a benchmark with an empty variants list raises an exception."""
+    expected_message = (
+        "You have provided an empty variants list; therefore, no "
+        "benchmarking iterations will be executed."
+    )
+
+    with pytest.raises(ValueError, match=expected_message):
+
+        @benchmark(variants=[], num_iterations=1)
+        def fn(ctx):
+            pass

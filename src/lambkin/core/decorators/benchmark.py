@@ -58,6 +58,11 @@ def benchmark(variants, num_iterations):
         Number of times to repeat each variant. Controls the iter_<N>
         subfolders under each variant directory.
     """
+    if not variants:
+        raise ValueError(
+            "You have provided an empty variants list; therefore, no "
+            "benchmarking iterations will be executed."
+        )
 
     def decorator(fn):
         @functools.wraps(fn)
