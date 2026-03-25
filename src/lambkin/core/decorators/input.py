@@ -14,29 +14,25 @@
 
 """Input decorator for lambkin."""
 
-import functools
 
+class InputRegistry:
+    """Manages the registration and resolution of input hooks for a benchmark."""
 
-def input(hook):
-    """Wrap a benchmark function to inject an input into ``ctx.inputs``.
+    def __init__(self):
+        """Initialize the InputRegistry."""
+        self._hooks = []
 
-    Uses :func:`inspect.getfile` to read the hook name and injects
-    the return value into ``ctx.inputs.<name>`` before the benchmark runs.
+    def register(self, hook_fn):
+        """Decorator used to register a function as an input provider."""
+        self._hooks.append(hook_fn)
+        return hook_fn
 
-    Parameters
-    ----------
-    hook : callable
-        Input resolver function. Must accept a single ``ctx`` argument
-        and return the input value to inject into ``ctx.inputs``.
-    """
+    def resolve(self, ctx):
+        """Resolve all registered input hooks.
 
-    def decorator(benchmark_fn):
-        @functools.wraps(benchmark_fn)
-        def wrapper(ctx):
-            setattr(ctx.inputs, hook.__name__, hook(ctx))
-            return benchmark_fn(ctx)
-
-        wrapper.__wrapped__ = benchmark_fn
-        return wrapper
-
-    return decorator
+        Executes all registered hooks and dynamically maps their return values
+        to the "ctx.inputs" namespace using the original function's name.
+        """
+        for hook in self._hooks:
+            result = hook(ctx)
+            setattr(ctx.inputs, hook.__name__, result)

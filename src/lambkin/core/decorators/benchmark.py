@@ -30,6 +30,7 @@ import click
 
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
+from lambkin.core.decorators.input import InputRegistry
 
 
 def _parse_options(fn, cli_args):
@@ -70,6 +71,8 @@ def benchmark(variants, num_iterations):
         )
 
     def decorator(fn):
+        inputs = InputRegistry()
+
         @functools.wraps(fn)
         def wrapper(args=None, output_dir=None):
             cli_args = sys.argv[1:] if args is None else args
@@ -85,8 +88,10 @@ def benchmark(variants, num_iterations):
                         variant_index=variant_index,
                         output_dir=output_dir,
                     )
+                    inputs.resolve(ctx)
                     fn(ctx)
 
+        wrapper.input = inputs.register
         return wrapper
 
     return decorator
