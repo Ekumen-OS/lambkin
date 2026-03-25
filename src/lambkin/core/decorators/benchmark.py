@@ -19,7 +19,7 @@ variants and iterations. It collects CLI option definitions registered by
 @option, parses them once before the loop using an internal click parser, and
 injects the resulting values into a Context class on each (variant, iteration)
 pair.
-
+Raises ValueError if variants is empty.
 """
 
 import functools
@@ -57,6 +57,11 @@ def benchmark(variants, num_iterations):
     num_iterations : int
         Number of times to repeat each variant. Controls the iter_<N>
         subfolders under each variant directory.
+
+    Raises:
+    ------
+    ValueError
+        If variants is empty
     """
     if not variants:
         raise ValueError(
