@@ -14,12 +14,11 @@
 
 """LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
 
-from lambkin.common.named_product import named_product
-from lambkin.core.decorators.benchmark import benchmark
-from lambkin.core.decorators.option import option
+from lambkin.common import named_product
+from lambkin.core.decorators import benchmark, option
 
 __all__ = [
-    "option",
     "benchmark",
     "named_product",
+    "option",
 ]
