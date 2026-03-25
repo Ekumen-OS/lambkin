@@ -13,3 +13,12 @@
 # limitations under the License.
 
 """LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+
+from lambkin.common import named_product
+from lambkin.core.decorators import benchmark, option
+
+__all__ = [
+    "benchmark",
+    "named_product",
+    "option",
+]
