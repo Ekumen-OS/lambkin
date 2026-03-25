@@ -13,3 +13,30 @@
 # limitations under the License.
 
 """Input decorator for lambkin."""
+
+import functools
+
+
+def input(hook):
+    """Wrap a benchmark function to inject an input into ``ctx.inputs``.
+
+    Uses :func:`inspect.getfile` to read the hook name and injects
+    the return value into ``ctx.inputs.<name>`` before the benchmark runs.
+
+    Parameters
+    ----------
+    hook : callable
+        Input resolver function. Must accept a single ``ctx`` argument
+        and return the input value to inject into ``ctx.inputs``.
+    """
+
+    def decorator(benchmark_fn):
+        @functools.wraps(benchmark_fn)
+        def wrapper(ctx):
+            setattr(ctx.inputs, hook.__name__, hook(ctx))
+            return benchmark_fn(ctx)
+
+        wrapper.__wrapped__ = benchmark_fn
+        return wrapper
+
+    return decorator
