@@ -70,10 +70,10 @@ def benchmark(variants, num_iterations):
                     ctx = Context(
                         variant=variant,
                         iteration=iteration,
-                        output_dir=output_dir,
                         options=options,
                         source=source,
                         variant_index=variant_index,
+                        output_dir=output_dir,
                     )
                     fn(ctx)
 
