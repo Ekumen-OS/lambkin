@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Input decorator for lambkin."""
+"""Input decorator for lambkin.
+
+Provides the class "InputRegistry" class, which manages the registration and
+resolution of input hooks for a benchmark function. Hooks are registered via the
+"InputRegistry.register" method and resolved before the benchmark function runs,
+injecting their return values into "ctx.inputs" under the hook's function name.
+"""
 
 
 class InputRegistry:
