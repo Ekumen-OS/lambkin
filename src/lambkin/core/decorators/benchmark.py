@@ -84,6 +84,16 @@ def benchmark(variants, num_iterations):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             source = Source(path=inspect.getfile(fn))
+            base_ctx = Context(
+                variant={},
+                iteration=0,
+                options=options,
+                source=source,
+                variant_index=0,
+                output_dir=output_dir,
+            )
+            inputs.resolve(base_ctx)
+            resolved_inputs = base_ctx.inputs
             for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
                     ctx = Context(
@@ -94,7 +104,7 @@ def benchmark(variants, num_iterations):
                         variant_index=variant_index,
                         output_dir=output_dir,
                     )
-                    inputs.resolve(ctx)
+                    ctx.inputs = resolved_inputs
                     fn(ctx)
 
         wrapper.input = inputs.register

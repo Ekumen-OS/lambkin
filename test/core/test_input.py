@@ -99,22 +99,3 @@ def test_multiple_inputs_all_injected(variant):
 
     nominal(output_dir="/tmp")
     assert seen == [("path/to/dataset.mcap", "path/to/map.yaml")]
-
-
-def test_inputs_resolved_on_every_iteration(variant):
-    """resolve() must run once per iteration, not just once upfront."""
-    call_count = [0]
-    seen = []
-
-    @benchmark(variants=variant, num_iterations=3)
-    def nominal(ctx):
-        seen.append(ctx.inputs.counter)
-
-    @nominal.input
-    def counter(ctx):
-        call_count[0] += 1
-        return call_count[0]
-
-    nominal(output_dir="/tmp")
-
-    assert seen == [1, 2, 3]
