@@ -23,12 +23,6 @@ injecting their return values into "ctx.inputs" under the hook's function name.
 import inspect
 
 
-class InputRegistryError(Exception):
-    """Raised when a critical input registry error occurs."""
-
-    pass
-
-
 def _validate_result(hook_fn, result) -> None:
     """Validate the return value of a hook function."""
     if result is None:
