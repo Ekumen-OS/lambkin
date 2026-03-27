@@ -16,6 +16,7 @@
 
 import pytest
 
+from lambkin.core.ctx import Context
 from lambkin.core.decorators.benchmark import benchmark
 from lambkin.core.decorators.input import InputRegistry
 
@@ -49,20 +50,82 @@ def test_registered_hook_name_is_preserved():
     assert registry._hooks[0].__name__ == "my_dataset"
 
 
-def test_two_hooks_registered_in_order():
-    """Hooks are stored in registration order."""
+def test_hook_with_no_parameters_raises():
+    """A hook with no parameters raises ValueError at resolve time."""
     registry = InputRegistry()
+    ctx = Context.__new__(Context)
+
+    def bad_hook():
+        return "value"
+
+    registry.register(bad_hook)
+    with pytest.raises(ValueError, match="exactly 1 parameter"):
+        registry.resolve(ctx)
+
+
+def test_hook_with_extra_parameters_raises():
+    """A hook with more than 1 parameter raises ValueError at resolve time."""
+    registry = InputRegistry()
+    ctx = Context.__new__(Context)
+
+    def bad_hook(ctx, extra):
+        return "value"
+
+    registry.register(bad_hook)
+    with pytest.raises(ValueError, match="exactly 1 parameter"):
+        registry.resolve(ctx)
+
+
+def test_hook_returning_none_raises():
+    """A hook that returns None raises ValueError."""
+    registry = InputRegistry()
+    ctx = Context.__new__(Context)
 
     def dataset(ctx):
-        return "d"
-
-    def map(ctx):
-        return "m"
+        return None
 
     registry.register(dataset)
-    registry.register(map)
+    with pytest.raises(ValueError, match="None"):
+        registry.resolve(ctx)
 
-    assert [h.__name__ for h in registry._hooks] == ["dataset", "map"]
+
+def test_hook_with_no_return_raises():
+    """A hook with no return statement raises ValueError."""
+    registry = InputRegistry()
+    ctx = Context.__new__(Context)
+
+    def dataset(ctx):
+        pass
+
+    registry.register(dataset)
+    with pytest.raises(ValueError, match="None"):
+        registry.resolve(ctx)
+
+
+def test_hook_returning_empty_string_raises():
+    """A hook that returns an empty string raises ValueError."""
+    registry = InputRegistry()
+    ctx = Context.__new__(Context)
+
+    def dataset(ctx):
+        return ""
+
+    registry.register(dataset)
+    with pytest.raises(ValueError, match="empty"):
+        registry.resolve(ctx)
+
+
+def test_hook_returning_blank_string_raises():
+    """A hook that returns a whitespace-only string raises ValueError."""
+    registry = InputRegistry()
+    ctx = Context.__new__(Context)
+
+    def dataset(ctx):
+        return "   "
+
+    registry.register(dataset)
+    with pytest.raises(ValueError, match="empty"):
+        registry.resolve(ctx)
 
 
 def test_ctx_inputs_populated_before_fn_runs(variant):
