@@ -20,6 +20,8 @@ resolution of input hooks for a benchmark function. Hooks are registered via the
 injecting their return values into "ctx.inputs" under the hook's function name.
 """
 
+import inspect
+
 
 class InputRegistryError(Exception):
     """Raised when a critical input registry error occurs."""
@@ -30,13 +32,21 @@ class InputRegistryError(Exception):
 def _validate_result(hook_fn, result) -> None:
     """Validate the return value of a hook function."""
     if result is None:
-        raise InputRegistryError(
+        raise ValueError(
             f"Hook '{hook_fn.__name__}' returned None or did not return a value."
         )
     if isinstance(result, str) and not result.strip():
-        raise InputRegistryError(
+        raise ValueError(
             f"Hook '{hook_fn.__name__}' returned an empty or blank string."
         )
+
+
+def _validate_hook_signature(hook_fn) -> None:
+    """Validate that the hook function accepts a single 'ctx' parameter."""
+    params = list(inspect.signature(hook_fn).parameters.keys())
+
+    if len(params) != 1:
+        raise ValueError(f"Hook '{hook_fn.__name__}' must have exactly 1 parameter, ")
 
 
 class InputRegistry:
@@ -50,7 +60,7 @@ class InputRegistry:
         """Decorator used to register a function as an input provider."""
         existing_names = [h.__name__ for h in self._hooks]
         if hook_fn.__name__ in existing_names:
-            raise InputRegistryError(
+            raise ValueError(
                 f"Hook name conflict: '{hook_fn.__name__}' is already registered."
             )
         self._hooks.append(hook_fn)
@@ -59,6 +69,7 @@ class InputRegistry:
     def resolve(self, ctx):
         """Resolve all registered input hooks."""
         for hook in self._hooks:
+            _validate_hook_signature(hook)
             result = hook(ctx)
             _validate_result(hook, result)
             setattr(ctx.inputs, hook.__name__, result)
