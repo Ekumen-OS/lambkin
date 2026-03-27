@@ -21,6 +21,24 @@ injecting their return values into "ctx.inputs" under the hook's function name.
 """
 
 
+class InputRegistryError(Exception):
+    """Raised when a critical input registry error occurs."""
+
+    pass
+
+
+def _validate_result(hook_fn, result) -> None:
+    """Validate the return value of a hook function."""
+    if result is None:
+        raise InputRegistryError(
+            f"Hook '{hook_fn.__name__}' returned None or did not return a value."
+        )
+    if isinstance(result, str) and not result.strip():
+        raise InputRegistryError(
+            f"Hook '{hook_fn.__name__}' returned an empty or blank string."
+        )
+
+
 class InputRegistry:
     """Manages the registration and resolution of input hooks for a benchmark."""
 
@@ -30,15 +48,17 @@ class InputRegistry:
 
     def register(self, hook_fn):
         """Decorator used to register a function as an input provider."""
+        existing_names = [h.__name__ for h in self._hooks]
+        if hook_fn.__name__ in existing_names:
+            raise InputRegistryError(
+                f"Hook name conflict: '{hook_fn.__name__}' is already registered."
+            )
         self._hooks.append(hook_fn)
         return hook_fn
 
     def resolve(self, ctx):
-        """Resolve all registered input hooks.
-
-        Executes all registered hooks and dynamically maps their return values
-        to the "ctx.inputs" namespace using the original function's name.
-        """
+        """Resolve all registered input hooks."""
         for hook in self._hooks:
             result = hook(ctx)
+            _validate_result(hook, result)
             setattr(ctx.inputs, hook.__name__, result)
