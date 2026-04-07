@@ -158,3 +158,28 @@ def test_multiple_inputs_all_injected(variant):
 
     nominal(output_dir="/tmp")
     assert seen == [("path/to/dataset.mcap", "path/to/map.yaml")]
+
+
+def test_input_hook_called_once_regardless_of_variants_and_iterations():
+    """Input hooks are resolved once, regardless of variants and iterations."""
+    call_count = 0
+
+    @benchmark(
+        variants=[
+            {"sensor_model": "beam", "num_particles": 10},
+            {"sensor_model": "lidar", "num_particles": 20},
+        ],
+        num_iterations=3,
+    )
+    def nominal(ctx):
+        pass
+
+    @nominal.input
+    def dataset(ctx):
+        nonlocal call_count
+        call_count += 1
+        return "path/to/dataset.mcap"
+
+    nominal(output_dir="/tmp")
+
+    assert call_count == 1
