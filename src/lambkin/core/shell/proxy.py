@@ -17,3 +17,50 @@
 Provides an abstraction over shell command dispatch, allowing benchmark
 processes to be launched and managed through a consistent interface.
 """
+
+from __future__ import annotations
+
+import shlex
+from typing import Any
+
+
+class _CommandProxy:
+    """Builds a shell command lazily by chaining attribute access and calls."""
+
+    def __init__(self, parts: list[str]) -> None:
+        """Initialize the proxy with the command words accumulated so far."""
+        self._parts = parts
+
+    def __getattr__(self, name: str) -> _CommandProxy:
+        """Append a new word to the command and return a new proxy."""
+        return _CommandProxy(self._parts + [name])
+
+    def __call__(self, *args: Any, **kwargs: Any) -> None:
+        """Finalize and print the command.
+
+        Positional args are appended as plain tokens. Keyword args are
+        converted to --flag value pairs, with underscores replaced by hyphens.
+        Boolean True values produce a standalone flag, False values are ignored.
+        """
+        extra = []
+
+        for arg in args:
+            extra.append(str(arg))
+
+        for key, value in kwargs.items():
+            flag = "--" + key.replace("_", "-")
+            if value is True:
+                extra.append(flag)
+            elif value is not False:
+                extra.extend([flag, shlex.quote(str(value))])
+
+        command = " ".join(self._parts + extra)
+        print(f"[CMD]: {command}")
+
+
+class ShellProxy:
+    """Dry-run mock shell that prints commands instead of executing them."""
+
+    def __getattr__(self, name: str) -> _CommandProxy:
+        """Start building a new command from the given top-level tool name."""
+        return _CommandProxy([name])
