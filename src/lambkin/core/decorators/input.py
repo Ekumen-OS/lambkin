@@ -52,6 +52,7 @@ class InputRegistry:
 
     def register(self, hook_fn):
         """Decorator used to register a function as an input provider."""
+        _validate_hook_signature(hook_fn)
         existing_names = [h.__name__ for h in self._hooks]
         if hook_fn.__name__ in existing_names:
             raise ValueError(
@@ -63,7 +64,6 @@ class InputRegistry:
     def resolve(self, ctx):
         """Resolve all registered input hooks."""
         for hook in self._hooks:
-            _validate_hook_signature(hook)
             result = hook(ctx)
             _validate_result(hook, result)
             setattr(ctx.inputs, hook.__name__, result)

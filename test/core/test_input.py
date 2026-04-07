@@ -53,27 +53,23 @@ def test_registered_hook_name_is_preserved():
 def test_hook_with_no_parameters_raises():
     """A hook with no parameters raises ValueError at resolve time."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
 
     def bad_hook():
         return "value"
 
-    registry.register(bad_hook)
     with pytest.raises(ValueError, match="exactly 1 parameter."):
-        registry.resolve(ctx)
+        registry.register(bad_hook)
 
 
 def test_hook_with_extra_parameters_raises():
     """A hook with more than 1 parameter raises ValueError at resolve time."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
 
     def bad_hook(ctx, extra):
         return "value"
 
-    registry.register(bad_hook)
     with pytest.raises(ValueError, match="exactly 1 parameter."):
-        registry.resolve(ctx)
+        registry.register(bad_hook)
 
 
 def test_hook_returning_none_raises():
