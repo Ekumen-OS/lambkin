@@ -40,7 +40,7 @@ def _validate_hook_signature(hook_fn) -> None:
     params = list(inspect.signature(hook_fn).parameters.keys())
 
     if len(params) != 1:
-        raise ValueError(f"Hook '{hook_fn.__name__}' must have exactly 1 parameter, ")
+        raise ValueError(f"Hook '{hook_fn.__name__}' must have exactly 1 parameter.")
 
 
 class InputRegistry:

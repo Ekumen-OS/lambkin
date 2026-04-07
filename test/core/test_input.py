@@ -59,7 +59,7 @@ def test_hook_with_no_parameters_raises():
         return "value"
 
     registry.register(bad_hook)
-    with pytest.raises(ValueError, match="exactly 1 parameter"):
+    with pytest.raises(ValueError, match="exactly 1 parameter."):
         registry.resolve(ctx)
 
 
@@ -72,7 +72,7 @@ def test_hook_with_extra_parameters_raises():
         return "value"
 
     registry.register(bad_hook)
-    with pytest.raises(ValueError, match="exactly 1 parameter"):
+    with pytest.raises(ValueError, match="exactly 1 parameter."):
         registry.resolve(ctx)
 
 
