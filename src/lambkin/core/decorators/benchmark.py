@@ -19,6 +19,11 @@ variants and iterations. It collects CLI option definitions registered by
 @option, parses them once before the loop using an internal click parser, and
 injects the resulting values into a Context class on each (variant, iteration)
 pair.
+
+Input hooks registered via "@nominal.input" are managed by "InputRegistry"
+instance and resolved before the benchmark function runs on each iteration,
+injecting their return values into "ctx.inputs".
+
 Raises ValueError if variants is empty.
 """
 
@@ -30,6 +35,7 @@ import click
 
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
+from lambkin.core.decorators.input import InputRegistry
 
 
 def _parse_options(fn, cli_args):
@@ -45,18 +51,19 @@ def _parse_options(fn, cli_args):
 def benchmark(variants, num_iterations):
     """Drive the benchmark execution loop over all variants and iterations.
 
-    Parses CLI options registered by @lambkin.option once before the loop,
-    then creates a Context for each (variant, iteration) pair and calls
-    the decorated function with it.
+    Parses CLI options registered by @lambkin.option once before the loop, then
+    creates a Context for each (variant, iteration) pair and calls the decorated
+    function with it. Input hooks registered via @nominal.input are resolved
+    before each call, injecting their return values into ctx.inputs.
 
     Parameters
     ----------
     variants : iterable of dict
-        Sequence of variant dicts to sweep over. Each dict is exposed
-        as attributes on ctx.variant.
+        Sequence of variant dicts to sweep over. Each dict is exposed as
+        attributes on ctx.variant.
     num_iterations : int
-        Number of times to repeat each variant. Controls the iter_<N>
-        subfolders under each variant directory.
+        Number of times to repeat each variant. Controls the iter_<N> subfolders
+        under each variant directory.
 
     Raises:
     ------
@@ -70,11 +77,23 @@ def benchmark(variants, num_iterations):
         )
 
     def decorator(fn):
+        inputs = InputRegistry()
+
         @functools.wraps(fn)
         def wrapper(args=None, output_dir=None):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             source = Source(path=inspect.getfile(fn))
+            base_ctx = Context(
+                variant={},
+                iteration=0,
+                options=options,
+                source=source,
+                variant_index=0,
+                output_dir=output_dir,
+            )
+            inputs.resolve(base_ctx)
+            resolved_inputs = base_ctx.inputs
             for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
                     ctx = Context(
@@ -85,8 +104,10 @@ def benchmark(variants, num_iterations):
                         variant_index=variant_index,
                         output_dir=output_dir,
                     )
+                    ctx.inputs = resolved_inputs
                     fn(ctx)
 
+        wrapper.input = inputs.register
         return wrapper
 
     return decorator
