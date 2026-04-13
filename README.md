@@ -40,4 +40,4 @@ LAMBKIN is algorithm-agnostic and middleware-agnostic by design. It has no knowl
 
 For concrete setups built on top of the SDK, see [`examples/`](examples/). Each example packages a specific system with its own environment and documentation, ready to run out of the box. They are fully optional — the SDK works independently of any of them.
 
-To get started with the SDK, see [`src/lambkin/README.md`](src/lambkin/README.md).
+To get started with the SDK, see [LAMBKIN SDK documentation](src/lambkin/README.md) to get started.
