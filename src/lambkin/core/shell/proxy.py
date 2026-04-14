@@ -38,9 +38,13 @@ class _CommandProxy:
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """Finalize and print the command.
 
-        Positional args are appended as plain tokens. Keyword args are
-        converted to --flag value pairs, with underscores replaced by hyphens.
-        Boolean True values produce a standalone flag, False values are ignored.
+        Positional args are appended as quoted tokens to handle paths with
+        spaces correctly. Keyword args are converted to --flag value pairs,
+        with underscores replaced by hyphens. Boolean True values produce a
+        standalone flag, False values are ignored.
+
+        This is a dry-run implementation that will be extended to dispatch
+        commands to BackgroundProcess for real execution.
         """
         extra = []
 
