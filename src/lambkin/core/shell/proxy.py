@@ -45,7 +45,7 @@ class _CommandProxy:
         extra = []
 
         for arg in args:
-            extra.append(str(arg))
+            extra.append(shlex.quote(str(arg)))
 
         for key, value in kwargs.items():
             flag = "--" + key.replace("_", "-")
