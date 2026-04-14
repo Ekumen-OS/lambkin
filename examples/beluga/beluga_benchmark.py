@@ -48,4 +48,5 @@ def nominal(ctx):
     ctx.shell.evo_ape.bag2("output.mcap", save_results="out.zip")
 
 
-nominal()
+if __name__ == "__main__":
+    nominal()
