@@ -22,7 +22,7 @@ from lambkin.core.shell import ShellProxy
 @pytest.fixture
 def shell():
     """Return a fresh ShellProxy instance for each test."""
-    return ShellProxy()
+    return ShellProxy(dry_run=True)
 
 
 def test_simple_command(shell, capsys):
