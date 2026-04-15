@@ -52,6 +52,16 @@ Make sure you have the following reference files available before running the be
 docker compose up -d lambkin_dev
 docker compose exec -it lambkin_dev bash
 ```
+Mount your reference files as volumes in `docker-compose.yml` before starting the container:
+
+```yaml
+volumes:
+  - /path/to/your/rosbag:/data/rosbag
+  - /path/to/your/map:/data/map
+  - /path/to/your/groundtruth:/data/groundtruth
+```
+
+> **Note:** Users are responsible for mounting their own reference files. The paths inside the container should match the ones used in the benchmark script.
 
 **2. Install ROS2 dependencies:**
 
@@ -83,3 +93,11 @@ source install/setup.bash
 ```bash
 uv run examples/beluga/beluga_benchmark.py
 ```
+
+By default, the benchmark runs in dry-run mode, printing the commands that would be executed without running them:
+
+```bash
+uv run examples/beluga/beluga_benchmark.py --dry-run
+```
+
+> **Note:** Real execution is not yet supported. The `--dry-run` flag is the only supported mode at this time.
