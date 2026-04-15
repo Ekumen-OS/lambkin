@@ -56,3 +56,30 @@ def test_arbitrary_tool(shell, capsys):
     """Test that any top-level tool name works without hardcoding."""
     shell.evo.traj("output.mcap")
     assert capsys.readouterr().out == "[CMD]: evo traj output.mcap\n"
+
+
+def test_kwarg_true_is_standalone_flag(shell, capsys):
+    """Test that a boolean True kwarg produces a standalone flag."""
+    shell.ros2.bag.play("my_bag", clock=True)
+    assert capsys.readouterr().out == "[CMD]: ros2 bag play my_bag --clock\n"
+
+
+def test_kwarg_false_is_ignored(shell, capsys):
+    """Test that a boolean False kwarg is ignored."""
+    shell.ros2.bag.play("my_bag", clock=False)
+    assert capsys.readouterr().out == "[CMD]: ros2 bag play my_bag\n"
+
+
+def test_path_with_spaces(shell, capsys):
+    """Test that positional args with spaces are correctly quoted."""
+    shell.ros2.bag.play("/my path/to/bag.mcap")
+    assert capsys.readouterr().out == "[CMD]: ros2 bag play '/my path/to/bag.mcap'\n"
+
+
+def test_kwarg_multiple_underscores_converted(shell, capsys):
+    """Test that multiple underscores in kwarg names are converted to dashes."""
+    shell.evo_ape.bag2("output.mcap", save_all_results="out.zip")
+    assert (
+        capsys.readouterr().out
+        == "[CMD]: evo_ape bag2 output.mcap --save-all-results out.zip\n"
+    )
