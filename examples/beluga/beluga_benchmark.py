@@ -40,7 +40,6 @@ def nominal(ctx):
     print(f"sensor_topic: {ctx.options.sensor_topic}")
     print(f"source: {ctx.source}")
     print("---")
-    ctx.shell = lambkin.ShellProxy(dry_run=ctx.options.dry_run)
     ctx.shell.ros2.launch(
         ctx.source.path.parent / "beluga.launch.xml",
         f"sensor_model:={ctx.variant.sensor_model}",

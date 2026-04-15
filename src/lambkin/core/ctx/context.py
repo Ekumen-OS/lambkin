@@ -178,7 +178,7 @@ class Context:
         # as parameters.
 
         # ctx.shell
-        self.shell = ShellProxy()
+        self.shell = ShellProxy(dry_run=getattr(self.options, "dry_run", False))
 
     def _setup_directories(self) -> None:
         """Create variant and iteration directories."""
