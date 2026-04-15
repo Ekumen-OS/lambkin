@@ -1,10 +1,27 @@
 services:
+
   lambkin_dev:
     build:
       context: ../../..
       dockerfile: examples/beluga/docker/Dockerfile
+      target: development
     image: lambkin_ros:jazzy
     container_name: lambkin_developer
     network_mode: "host"
     stdin_open: true
     tty: true
+    profiles: ["development"]
+    volumes:
+      - ../../..:/ws
+
+  lambkin_prod:
+    build:
+      context: ../../..
+      dockerfile: examples/beluga/docker/Dockerfile
+      target: production
+    image: lambkin_ros:jazzy
+    container_name: lambkin_production
+    network_mode: "host"
+    stdin_open: true
+    tty: true
+    profiles: ["production"]

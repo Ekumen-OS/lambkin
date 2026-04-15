@@ -1,7 +1,9 @@
-FROM ros:jazzy-ros-base
+# ── Stage 0: base ─────────────────────────────────────────
+FROM ros:jazzy-ros-base AS base
 
 RUN apt-get update && apt-get install -y \
     curl \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ws
@@ -13,8 +15,7 @@ RUN rosdep init || true \
 
 RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 
-COPY . .
-
-RUN pip install
-
+# ── Stage 1: development ───────────────────────────────────
+FROM base AS development
+# Code is mounted via volume in docker-compose, nothing is copied here
 CMD ["bash"]
