@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
+"""Shell subpackage for the lambkin SDK.
 
-from lambkin.common import named_product
-from lambkin.core.decorators import benchmark, option
-from lambkin.core.shell.proxy import ShellProxy
+Provides shell abstractions for executing system commands within benchmarks.
+Each shell implementation exposes the same interface, allowing benchmarks to
+switch between dry-run and real execution without changing any benchmark code.
+"""
+
+from .proxy import ShellProxy
 
 __all__ = [
-    "benchmark",
-    "named_product",
-    "option",
     "ShellProxy",
 ]

@@ -23,6 +23,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+from lambkin.core.shell import ShellProxy
+
 from .source import Source
 
 
@@ -176,7 +178,7 @@ class Context:
         # as parameters.
 
         # ctx.shell
-        # TODO(teresa-ortega): self.shell = Shell(self)
+        self.shell = ShellProxy(dry_run=getattr(self.options, "dry_run", False))
 
     def _setup_directories(self) -> None:
         """Create variant and iteration directories."""
