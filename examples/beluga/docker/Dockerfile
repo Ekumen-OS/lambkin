@@ -19,3 +19,19 @@ RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 FROM base AS development
 # Code is mounted via volume in docker-compose, nothing is copied here
 CMD ["bash"]
+
+# ── Stage 2: production ────────────────────────────────────
+FROM base AS production
+
+COPY . /ws/src/
+
+RUN /usr/bin/uv pip install /ws/src/ --system --break-system-packages \
+    && rm -rf /ws/src/README.md /ws/src/pyproject.toml
+
+RUN apt-get update \
+    && rosdep install --from-paths src --ignore-src -y \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN . /opt/ros/jazzy/setup.sh && colcon build
+
+CMD ["bash"]
