@@ -64,6 +64,10 @@ class _CommandProxy:
         if self._dry_run:
             # TODO: extend to dispatch commands to BackgroundProcess for real execution.
             print(f"[CMD]: {command}")
+        else:
+            raise NotImplementedError(
+                "Real execution is not yet supported, use dry_run=True."
+            )
 
 
 class ShellProxy:
