@@ -1,14 +1,6 @@
 # Beluga Example
 
-## Overview
-
-LAMBKIN (Localization And Mapping Benchmarking) is a programmatic SDK for building reproducible, structured, and parallelized SLAM evaluation pipelines.
-It moves away from complex automation "glue" in favor of a clean, Python-first approach to benchmarking.
-
-
-## Scope
-
-This example demonstrates how to use LAMBKIN with the Beluga AMCL localization algorithm, sweeping over different sensor models and particle counts, automatically evaluating trajectory accuracy, and aggregating results across all configurations.
+This directory is a worked example of a LAMBKIN benchmark pipeline applied to Beluga AMCL. It sweeps over different sensor models and particle counts, automatically evaluates trajectory accuracy, and aggregates results across all configurations. It is self-contained: it ships with its own ROS2 package, Docker environment, and benchmark script.
 
 ## ROS2 Beluga Example
 
@@ -46,13 +38,9 @@ Make sure you have the following reference files available before running the be
 
 ### Setup
 
-**1. Build and start the Docker container:**
+**1. Configure volume mounts**
 
-```bash
-docker compose up -d lambkin_dev
-docker compose exec -it lambkin_dev bash
-```
-Mount your reference files as volumes in `docker-compose.yml` before starting the container:
+Before starting the container, edit docker/docker-compose.yml to mount your reference files. Locate the volumes section and set the host paths accordingly:
 
 ```yaml
 volumes:
@@ -60,31 +48,40 @@ volumes:
   - /path/to/your/map:/data/map
   - /path/to/your/groundtruth:/data/groundtruth
 ```
+The paths inside the container must match those used in the benchmark script.
+**2. Start the container**
 
-> **Note:** Users are responsible for mounting their own reference files. The paths inside the container should match the ones used in the benchmark script.
-
-**2. Install ROS2 dependencies:**
-
+Two Docker profiles are available depending on your use case.
+#### Development
+The development profile mounts the repository as a volume, so code changes are reflected immediately without rebuilding the image. Dependencies are installed manually inside the container.
+**1. Start the container**
+```bash
+docker compose --profile development up -d
+docker compose --profile development exec lambkin_developer bash
+```
+**2. Install ROS2 dependencies**
 ```bash
 rosdep install --from-paths lambkin_ros2 --ignore-src -r -y
 ```
-
-**3. Install all dependencies (including lambkin):**
-
+**3. Install Python dependencies**
 ```bash
 uv sync
 ```
-
-This installs lambkin and all its dependencies into the environment. After this step, you can use `import lambkin` in any benchmark script without any additional configuration.
-
-**4. Build the workspace:**
-
+**4. Build the ROS2 workspace**
 ```bash
 colcon build --symlink-install
 source install/setup.bash
 ```
+#### Production
+The production profile builds a fully self-contained image. All dependencies are installed and the workspace is compiled at image build time — no manual steps are needed inside the container.
+**1. Build and start the container**
+```bash
+docker compose --profile production up -d
+docker compose --profile production exec lambkin_production bash
+```
+The image is ready to use immediately.
 
----
+
 
 ## Usage
 
@@ -93,11 +90,3 @@ source install/setup.bash
 ```bash
 uv run examples/beluga/beluga_benchmark.py
 ```
-
-By default, the benchmark runs in dry-run mode, printing the commands that would be executed without running them:
-
-```bash
-uv run examples/beluga/beluga_benchmark.py --dry-run
-```
-
-> **Note:** Real execution is not yet supported. The `--dry-run` flag is the only supported mode at this time.
