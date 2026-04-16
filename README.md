@@ -11,15 +11,14 @@ Most benchmarking systems are built around a specific algorithm, dataset format,
 
 LAMBKIN separates the orchestration machinery from the benchmark definition. The algorithm runs as an external process — LAMBKIN does not need to know what is inside it. Parameter sweeps, process lifecycle, I/O, and metric collection are all handled by the SDK, so your script stays focused on the benchmark logic.
 
-
 ## What it provides
 
-| Primitive | What it does |
+| | |
 |---|---|
-| **Process orchestration** | Launch, supervise, synchronize, and terminate external processes across the benchmark lifecycle |
-| **Named products** | Declare combinations of algorithms, datasets, and parameters; run them concurrently with results kept organized |
-| **Pipeline stages** | Structured ingestion (datasets), execution (processes), and egression (metrics), each independently composable |
-| **Context management** | Carry configuration, paths, and state through the pipeline without coupling stages to each other |
+| **Parameter sweeps** | Declare combinations of algorithms, datasets, and parameters and run them concurrently |
+| **Process lifecycle** | Launch, supervise, and terminate external processes automatically |
+| **Organized results** | Every run is written to a structured, traceable output directory |
+| **Reproducibility** | Benchmarks are defined as code — versionable and runnable by anyone with the same environment |
 
 
 ## Examples
