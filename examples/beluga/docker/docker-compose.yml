@@ -5,7 +5,7 @@ services:
       context: ../../..
       dockerfile: examples/beluga/docker/Dockerfile
       target: development
-    image: lambkin_ros:jazzy
+    image: lambkin_ros_dev_jazzy
     container_name: lambkin_developer
     network_mode: "host"
     stdin_open: true
@@ -19,7 +19,7 @@ services:
       context: ../../..
       dockerfile: examples/beluga/docker/Dockerfile
       target: production
-    image: lambkin_ros:jazzy
+    image: lambkin_ros_jazzy
     container_name: lambkin_production
     network_mode: "host"
     stdin_open: true
