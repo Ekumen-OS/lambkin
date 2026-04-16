@@ -2,8 +2,6 @@
 
 This is the LAMBKIN Python SDK — the core library for building SLAM evaluation pipelines. It provides the orchestration primitives you compose into your benchmark: process lifecycle management, parameter sweep execution, pipeline stages, and structured I/O.
 
----
-
 ## Architecture
 
 ### Output folder structure
@@ -19,14 +17,10 @@ results/
         └── ...
 ```
 
----
-
 ## Requirements
 
 - Python 3.10+
 - [`uv`](https://github.com/astral-sh/uv)
-
----
 
 ## Installation
 
@@ -36,8 +30,6 @@ Clone the repository and install the SDK dependencies:
 git clone git@github.com:Ekumen-OS/lambkin.git
 uv sync
 ```
-
----
 
 ## Getting started
 
@@ -52,8 +44,6 @@ A benchmark is structured around three stages:
 Each stage is a Python callable that receives a context object carrying configuration, paths, and state. You implement the logic; LAMBKIN sequences the stages, manages parallelism, and keeps results organized.
 
 See [`examples/beluga/beluga_benchmark.py`](examples/beluga/beluga_benchmark.py) for a working end-to-end example of a benchmark built on top of the SDK using the Beluga algorithm.
-
----
 
 ## Running the example
 

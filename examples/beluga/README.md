@@ -81,8 +81,6 @@ docker compose --profile production exec lambkin_production bash
 ```
 The image is ready to use immediately.
 
-
-
 ## Usage
 
 ### Running the benchmark
