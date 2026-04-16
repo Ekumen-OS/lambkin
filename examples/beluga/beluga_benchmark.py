@@ -34,12 +34,7 @@ def nominal(ctx):
     Args:
         ctx: Lambkin context with variant, options, source, and shell access.
     """
-    print(f"variation: {ctx.variant.sensor_model}, {ctx.variant.num_particles}")
-    print(f"iteration: {ctx.iteration}")
-    print(f"clock_rate: {ctx.options.clock_rate}")
-    print(f"sensor_topic: {ctx.options.sensor_topic}")
-    print(f"source: {ctx.source}")
-    print("---")
+    print(ctx)
     ctx.shell.ros2.launch(
         ctx.source.path.parent / "beluga.launch.xml",
         f"sensor_model:={ctx.variant.sensor_model}",
@@ -47,6 +42,18 @@ def nominal(ctx):
     )
     ctx.shell.ros2.bag.play("--clock", "-r", ctx.options.clock_rate)
     ctx.shell.evo_ape.bag2("output.mcap", save_results="out.zip")
+
+
+@nominal.input
+def dataset(ctx):
+    """Return the path to the MCAP dataset used as input for the benchmark."""
+    return "/mydataset/dataset.mcap"
+
+
+@nominal.input
+def map(ctx):
+    """Return the path to the map file used for localization."""
+    return "my_map.yaml"
 
 
 if __name__ == "__main__":
