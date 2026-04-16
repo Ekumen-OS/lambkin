@@ -1,4 +1,4 @@
-# LAMBKIN
+# LAMBKIN SDK
 
 This is the LAMBKIN Python SDK — the core library for building SLAM evaluation pipelines. It provides the orchestration primitives you compose into your benchmark: process lifecycle management, parameter sweep execution, pipeline stages, and structured I/O.
 

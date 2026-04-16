@@ -1,5 +1,5 @@
 # LAMBKIN
-**L**ocalization **A**nd **M**apping **B**ench**KIN**g
+**L**ocalization **A**nd **M**apping **B**enchmar**KIN**g
 
 > *The user brings the algorithm. LAMBKIN handles the rest.*
 

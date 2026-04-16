@@ -1,4 +1,4 @@
-# LAMBKIN
+# Beluga Example
 
 ## Overview
 
