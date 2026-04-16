@@ -29,7 +29,7 @@ The launch file accepts the map path, sensor model type, and particle count as p
 
 ## Setup
 
-**1. Configure volume mounts**
+### **1. Configure volume mounts**
 
 Edit `docker/docker-compose.yml` and set the host paths to your reference files:
 
@@ -40,7 +40,22 @@ volumes:
   - /path/to/your/groundtruth:/data/groundtruth
 ```
 
-**2. Start the container**
+### **2. Build the image**
+
+
+####  Development
+
+```bash
+docker compose --profile development build
+```
+
+####  Production
+
+```bash
+docker compose --profile production build
+```
+
+### **3. Start the container**
 
 Two Docker profiles are available depending on your use case.
 
