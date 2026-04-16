@@ -1,22 +1,16 @@
 # LAMBKIN SDK
 
-The LAMBKIN Python SDK is the core library for building SLAM evaluation
-pipelines. It provides the orchestration primitives you compose into your
-benchmark: process lifecycle management, parameter sweep execution, pipeline
-stages, and structured I/O.
+The LAMBKIN Python SDK is the core library for building SLAM evaluation pipelines. It provides the orchestration primitives you compose into your benchmark: process lifecycle management, parameter sweep execution, pipeline stages, and structured I/O.
 
 ## Structure
 
-A benchmark is structured around three stages that LAMBKIN sequences,
-parallelizes, and keeps organized:
+A benchmark is structured around three stages that LAMBKIN sequences, parallelizes, and keeps organized:
 
 1. **Ingestion** — locate or download datasets and prepare inputs.
 2. **Execution** — launch and supervise the processes that run your algorithm.
 3. **Egression** — collect outputs and compute metrics.
 
-Each stage is a Python callable that receives a context object carrying
-configuration, paths, and state. You implement the logic; LAMBKIN handles
-the rest.
+Each stage is a Python callable that receives a context object carrying configuration, paths, and state. You implement the logic; LAMBKIN handles the rest.
 
 LAMBKIN writes all artifacts under a consistent directory tree:
 ```
@@ -30,8 +24,7 @@ results/
 
 ## Usage
 
-A benchmark is a decorated Python function. The `@lambkin.benchmark`
-decorator handles iteration, parameter expansion, and context setup.
+A benchmark is a decorated Python function. The `@lambkin.benchmark` decorator handles iteration, parameter expansion, and context setup.
 Inputs and outputs are registered as hooks on the benchmark function.
 
 ```python
@@ -66,8 +59,7 @@ def dataset(ctx):
 > supported mode at this time. The shell proxy prints commands rather than
 > running them.
 
-For a complete, working example using the Beluga algorithm, see
-[`Beluga Example`](examples/beluga/beluga_benchmark.py).
+For a complete, working example using the Beluga algorithm, see [`Beluga Example`](examples/beluga/beluga_benchmark.py).
 
 ## Requirements
 
