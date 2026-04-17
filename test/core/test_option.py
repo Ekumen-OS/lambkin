@@ -76,7 +76,10 @@ def test_option_stacks_bottom_up():
 
 def test_option_fails_on_invalid_declaration(simple_fn):
     """option() raises an error if the flag name is invalid."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid flag name: 'clock-rate'\. Must start with '-' or '--'\.",
+    ):
         option("clock-rate")(simple_fn)
 
 
