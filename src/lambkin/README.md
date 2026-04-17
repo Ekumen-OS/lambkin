@@ -12,27 +12,27 @@ A benchmark is structured around three stages that LAMBKIN sequences and keeps o
 
 Each stage is a Python callable that receives a context object carrying configuration, paths, and state. You implement the logic; LAMBKIN handles the rest.
 
-### Core Concepts
+## Core Concepts
 
 LAMBKIN exposes a small set of composable primitives. Together they cover the full lifecycle of a benchmark — from declaring inputs and sweeping parameters to launching processes and collecting results.
 
 **`named_product`**
-Takes named parameter lists and returns every possible combination as a list of dictionaries, one per benchmark run configuration. Pass the result to `@benchmark` via `variants=` to sweep all combinations automatically.
+Takes named parameter lists and returns every possible combination as a list of dictionaries, one per benchmark run configuration. Pass the result to `Benchmark` via `variants=` to sweep all combinations automatically.
 
-**`@benchmark`**
-Drives the benchmark execution loop. It parses CLI options registered by `@option` once before the loop, then creates a `Context` for each `(variant, iteration)` pair and calls the decorated function with it. Input hooks registered via `@input` are resolved before each call and injected into `ctx.inputs`. Raises `ValueError` if `variants` is empty.
+**`Benchmark`**
+Drives the benchmark execution loop. It parses options registered via `Option` once before the loop, then creates a `Context` for every `(variant, iteration)` pair and calls the decorated function with it. A base context is used during setup to resolve inputs before the loop begins. Can be used as a decorator via `@benchmark`.
 
 **`Context`**
-Carries all namespaced information for one benchmark variant. From the given parameters it builds `ctx.variant`, `ctx.inputs`, `ctx.options`, and `ctx.output`, and automatically creates the required output folders on disk before the benchmark function runs.
+Carries all namespaced information for one benchmark variant. Builds `ctx.variant`, `ctx.inputs`, `ctx.options`, and `ctx.output` from the given parameters, and automatically creates the required output folders on disk before the benchmark function runs.
 
 **`Source`**
 Describes the benchmark script being executed. Exposed on the context as `ctx.source`, it gives benchmark stages access to the script's location and metadata without hardcoding paths.
 
-**`@input`**
-Registers a hook on the benchmark function. Hooks are resolved before each call and their return values injected into `ctx.inputs` under the hook's function name, keeping data resolution decoupled from benchmark logic.
+**`Input`**
+Registers a data resolution hook on a benchmark. Hooks are resolved before each iteration and their return values injected into `ctx.inputs` under the hook's function name, keeping data resolution decoupled from benchmark logic. Can be used as a decorator via `@input`.
 
-**`@option`**
-Modelled after `click.option`. Registers a CLI option on the benchmark function by storing a `click.Option` object on `fn.__lambkin_options__`, which `@benchmark` collects and parses before the execution loop. The parsed values are injected into `ctx.options` — flag names are normalized by click, so `--clock-rate` becomes `ctx.options.clock_rate`.
+**`Option`**
+Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible via `ctx.shell`.
 
 **`ctx.shell`**
 Exposes the host environment's executables as Python attributes. Accessing `ctx.shell.my_tool` returns a callable that, when invoked, runs `my_tool` with the given arguments. This lets benchmark scripts call external processes as if they were native Python functions, without hardcoding paths or constructing subprocess calls manually.
