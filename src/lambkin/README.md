@@ -68,6 +68,8 @@ def my_benchmark(ctx):
 def dataset(ctx):
     return ctx.source.path.parent / "datasets" / "my_dataset.mcap"
 
+if __name__ == "__main__":
+    my_benchmark()
 
 ```
 > **Note:** Real execution is not yet supported. `--dry-run` is the only supported mode at this time. The shell proxy prints commands rather than running them.
