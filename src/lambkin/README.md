@@ -4,7 +4,7 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 
 ## Structure
 
-A benchmark is structured around three stages that LAMBKIN sequences, parallelizes, and keeps organized:
+A benchmark is structured around three stages that LAMBKIN sequences and keeps organized:
 
 1. **Ingestion** — locate or download datasets and prepare inputs.
 2. **Execution** — launch and supervise the processes that run your algorithm.
@@ -22,10 +22,26 @@ results/
         └── ...
 ```
 
+## Requirements
+
+- Python 3.10+
+- [`uv`](https://github.com/astral-sh/uv)
+
+## Installation
+
+```bash
+git clone git@github.com:Ekumen-OS/lambkin.git
+uv sync
+```
+
+
 ## Usage
 
 A benchmark is a decorated Python function. The `@lambkin.benchmark` decorator handles iteration, parameter expansion, and context setup.
 Inputs and outputs are registered as hooks on the benchmark function.
+
+### The shell proxy
+`ctx.shell` exposes the host environment's executables as Python attributes. Accessing `ctx.shell.my_tool` returns a callable that, when invoked, runs `my_tool` with the given arguments. This lets benchmark scripts call external processes as if they were native Python functions, without hardcoding paths or constructing subprocess calls manually.
 
 ```python
 import lambkin
@@ -58,15 +74,3 @@ def dataset(ctx):
 > Background process orchestration will be implemented in subsequent phases.
 
 For a complete, working example using the Beluga algorithm, see [`Beluga Example`](examples/beluga/beluga_benchmark.py).
-
-## Requirements
-
-- Python 3.10+
-- [`uv`](https://github.com/astral-sh/uv)
-
-## Installation
-
-```bash
-git clone git@github.com:Ekumen-OS/lambkin.git
-uv sync
-```
