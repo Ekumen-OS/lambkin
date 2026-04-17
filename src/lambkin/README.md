@@ -12,9 +12,7 @@ A benchmark is structured around three stages that LAMBKIN sequences and keeps o
 
 Each stage is a Python callable that receives a context object carrying configuration, paths, and state. You implement the logic; LAMBKIN handles the rest.
 
----
-
-### SDK primitives
+### Core Concepts
 
 LAMBKIN exposes a small set of composable primitives. Together they cover the full lifecycle of a benchmark — from declaring inputs and sweeping parameters to launching processes and collecting results.
 
