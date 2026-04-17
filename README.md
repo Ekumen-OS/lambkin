@@ -3,7 +3,7 @@
 
 > *The user brings the algorithm. LAMBKIN handles the rest.*
 
-LAMBKIN is a Python SDK for building SLAM evaluation pipelines that are reproducible, structured, and parallelized by design.
+LAMBKIN is a Python SDK for building SLAM evaluation pipelines that are reproducible and structured by design.
 
 ## Philosophy
 
@@ -11,17 +11,22 @@ Most benchmarking systems are built around a specific algorithm, dataset format,
 
 LAMBKIN separates the orchestration machinery from the benchmark definition. The algorithm runs as an external process — LAMBKIN does not need to know what is inside it. Parameter sweeps, process lifecycle, I/O, and metric collection are all handled by the SDK, so your script stays focused on the benchmark logic.
 
-## What it provides
+## Capabilities
 
-| | |
+|Feature |Description |
 |---|---|
-| **Parameter sweeps** | Declare combinations of algorithms, datasets, and parameters and run them concurrently |
-| **Process lifecycle** | Launch, supervise, and terminate external processes automatically |
-| **Organized results** | Every run is written to a structured, traceable output directory |
-| **Reproducibility** | Benchmarks are defined as code — versionable and runnable by anyone with the same environment |
+| **Parameter sweeps** | Declare combinations of algorithms, datasets, and parameters. LAMBKIN runs each combination as an independent iteration. |
+| **Process lifecycle** | Launch, supervise, and terminate external processes automatically across benchmark iterations. |
+| **Pipeline stages** | Structure your benchmark into ingestion, execution, and egression stages, each independently customizable. |
+| **Context passing** |Carry configuration, paths, and state through the pipeline without coupling stages to each other.|
+
+To understand how LAMBKIN works under the hood, see the [SDK documentation](src/lambkin/README.md).
 
 
 ## Examples
 
-The [`examples/`](examples/) directory contains ready-to-run setups, each packaging a specific system with its own environment and documentation.
-To understand how LAMBKIN works under the hood, see the [SDK documentation](src/lambkin/README.md).
+The [`examples/`](examples/) directory contains ready-to-run setups, each packaging a specific system with its own Docker environment, ROS2 package, and documentation. Each integration is self-contained and optional — the SDK works independently of any of them.
+
+Current examples:
+
+* [examples/beluga/](examples/beluga/README.md) — Beluga AMCL localization, with a worked benchmark script and Docker setup.
