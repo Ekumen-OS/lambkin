@@ -21,16 +21,17 @@ CMD ["bash"]
 
 # ── Stage 2: production ────────────────────────────────────
 FROM base AS production
-COPY examples/beluga /ws/src
-COPY . /tmp/lambkin/
 
+COPY examples/beluga /ws/examples/beluga
+
+COPY . /tmp/lambkin/
 RUN /usr/bin/uv pip install /tmp/lambkin --system --break-system-packages \
     && rm -rf /tmp/lambkin
 
 RUN apt-get update \
-    && rosdep install --from-paths src --ignore-src -y \
+    && rosdep install --from-paths examples/beluga --ignore-src -y \
     && rm -rf /var/lib/apt/lists/*
+RUN . /opt/ros/jazzy/setup.sh && colcon build --base-paths examples/beluga
 
-RUN . /opt/ros/jazzy/setup.sh && colcon build
-
+WORKDIR /ws
 CMD ["bash"]
