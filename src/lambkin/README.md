@@ -34,7 +34,7 @@ Registers a data resolution hook on a benchmark. Hooks are resolved before each 
 **`Option`**
 Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible via `ctx.shell`.
 
-**`ctx.shell`**
+**`Shell`**
 Exposes the host environment's executables as Python attributes. Accessing `ctx.shell.my_tool` returns a callable that, when invoked, runs `my_tool` with the given arguments. This lets benchmark scripts call external processes as if they were native Python functions, without hardcoding paths or constructing subprocess calls manually.
 
 
