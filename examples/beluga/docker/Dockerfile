@@ -17,16 +17,15 @@ RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 
 # ── Stage 1: development ───────────────────────────────────
 FROM base AS development
-# Code is mounted via volume in docker-compose, nothing is copied here
 CMD ["bash"]
 
 # ── Stage 2: production ────────────────────────────────────
 FROM base AS production
+COPY examples/beluga /ws/src
+COPY . /tmp/lambkin/
 
-COPY . /ws/src/
-
-RUN /usr/bin/uv pip install /ws/src/ --system --break-system-packages \
-    && rm -rf /ws/src/README.md /ws/src/pyproject.toml
+RUN /usr/bin/uv pip install /tmp/lambkin --system --break-system-packages \
+    && rm -rf /tmp/lambkin
 
 RUN apt-get update \
     && rosdep install --from-paths src --ignore-src -y \
