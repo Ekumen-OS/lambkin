@@ -1,6 +1,6 @@
 # Beluga Example
 
-A worked example of a LAMBKIN benchmark pipeline applied to [Beluga AMCL](https://github.com/Ekumen-OS/beluga). It sweeps over sensor models and particle counts, evaluates trajectory accuracy, and aggregates results across all configurations. Ships with its own ROS2 package, Docker environment, and benchmark script.
+A worked example of a LAMBKIN benchmark pipeline applied to [Beluga AMCL](https://github.com/Ekumen-OS/beluga) in ROS 2. It sweeps over sensor models and particle counts, evaluates trajectory accuracy, and aggregates results across all configurations. Ships with its own ROS 2 package, Docker environment, and benchmark script.
 
 ## How it works
 
@@ -28,6 +28,8 @@ The launch file accepts the map path, sensor model type, and particle count as p
 | Groundtruth | Reference trajectory in `.tum` format to evaluate against |
 
 ## Setup
+
+If you are running the benchmark as-is, use the Production profile. If you are modifying the benchmark script or the ROS 2 package, use the Development profile.
 
 ### **1. Configure volume mounts**
 
@@ -92,3 +94,6 @@ docker compose --profile production exec lambkin_prod bash
 ```bash
 uv run examples/beluga/beluga_benchmark.py
 ```
+Once complete, results are written to results/ organized by configuration (var_<number>/iter_<number>). Each iteration contains the recorded bag, TUM trajectory, and APE metrics.
+
+> Note: Full execution is not yet implemented. At this stage the benchmark runs in dry-run mode only, printing all commands that would be executed without running them.
