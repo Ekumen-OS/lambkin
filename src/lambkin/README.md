@@ -54,10 +54,8 @@ def dataset(ctx):
 
 
 ```
-
-> **Note:** Real execution is not yet supported. `--dry-run` is the only
-> supported mode at this time. The shell proxy prints commands rather than
-> running them.
+> **Note:** Real execution is not yet supported. `--dry-run` is the only supported mode at this time. The shell proxy prints commands rather than running them.
+> Background process orchestration will be implemented in subsequent phases.
 
 For a complete, working example using the Beluga algorithm, see [`Beluga Example`](examples/beluga/beluga_benchmark.py).
 
