@@ -65,13 +65,14 @@ Mounts the repository as a volume so code changes are reflected immediately with
 
 ```bash
 docker compose --profile development up -d
-docker compose --profile development exec lambkin_ros_dev_jazzy bash
+docker compose --profile development exec lambkin_dev bash
 ```
 
 Inside the container:
 
 ```bash
-rosdep install --from-paths lambkin_ros2 --ignore-src -r -y
+apt-get update
+rosdep install --from-paths /ws/examples/beluga beluga_ros2 --ignore-src -r -y
 uv sync
 colcon build --symlink-install
 source install/setup.bash
@@ -83,7 +84,7 @@ Builds a fully self-contained image with all dependencies pre-installed. No manu
 
 ```bash
 docker compose --profile production up -d
-docker compose --profile production exec lambkin_ros_jazzy bash
+docker compose --profile production exec lambkin_prod bash
 ```
 
 ## Usage
