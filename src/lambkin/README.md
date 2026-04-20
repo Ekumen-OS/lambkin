@@ -26,16 +26,16 @@ Drives the benchmark execution loop, handling iteration, parameter expansion, an
 Carries all namespaced information for one benchmark variant and iteration. Holds configuration, resolved inputs, options, and output paths for the current run, and automatically creates the required output folders on disk before the benchmark function runs.
 
 **`Source`**
-Describes the benchmark script being executed. Exposed on the context as `ctx.source`, it gives benchmark stages access to the script's location and metadata without hardcoding paths.
+Describes the benchmark script being executed. Exposed through the context, it gives benchmark stages access to the script's location and metadata without hardcoding paths.
 
 **`Input`**
-Registers a data resolution hook on a benchmark. Each hook must be a callable that accepts a single `Context` object as its argument. Hook names must be unique — registering two hooks with the same name raises an error. Hooks are resolved once before the execution loop and their return values injected into `ctx.inputs` under the hook's function name. Can be used as a decorator via `@input`.
+Registers a data resolution hook on a benchmark function. Each hook must be a callable that accepts a single `Context` object as its argument. Hook names must be unique — registering two hooks with the same name raises an error. Hooks are resolved once before the execution loop and their return values injected into the context under the hook's function name. Can be used as a decorator via `@input`.
 
 **`Option`**
-Registers a data resolution hook on a benchmark. Each hook must be a callable that accepts a single `Context` object as its argument. Hook names must be unique — registering two hooks with the same name raises an error. Hooks are resolved once before the execution loop and their return values injected into `ctx.inputs` under the hook's function name. Can be used as a decorator via `@input`.
+Registers a CLI option on a benchmark. Built on top of [`click`](https://click.palletsprojects.com/en/stable/options/), so any attribute supported by `click.Option` can be passed. Flag names must start with `-` or `--`. Declared options are collected and parsed once before the execution loop, and their values made available through the context. Can be used as a decorator via `@option`.
 
 **`Shell`**
-Exposes the host environment's executables as Python attributes. Accessing `ctx.shell.my_tool` returns a callable that, when invoked, runs `my_tool` with the given arguments. This lets benchmark scripts call external processes as if they were native Python functions, without hardcoding paths or constructing subprocess calls manually.
+Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible through the context.
 
 
 ## Requirements
