@@ -14,11 +14,11 @@ services:
     volumes:
       - ../../..:/ws
       # ── Inputs (uncomment and adjust paths as needed) ─────────
-      # - /path/to/your/rosbag:/data/rosbag
-      # - /path/to/your/map:/data/map
-      # - /path/to/your/groundtruth:/data/groundtruth
+      # - ../rosbags:/ws/examples/beluga/rosbags:ro
+      # - ../maps:/ws/examples/beluga/maps:ro
+      # - ../groundtruth:/ws/examples/beluga/groundtruth:ro
       # ── Output (benchmark results persisted on host) ──────────
-      # - ../benchmarks:/ws/examples/beluga/benchmarks
+      - ../results:/ws/examples/beluga/results
 
   lambkin_prod:
     build:
@@ -33,8 +33,8 @@ services:
     profiles: ["production"]
     volumes:
       # ── Inputs (uncomment and adjust paths as needed) ─────────
-      # - /path/to/your/rosbag:/data/rosbag
-      # - /path/to/your/map:/data/map
-      # - /path/to/your/groundtruth:/data/groundtruth
+      # - ../rosbags:/ws/examples/beluga/rosbags:ro
+      # - ../maps:/ws/examples/beluga/maps:ro
+      # - ../groundtruth:/ws/examples/beluga/groundtruth:ro
       # ── Output (benchmark results persisted on host) ──────────
-      # - ../benchmarks:/ws/examples/beluga/benchmarks
+      - ../results:/ws/examples/beluga/results
