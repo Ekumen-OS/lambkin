@@ -48,12 +48,14 @@ volumes:
 ####  Development
 
 ```bash
+cd examples/beluga/docker
 docker compose --profile development build
 ```
 
 ####  Production
 
 ```bash
+cd examples/beluga/docker
 docker compose --profile production build
 ```
 
@@ -66,7 +68,6 @@ Two Docker profiles are available depending on your use case.
 Mounts the repository as a volume so code changes are reflected immediately without rebuilding.
 
 ```bash
-cd examples/beluga/docker
 docker compose --profile development up -d
 docker compose --profile development exec lambkin_dev bash
 ```
