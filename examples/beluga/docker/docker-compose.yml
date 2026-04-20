@@ -13,6 +13,12 @@ services:
     profiles: ["development"]
     volumes:
       - ../../..:/ws
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # - /path/to/your/rosbag:/data/rosbag
+      # - /path/to/your/map:/data/map
+      # - /path/to/your/groundtruth:/data/groundtruth
+      # ── Output (benchmark results persisted on host) ──────────
+      # - ../benchmarks:/ws/examples/beluga/benchmarks
 
   lambkin_prod:
     build:
@@ -25,3 +31,10 @@ services:
     stdin_open: true
     tty: true
     profiles: ["production"]
+    volumes:
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # - /path/to/your/rosbag:/data/rosbag
+      # - /path/to/your/map:/data/map
+      # - /path/to/your/groundtruth:/data/groundtruth
+      # ── Output (benchmark results persisted on host) ──────────
+      # - ../benchmarks:/ws/examples/beluga/benchmarks
