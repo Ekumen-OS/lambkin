@@ -66,6 +66,7 @@ Two Docker profiles are available depending on your use case.
 Mounts the repository as a volume so code changes are reflected immediately without rebuilding.
 
 ```bash
+cd examples/beluga/docker
 docker compose --profile development up -d
 docker compose --profile development exec lambkin_dev bash
 ```
@@ -76,7 +77,8 @@ Inside the container:
 apt-get update
 rosdep install --from-paths /ws/examples/beluga beluga_ros2 --ignore-src -r -y
 uv sync
-colcon build --symlink-install
+uv pip install -e /tmp/lambkin --system --break-system-packages
+colcon build --base-paths examples/beluga
 source install/setup.bash
 ```
 
