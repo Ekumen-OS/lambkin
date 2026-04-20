@@ -20,10 +20,10 @@ LAMBKIN exposes a small set of composable primitives. Together they cover the fu
 Takes named parameter lists and returns every possible combination as a list of dictionaries, one per benchmark run configuration. Pass the result to `Benchmark` via `variants=` to sweep all combinations automatically.
 
 **`Benchmark`**
-Drives the benchmark execution loop. It parses options registered via `Option` once before the loop, then creates a `Context` for every `(variant, iteration)` pair and calls the decorated function with it. A base context is used during setup to resolve inputs before the loop begins. Can be used as a decorator via `@benchmark`.
+Drives the benchmark execution loop, handling iteration, parameter expansion, and context setup. It parses options registered via `Option` once before the loop, then creates a `Context` for every combination of variant and iteration and calls the decorated function with it. A base context is used during setup to resolve inputs before the loop begins. Can be used as a decorator via `@benchmark`.
 
 **`Context`**
-Carries all namespaced information for one benchmark variant. Builds `ctx.variant`, `ctx.inputs`, `ctx.options`, and `ctx.output` from the given parameters, and automatically creates the required output folders on disk before the benchmark function runs.
+Carries all namespaced information for one benchmark variant and iteration. Holds configuration, resolved inputs, options, and output paths for the current run, and automatically creates the required output folders on disk before the benchmark function runs.
 
 **`Source`**
 Describes the benchmark script being executed. Exposed on the context as `ctx.source`, it gives benchmark stages access to the script's location and metadata without hardcoding paths.
@@ -53,7 +53,7 @@ uv sync
 
 ## Usage
 
-A benchmark is a decorated Python function. The `@lambkin.benchmark` benchmark decorator handles iteration, parameter expansion, and context setup. Inputs and outputs are registered as hooks on the benchmark function.
+A minimal example composing the SDK primitives described above into a working benchmark.
 
 ```python
 import lambkin
