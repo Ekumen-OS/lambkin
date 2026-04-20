@@ -77,8 +77,8 @@ Inside the container:
 apt-get update
 rosdep install --from-paths /ws/examples/beluga beluga_ros2 --ignore-src -r -y
 uv sync
-uv pip install -e /tmp/lambkin --system --break-system-packages
-colcon build --base-paths examples/beluga
+uv pip install -e /ws/src/lambkin --system --break-system-packages
+colcon build --base-paths /ws/examples/beluga
 source install/setup.bash
 ```
 
