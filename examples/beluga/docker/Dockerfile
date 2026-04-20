@@ -1,9 +1,9 @@
-
-FROM ros:jazzy-ros-base
-
+# ── Stage 0: base ─────────────────────────────────────────
+FROM ros:jazzy-ros-base AS base
 
 RUN apt-get update && apt-get install -y \
     curl \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ws
@@ -14,6 +14,24 @@ RUN rosdep init || true \
     && rosdep update
 
 RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
-RUN apt-get update
+
+# ── Stage 1: development ───────────────────────────────────
+FROM base AS development
+CMD ["bash"]
+
+# ── Stage 2: production ────────────────────────────────────
+FROM base AS production
+
+COPY pyproject.toml README.md LICENSE /tmp/lambkin/
+COPY src/ /tmp/lambkin/src/
+RUN uv pip install /tmp/lambkin --system --break-system-packages \
+&& rm -rf /tmp/lambkin
+
+COPY examples/beluga /ws/examples/beluga
+
+RUN apt-get update \
+    && rosdep install --from-paths examples/beluga --ignore-src -y \
+    && rm -rf /var/lib/apt/lists/*
+RUN . /opt/ros/jazzy/setup.sh && colcon build --base-paths examples/beluga
 
 CMD ["bash"]

@@ -1,14 +1,40 @@
 services:
+
   lambkin_dev:
-    build: .
-    image: lambkin_ros:jazzy
+    build:
+      context: ../../..
+      dockerfile: examples/beluga/docker/Dockerfile
+      target: development
+    image: lambkin_ros_dev:jazzy
     container_name: lambkin_developer
     network_mode: "host"
-
     stdin_open: true
     tty: true
-
+    profiles: ["development"]
     volumes:
-      - ..:/ws
-      - ${HOME}/ekumen/rosbags/reference_files:/rosbags/reference
-      - ${HOME}/ekumen/rosbags/benchmarking_results:/benchmarking_results
+      - ../../..:/ws
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # - ../rosbags:/ws/examples/beluga/rosbags:ro
+      # - ../maps:/ws/examples/beluga/maps:ro
+      # - ../groundtruth:/ws/examples/beluga/groundtruth:ro
+      # ── Output (benchmark results persisted on host) ──────────
+      - ../results:/ws/examples/beluga/results
+
+  lambkin_prod:
+    build:
+      context: ../../..
+      dockerfile: examples/beluga/docker/Dockerfile
+      target: production
+    image: lambkin_ros:jazzy
+    container_name: lambkin_production
+    network_mode: "host"
+    stdin_open: true
+    tty: true
+    profiles: ["production"]
+    volumes:
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # - ../rosbags:/ws/examples/beluga/rosbags:ro
+      # - ../maps:/ws/examples/beluga/maps:ro
+      # - ../groundtruth:/ws/examples/beluga/groundtruth:ro
+      # ── Output (benchmark results persisted on host) ──────────
+      - ../results:/ws/examples/beluga/results
