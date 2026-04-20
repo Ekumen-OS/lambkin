@@ -22,11 +22,11 @@ CMD ["bash"]
 # ── Stage 2: production ────────────────────────────────────
 FROM base AS production
 
-COPY examples/beluga /ws/examples/beluga
-
 COPY . /tmp/lambkin/
 RUN /usr/bin/uv pip install /tmp/lambkin --system --break-system-packages \
-    && rm -rf /tmp/lambkin
+&& rm -rf /tmp/lambkin
+
+COPY examples/beluga /ws/examples/beluga
 
 RUN apt-get update \
     && rosdep install --from-paths examples/beluga --ignore-src -y \
