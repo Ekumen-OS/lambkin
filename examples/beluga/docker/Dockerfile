@@ -22,8 +22,9 @@ CMD ["bash"]
 # ── Stage 2: production ────────────────────────────────────
 FROM base AS production
 
-COPY . /tmp/lambkin/
-RUN /usr/bin/uv pip install /tmp/lambkin --system --break-system-packages \
+COPY pyproject.toml README.md LICENSE /tmp/lambkin/
+COPY src/ /tmp/lambkin/src/
+RUN uv pip install /tmp/lambkin --system --break-system-packages \
 && rm -rf /tmp/lambkin
 
 COPY examples/beluga /ws/examples/beluga
@@ -33,5 +34,4 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 RUN . /opt/ros/jazzy/setup.sh && colcon build --base-paths examples/beluga
 
-WORKDIR /ws
 CMD ["bash"]
