@@ -29,7 +29,7 @@ Carries all namespaced information for one benchmark variant. Builds `ctx.varian
 Describes the benchmark script being executed. Exposed on the context as `ctx.source`, it gives benchmark stages access to the script's location and metadata without hardcoding paths.
 
 **`Input`**
-Registers a data resolution hook on a benchmark. Hooks are resolved before each iteration and their return values injected into the `Context` under the hook's function name, keeping data resolution decoupled from benchmark logic. Can be used as a decorator via `@input`.
+Registers a data resolution hook on a benchmark. Each hook must be a callable that accepts a single `Context` object as its argument. Hook names must be unique — registering two hooks with the same name raises an error. Hooks are resolved once before the execution loop and their return values injected into `ctx.inputs` under the hook's function name. Can be used as a decorator via `@input`.
 
 **`Option`**
 Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible via `ctx.shell`.
