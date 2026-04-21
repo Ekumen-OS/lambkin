@@ -16,25 +16,32 @@ Each stage is a Python callable that receives a context object carrying configur
 
 LAMBKIN exposes a small set of composable primitives. Together they cover the full lifecycle of a benchmark — from declaring inputs and sweeping parameters to launching processes and collecting results.
 
-**`Named Product`**
+**Named Product**
+
 Takes named parameter lists and returns every possible combination as a list of dictionaries, one per benchmark run configuration. Pass the result to `Benchmark` via `variants=` to sweep all combinations automatically.
 
-**`Benchmark`**
+**Benchmark**
+
 Drives the benchmark execution loop, handling iteration, parameter expansion, and context setup. It parses options registered via `Option` once before the loop, then creates a `Context` for every combination of variant and iteration and calls the decorated function with it. A base context is used during setup to resolve inputs before the loop begins. Can be used as a decorator via `@benchmark`.
 
-**`Context`**
+**Context**
+
 Carries all namespaced information for one benchmark variant and iteration. Holds configuration, resolved inputs, options, and output paths for the current run, and automatically creates the required output folders on disk before the benchmark function runs.
 
-**`Source`**
+**Source**
+
 Describes the benchmark script being executed. Exposed through the context, it gives benchmark stages access to the script's location and metadata without hardcoding paths.
 
-**`Input`**
+**Input**
+
 Registers a data resolution hook on a benchmark function. Each hook must be a callable that accepts a single `Context` object as its argument. Hook names must be unique — registering two hooks with the same name raises an error. Hooks are resolved once before the execution loop and their return values injected into the context under the hook's function name. Can be used as a decorator via `@input`.
 
-**`Option`**
+**Option**
+
 Registers a CLI option on a benchmark. Built on top of [`click`](https://click.palletsprojects.com/en/stable/options/), so any attribute supported by `click.Option` can be passed. Flag names must start with `-` or `--`. Declared options are collected and parsed once before the execution loop, and their values made available through the context. Can be used as a decorator via `@option`.
 
-**`Shell`**
+**Shell**
+
 Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible through the context.
 
 
@@ -46,7 +53,7 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 ## Installation
 
 ```bash
-git clone git@github.com:Ekumen-OS/lambkin.git
+git clone -b next-gen git@github.com:Ekumen-OS/lambkin.git
 uv sync
 ```
 
