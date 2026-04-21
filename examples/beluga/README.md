@@ -94,9 +94,12 @@ docker compose --profile production exec lambkin_prod bash
 
 ## Usage
 
+Inside the Docker container/enviroment, run:
+
 ```bash
 uv run examples/beluga/beluga_benchmark.py
 ```
-Once complete, results are written to results/ organized by configuration (var_<number>/iter_<number>). Each iteration contains the recorded bag, TUM trajectory, and APE metrics.
+
+Once complete, results are written to results/ organized by configuration (`var_<number>/iter_<number>`). Each iteration contains the recorded bag, TUM trajectory, and APE metrics.
 
 > Note: Full execution is not yet implemented. At this stage the benchmark runs in dry-run mode only, printing all commands that would be executed without running them.
