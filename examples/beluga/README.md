@@ -94,7 +94,7 @@ docker compose --profile production exec lambkin_prod bash
 
 ## Usage
 
-Inside the Docker container/enviroment, run:
+Inside the Docker container/enviroment, run the following command:
 
 ```bash
 uv run examples/beluga/beluga_benchmark.py
