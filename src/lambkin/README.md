@@ -16,7 +16,7 @@ Each stage is a Python callable that receives a context object carrying configur
 
 LAMBKIN exposes a small set of composable primitives. Together they cover the full lifecycle of a benchmark — from declaring inputs and sweeping parameters to launching processes and collecting results.
 
-**`named_product`**
+**`Named Product`**
 Takes named parameter lists and returns every possible combination as a list of dictionaries, one per benchmark run configuration. Pass the result to `Benchmark` via `variants=` to sweep all combinations automatically.
 
 **`Benchmark`**
@@ -84,6 +84,7 @@ if __name__ == "__main__":
     my_benchmark()
 
 ```
+
 > **Note:** Real execution is not yet supported. `--dry-run` is the only supported mode at this time. The shell proxy prints commands rather than running them.
 > Background process orchestration will be implemented in subsequent phases.
 
