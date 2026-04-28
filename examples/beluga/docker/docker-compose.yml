@@ -28,13 +28,22 @@ services:
     image: lambkin_ros:jazzy
     container_name: lambkin_production
     network_mode: "host"
+    #privileged: true
+    security_opt:
+      - "unmask=/sys/fs/cgroup"
+    systemd: always
+    cgroupns: "host" 
     stdin_open: true
     tty: true
     profiles: ["production"]
+    cgroup_parent: user.slice
     volumes:
       # ── Inputs (uncomment and adjust paths as needed) ─────────
-      # - ../rosbags:/ws/examples/beluga/rosbags:ro
-      # - ../maps:/ws/examples/beluga/maps:ro
+      - ../../../record_1:/ws/examples/beluga/record_1:ro
+      - ../../../maps:/ws/examples/beluga/maps:ro
+      - ../../../bench_process_groups.py:/ws/bench_process_groups.py:ro
+      - ../../../bench_cgroups_v2.py:/ws/bench_cgroups_v2.py:ro
+      - ../../../bench_subprocess_sessions.py:/ws/bench_subprocess_sessions.py:ro
       # - ../groundtruth:/ws/examples/beluga/groundtruth:ro
       # ── Output (benchmark results persisted on host) ──────────
       - ../results:/ws/examples/beluga/results
