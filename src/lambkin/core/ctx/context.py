@@ -19,10 +19,11 @@ configuration, runtime metadata, and cleanup hooks. Shared across the process
 layer and decorators during a run.
 """
 
+import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-import datetime
+
 import yaml
 
 from lambkin.core.shell import ShellProxy
