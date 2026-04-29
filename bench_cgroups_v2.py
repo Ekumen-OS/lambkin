@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Test bench: cgroups v2
+"""Test bench: cgroups v2.
 
 Scenarios:
     1. simple           — LAUNCHER only (baseline)
@@ -13,15 +12,21 @@ HOW TO RUN:
     systemd-run --user --scope -- python3 bench_cgroups_v2.py
 """
 
-import os, signal, subprocess, sys, time, uuid, shutil, tempfile
-
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+import uuid
 
 ROS2_SETUP = "/opt/ros/jazzy/setup.bash"
-WS_SETUP = "/home/teresa/ekumen/lambkin/ws/install/setup.bash"
+WS_SETUP = "$HOME/ekumen/lambkin/ws/install/setup.bash"
 LAUNCH_PACKAGE = "beluga_ros2"
 LAUNCH_FILE = "beluga.launch.py"
-MAP_PATH = "/home/teresa/ekumen/lambkin/examples/map/"
-BAG_PATH = "/home/teresa/ekumen/lambkin/record_1/"
+MAP_PATH = "$HOME/ekumen/lambkin/examples/map/"
+BAG_PATH = "$HOME/ekumen/lambkin/record_1/"
 RECORD_TOPICS = ["/tf"]
 RUN_DURATION = 30
 
@@ -41,6 +46,19 @@ ROS2_PATTERNS = [
 
 
 def ros2_env():
+    """Source ROS 2 setup files and return the resulting environment as a dict.
+
+    Sources each setup file listed in ``ROS2_SETUP`` and ``WS_SETUP`` in a
+    bash subprocess and captures the resulting environment variables. The
+    returned dict can be passed directly as the ``env`` argument to
+    ``subprocess.Popen`` so that ROS 2 commands resolve correctly.
+
+    Returns:
+    -------
+    dict
+        Mapping of environment variable names to their values after sourcing
+        the ROS 2 and workspace setup scripts.
+    """
     setups = [s for s in [ROS2_SETUP, WS_SETUP] if s]
     source_cmd = " && ".join(f"source {s}" for s in setups)
     result = subprocess.run(
@@ -55,6 +73,19 @@ def ros2_env():
 
 
 def proc_name(pid):
+    """Return the short command name of a process from ``/proc/<pid>/comm``.
+
+    Parameters
+    ----------
+    pid : int
+        PID of the process to query.
+
+    Returns:
+    -------
+    str
+        The contents of ``/proc/<pid>/comm``, stripped of whitespace,
+        or ``'<gone>'`` if the process no longer exists.
+    """
     try:
         return open(f"/proc/{pid}/comm").read().strip()
     except FileNotFoundError:
@@ -62,6 +93,22 @@ def proc_name(pid):
 
 
 def proc_cmdline(pid):
+    """Return the full command line of a process from ``/proc/<pid>/cmdline``.
+
+    Null bytes used as argument separators in the raw file are replaced with
+    spaces to produce a human-readable string.
+
+    Parameters
+    ----------
+    pid : int
+        PID of the process to query.
+
+    Returns:
+    -------
+    str
+        The command line of the process with null bytes replaced by spaces,
+        or ``'<gone>'`` if the process no longer exists.
+    """
     try:
         return open(f"/proc/{pid}/cmdline").read().replace("\x00", " ").strip()
     except FileNotFoundError:
@@ -69,6 +116,19 @@ def proc_cmdline(pid):
 
 
 def proc_ppid(pid):
+    """Return the parent PID of a process by reading ``/proc/<pid>/status``.
+
+    Parameters
+    ----------
+    pid : int
+        PID of the process to query.
+
+    Returns:
+    -------
+    int
+        The parent PID of the process, or ``0`` if the process no longer
+        exists or the status file cannot be read.
+    """
     try:
         with open(f"/proc/{pid}/status") as f:
             for line in f:
@@ -80,7 +140,19 @@ def proc_ppid(pid):
 
 
 def alive(pid):
-    """True if pid exists and is not a zombie."""
+    """Return ``True`` if a process exists and is not a zombie.
+
+    Parameters
+    ----------
+    pid : int
+        PID of the process to check.
+
+    Returns:
+    -------
+    bool
+        ``True`` if the process exists and its state is not ``'Z'`` (zombie),
+        ``False`` otherwise.
+    """
     try:
         with open(f"/proc/{pid}/status") as f:
             for line in f:
@@ -92,7 +164,22 @@ def alive(pid):
 
 
 def get_descendants(root_pid):
-    """Walk /proc to find all descendants of root_pid (BFS)."""
+    """Walk ``/proc`` and return all descendants of a given PID via BFS.
+
+    Builds a parent-to-children mapping from every readable entry in
+    ``/proc`` and then performs a breadth-first search starting from
+    ``root_pid``. The root itself is included in the result.
+
+    Parameters
+    ----------
+    root_pid : int
+        PID of the root process whose descendants are to be collected.
+
+    Returns:
+    -------
+    list of int
+        All PIDs in the subtree rooted at ``root_pid``, including the root.
+    """
     children_of = {}
     for pid_str in os.listdir("/proc"):
         if not pid_str.isdigit():
@@ -113,7 +200,22 @@ def get_descendants(root_pid):
 
 
 def scan_ros2_processes(my_uid=None):
-    """Scan /proc for ROS2-related processes belonging to the current user."""
+    """Scan ``/proc`` for ROS 2-related processes owned by the current user.
+
+    A process is considered ROS 2-related if any substring in
+    ``ROS2_PATTERNS`` appears in its lower-cased command line.
+
+    Parameters
+    ----------
+    my_uid : int, optional
+        UID to filter processes by. Defaults to the UID of the current
+        process if not provided.
+
+    Returns:
+    -------
+    set of int
+        PIDs of all ROS 2-related processes owned by ``my_uid``.
+    """
     if my_uid is None:
         my_uid = os.getuid()
     found = set()
@@ -136,6 +238,15 @@ def scan_ros2_processes(my_uid=None):
 
 
 def force_kill(pids):
+    """Send ``SIGKILL`` to every PID in the given iterable.
+
+    Silently ignores PIDs that no longer exist at the time of the call.
+
+    Parameters
+    ----------
+    pids : iterable of int
+        PIDs to kill.
+    """
     for pid in pids:
         try:
             os.kill(pid, signal.SIGKILL)
@@ -144,6 +255,13 @@ def force_kill(pids):
 
 
 def header(title):
+    """Print a formatted section header to stdout.
+
+    Parameters
+    ----------
+    title : str
+        Text to display as the section title.
+    """
     print()
     print("=" * 60)
     print(title)
@@ -151,6 +269,15 @@ def header(title):
 
 
 def print_tree(label, pids):
+    """Print a formatted list of processes with PID, PPID, name, and cmdline.
+
+    Parameters
+    ----------
+    label : str
+        Heading to display above the process list.
+    pids : iterable of int
+        PIDs to display. If empty, prints ``'(none)'``.
+    """
     print(f"\n{label} ({len(pids)} processes):")
     if not pids:
         print("  (none)")
@@ -172,6 +299,24 @@ CGROUP_ROOT = "/sys/fs/cgroup"
 
 
 def find_writable_parent():
+    """Find a writable cgroup directory in the current process's cgroup hierarchy.
+
+    Reads ``/proc/self/cgroup`` to determine the current cgroup path, then
+    walks up the hierarchy until a directory with write permission is found.
+    This is the parent under which per-step child cgroups will be created.
+
+    Returns:
+    -------
+    str
+        Absolute path to the nearest writable ancestor cgroup directory.
+
+    Raises:
+    ------
+    RuntimeError
+        If no writable cgroup directory is found. This typically means the
+        process was not launched inside a delegated scope. Re-run with
+        ``systemd-run --user --scope``.
+    """
     with open("/proc/self/cgroup") as f:
         for line in f:
             if line.startswith("0::"):
@@ -192,17 +337,58 @@ def find_writable_parent():
 
 
 def make_cgroup(parent):
+    """Create a fresh child cgroup directory under the given parent.
+
+    The directory name is a ``bench-`` prefix followed by a random 8-character
+    hex string to avoid collisions between concurrent bench runs.
+
+    Parameters
+    ----------
+    parent : str
+        Absolute path to the writable parent cgroup directory.
+
+    Returns:
+    -------
+    str
+        Absolute path to the newly created child cgroup directory.
+    """
     cg = os.path.join(parent, f"bench-{uuid.uuid4().hex[:8]}")
     os.makedirs(cg, exist_ok=True)
     return cg
 
 
 def enter_cgroup(cg):
+    """Move the calling process into the given cgroup.
+
+    Writes the current PID to ``cgroup.procs`` inside ``cg``. Intended to be
+    used as a ``preexec_fn`` in ``subprocess.Popen`` so that the child process
+    joins the cgroup before any of its own children are created.
+
+    Parameters
+    ----------
+    cg : str
+        Absolute path to the target cgroup directory.
+    """
     with open(os.path.join(cg, "cgroup.procs"), "w") as f:
         f.write(str(os.getpid()))
 
 
 def cgroup_pids(cg):
+    """Return the list of PIDs currently in a cgroup.
+
+    Reads ``cgroup.procs`` from the given cgroup directory. Returns an empty
+    list if the file does not exist (e.g. after the cgroup has been removed).
+
+    Parameters
+    ----------
+    cg : str
+        Absolute path to the cgroup directory.
+
+    Returns:
+    -------
+    list of int
+        PIDs of all processes currently in the cgroup.
+    """
     try:
         with open(os.path.join(cg, "cgroup.procs")) as f:
             return [int(p) for p in f.read().split() if p.strip()]
@@ -211,6 +397,23 @@ def cgroup_pids(cg):
 
 
 def cgroup_kill(cg):
+    """Kill all processes in a cgroup using the best available strategy.
+
+    Prefers the atomic ``cgroup.kill`` interface (Linux >= 5.14). Falls back
+    to an iterative ``SIGKILL`` loop on older kernels, retrying up to 20 times
+    with a short sleep between attempts.
+
+    Parameters
+    ----------
+    cg : str
+        Absolute path to the cgroup directory to kill.
+
+    Returns:
+    -------
+    str
+        ``'cgroup.kill'`` if the atomic interface was used, or
+        ``'iterative'`` if the fallback loop was used.
+    """
     kill_file = os.path.join(cg, "cgroup.kill")
     if os.path.exists(kill_file):
         with open(kill_file, "w") as f:
@@ -226,6 +429,17 @@ def cgroup_kill(cg):
 
 
 def cgroup_remove(cg):
+    """Remove a cgroup directory, retrying until it is empty.
+
+    The kernel rejects ``rmdir`` on a non-empty cgroup, so this function
+    retries up to 20 times with a short sleep between attempts to give
+    processes time to exit after being killed.
+
+    Parameters
+    ----------
+    cg : str
+        Absolute path to the cgroup directory to remove.
+    """
     for _ in range(20):
         try:
             os.rmdir(cg)
@@ -238,16 +452,35 @@ def cgroup_remove(cg):
 # Scenario 1
 # ---------------------------------------------------------------------------
 def scenario_simple(parent):
+    """Run scenario 1: single LAUNCHER process with no descendants.
+
+    Baseline test that confirms the cgroup creation and ``cgroup.kill``
+    primitive work correctly in the simplest possible case — a single process
+    with no children.
+
+    Parameters
+    ----------
+    parent : str
+        Absolute path to the writable parent cgroup directory.
+
+    Returns:
+    -------
+    tuple
+        A four-element tuple
+        ``(name, description, expected_kill_all, observed_kill_all)``
+        where both boolean fields are ``True`` if the launcher was killed and
+        the cgroup was left empty.
+    """
     header("SCENARIO 1: Simple subject")
     cg = make_cgroup(parent)
 
-    LAUNCHER = """
+    launcher_script = """
 import os, time
 print(f'[LAUNCHER] PID={os.getpid()}', flush=True)
 time.sleep(60)
 """
     launcher = subprocess.Popen(
-        [sys.executable, "-c", LAUNCHER],
+        [sys.executable, "-c", launcher_script],
         preexec_fn=lambda: enter_cgroup(cg),
     )
     time.sleep(0.3)
@@ -279,29 +512,51 @@ time.sleep(60)
 # Scenario 2
 # ---------------------------------------------------------------------------
 def scenario_deep(parent):
+    """Run scenario 2: three-level cooperative process tree.
+
+    Verifies that cgroup membership propagates correctly through two levels of
+    ``fork()`` without any explicit cooperation from the child processes.
+    All three processes (LAUNCHER -> CHILD -> GRANDCHILD) should be killed by
+    a single ``cgroup.kill``.
+
+    Parameters
+    ----------
+    parent : str
+        Absolute path to the writable parent cgroup directory.
+
+    Returns:
+    -------
+    tuple
+        A four-element tuple
+        ``(name, description, expected_kill_all, observed_kill_all)``.
+        ``observed_kill_all`` is ``True`` if all three processes were killed
+        and the cgroup was left empty.
+    """
     header("SCENARIO 2: Deep cooperative tree")
     cg = make_cgroup(parent)
 
-    GRANDCHILD = (
+    grandchild_script = (
         "import os,time; "
         "print(f'[GRANDCHILD] PID={os.getpid()}', flush=True); "
         "time.sleep(60)"
     )
-    CHILD = f"""
+    child_script = f"""
 import os, subprocess, sys, time
 print(f'[CHILD] PID={{os.getpid()}}', flush=True)
-gc = subprocess.Popen([sys.executable, "-c", {repr(GRANDCHILD)}])
+gc = subprocess.Popen([sys.executable, "-c", {repr(grandchild_script)}])
 print(f'GRANDCHILD_PID:{{gc.pid}}', flush=True)
 time.sleep(60)
 """
-    LAUNCHER = f"""
+    launcher_script = f"""
 import os, subprocess, sys, time
 print(f'[LAUNCHER] PID={{os.getpid()}}', flush=True)
-child = subprocess.Popen([sys.executable, "-c", {repr(CHILD)}], stdout=sys.stdout)
+child = subprocess.Popen(
+    [sys.executable, "-c", {repr(child_script)}], stdout=sys.stdout
+)
 time.sleep(60)
 """
     launcher = subprocess.Popen(
-        [sys.executable, "-c", LAUNCHER],
+        [sys.executable, "-c", launcher_script],
         preexec_fn=lambda: enter_cgroup(cg),
         stdout=subprocess.PIPE,
         text=True,
@@ -318,7 +573,7 @@ time.sleep(60)
     print(f"Grandchild PID={grandchild_pid}")
     print(f"cgroup members: {pids}  (all 3 inherited membership through fork)")
 
-    print(f"\nKilling cgroup ...")
+    print("\nKilling cgroup ...")
     strategy = cgroup_kill(cg)
     print(f"  (strategy: {strategy})")
     time.sleep(0.3)
@@ -346,29 +601,51 @@ time.sleep(60)
 # Scenario 3
 # ---------------------------------------------------------------------------
 def scenario_setpgid(parent):
+    """Run scenario 3: GRANDCHILD calls ``os.setpgid(0, 0)``.
+
+    Confirms that changing the process group ID has no effect on cgroup
+    membership. Even though GRANDCHILD moves itself to a new process group,
+    it remains in the same cgroup and is killed along with the rest of the
+    tree.
+
+    Parameters
+    ----------
+    parent : str
+        Absolute path to the writable parent cgroup directory.
+
+    Returns:
+    -------
+    tuple
+        A four-element tuple
+        ``(name, description, expected_kill_all, observed_kill_all)``.
+        ``observed_kill_all`` is ``True`` if all processes were killed despite
+        the ``setpgid`` call.
+    """
     header("SCENARIO 3: setpgid has no effect on cgroup membership")
     cg = make_cgroup(parent)
 
-    GRANDCHILD = (
+    grandchild_script = (
         "import os,time; "
         "os.setpgid(0,0); "
         "print(f'[GRANDCHILD] PID={os.getpid()} PGID={os.getpgid(0)}', flush=True); "
         "time.sleep(60)"
     )
-    CHILD = f"""
+    child_script = f"""
 import os, subprocess, sys, time
-gc = subprocess.Popen([sys.executable, "-c", {repr(GRANDCHILD)}])
+gc = subprocess.Popen([sys.executable, "-c", {repr(grandchild_script)}])
 print(f'GRANDCHILD_PID:{{gc.pid}}', flush=True)
 time.sleep(60)
 """
-    LAUNCHER = f"""
+    launcher_script = f"""
 import os, subprocess, sys, time
 print(f'[LAUNCHER] PID={{os.getpid()}}', flush=True)
-child = subprocess.Popen([sys.executable, "-c", {repr(CHILD)}], stdout=sys.stdout)
+child = subprocess.Popen(
+    [sys.executable, "-c", {repr(child_script)}], stdout=sys.stdout
+)
 time.sleep(60)
 """
     launcher = subprocess.Popen(
-        [sys.executable, "-c", LAUNCHER],
+        [sys.executable, "-c", launcher_script],
         preexec_fn=lambda: enter_cgroup(cg),
         stdout=subprocess.PIPE,
         text=True,
@@ -387,7 +664,7 @@ time.sleep(60)
     )
     print(f"cgroup members: {pids}")
 
-    print(f"\nKilling cgroup ...")
+    print("\nKilling cgroup ...")
     cgroup_kill(cg)
     time.sleep(0.3)
 
@@ -414,29 +691,51 @@ time.sleep(60)
 # Scenario 4
 # ---------------------------------------------------------------------------
 def scenario_setsid(parent):
+    """Run scenario 4: GRANDCHILD calls ``os.setsid()``.
+
+    Confirms that creating a new session has no effect on cgroup membership.
+    Even though GRANDCHILD moves itself to a new session and process group,
+    it remains in the same cgroup and is killed along with the rest of the
+    tree.
+
+    Parameters
+    ----------
+    parent : str
+        Absolute path to the writable parent cgroup directory.
+
+    Returns:
+    -------
+    tuple
+        A four-element tuple
+        ``(name, description, expected_kill_all, observed_kill_all)``.
+        ``observed_kill_all`` is ``True`` if all processes were killed despite
+        the ``setsid`` call.
+    """
     header("SCENARIO 4: setsid has no effect on cgroup membership")
     cg = make_cgroup(parent)
 
-    GRANDCHILD = (
+    grandchild_script = (
         "import os,time; "
         "os.setsid(); "
         "print(f'[GRANDCHILD] PID={os.getpid()} SID={os.getsid(0)}', flush=True); "
         "time.sleep(60)"
     )
-    CHILD = f"""
+    child_script = f"""
 import os, subprocess, sys, time
-gc = subprocess.Popen([sys.executable, "-c", {repr(GRANDCHILD)}])
+gc = subprocess.Popen([sys.executable, "-c", {repr(grandchild_script)}])
 print(f'GRANDCHILD_PID:{{gc.pid}}', flush=True)
 time.sleep(60)
 """
-    LAUNCHER = f"""
+    launcher_script = f"""
 import os, subprocess, sys, time
 print(f'[LAUNCHER] PID={{os.getpid()}}', flush=True)
-child = subprocess.Popen([sys.executable, "-c", {repr(CHILD)}], stdout=sys.stdout)
+child = subprocess.Popen(
+    [sys.executable, "-c", {repr(child_script)}], stdout=sys.stdout
+)
 time.sleep(60)
 """
     launcher = subprocess.Popen(
-        [sys.executable, "-c", LAUNCHER],
+        [sys.executable, "-c", launcher_script],
         preexec_fn=lambda: enter_cgroup(cg),
         stdout=subprocess.PIPE,
         text=True,
@@ -451,11 +750,12 @@ time.sleep(60)
     pids = cgroup_pids(cg)
     print(f"Launcher   PID={launcher.pid}")
     print(
-        f"Grandchild PID={grandchild_pid} (called setsid() — new session, but still in cgroup)"
+        f"Grandchild PID={grandchild_pid}"
+        " (called setsid() — new session, but still in cgroup)"
     )
     print(f"cgroup members: {pids}")
 
-    print(f"\nKilling cgroup ...")
+    print("\nKilling cgroup ...")
     cgroup_kill(cg)
     time.sleep(0.3)
 
@@ -482,10 +782,34 @@ time.sleep(60)
 # Scenario 5 — ROS2 full stack
 # ---------------------------------------------------------------------------
 def scenario_ros2_full_stack(parent, env):
+    """Run scenario 5: full ROS 2 workload with launch, bag play, and bag record.
+
+    Launches the Beluga AMCL stack (``ros2 launch``), a bag player
+    (``ros2 bag play``), and a bag recorder (``ros2 bag record``) as three
+    separate top-level processes, all placed into the same cgroup. After a
+    fixed run duration the cgroup is killed and the system is scanned for any
+    surviving ROS 2 processes to detect descendants that may have escaped.
+
+    Parameters
+    ----------
+    parent : str
+        Absolute path to the writable parent cgroup directory.
+    env : dict
+        Environment variables to pass to all subprocesses, as returned by
+        ``ros2_env()``.
+
+    Returns:
+    -------
+    tuple
+        A four-element tuple
+        ``(name, description, expected_kill_all, observed_kill_all)``.
+        ``observed_kill_all`` is ``True`` if no ROS 2 processes survived after
+        ``cgroup.kill`` was applied.
+    """
     header("SCENARIO 5: ROS2 full stack (launch + bag play + bag record)")
     print(f"  Launcher: ros2 launch {LAUNCH_PACKAGE} {LAUNCH_FILE}")
     print(f"  Bag:      {BAG_PATH}")
-    print(f"  Cleanup:  cgroup.kill")
+    print("  Cleanup:  cgroup.kill")
     print(f"  Duration: {RUN_DURATION}s")
 
     baseline = scan_ros2_processes()
@@ -536,7 +860,7 @@ def scenario_ros2_full_stack(parent, env):
     print_tree("Descendant tree before kill", sorted(full_tree))
     print(f"\ncgroup.procs members: {len(cgroup_pids(cg))}")
 
-    print(f"\nKilling cgroup with cgroup.kill ...")
+    print("\nKilling cgroup with cgroup.kill ...")
     cgroup_kill(cg)
     time.sleep(2.0)
 
@@ -546,8 +870,9 @@ def scenario_ros2_full_stack(parent, env):
     print_tree("Global ROS2 escapees AFTER cgroup.kill", escapees)
 
     if escapees:
+        n = len(escapees)
         print(
-            f"\n⚠️  Force-killing {len(escapees)} leaked process(es) so the bench can exit cleanly"
+            f"\n⚠️  Force-killing {n} leaked process(es) so the bench can exit cleanly"
         )
         force_kill(escapees)
         time.sleep(0.5)
@@ -569,13 +894,19 @@ def scenario_ros2_full_stack(parent, env):
     if ok:
         print("\n✅ All ROS2 processes killed by cgroup.kill — full tree contained")
     else:
-        print(
-            f"\n❌ ESCAPE DETECTED ({len(tree_survivors)} in tree, {len(escapees)} global)"
-        )
+        n_tree = len(tree_survivors)
+        n_esc = len(escapees)
+        print(f"\n❌ ESCAPE DETECTED ({n_tree} in tree, {n_esc} global)")
     return ("ros2_full_stack", "ROS2 launch + bag play + bag record", True, ok)
 
 
 def main():
+    """Run all cgroups v2 test scenarios and print a summary table.
+
+    Verifies that the cgroups v2 mechanism is available and that the ROS 2
+    environment is sourced, then runs the five scenarios in sequence. Prints
+    a per-scenario summary table showing expected vs observed outcome for each.
+    """
     print("=" * 60)
     print("CGROUPS v2 — TEST BENCH")
     print("Mechanism: dedicated cgroup per step + cgroup.kill")
@@ -614,12 +945,10 @@ def main():
 
     cooperative = [r for r in results if r[2]]
     escape = [r for r in results if not r[2]]
-    print(
-        f"\nCooperative scenarios cleaned up: {sum(1 for r in cooperative if r[3])}/{len(cooperative)}"
-    )
-    print(
-        f"Escape scenarios cleaned up:      {sum(1 for r in escape if r[3])}/{len(escape)}"
-    )
+    n_coop = sum(1 for r in cooperative if r[3])
+    n_esc = sum(1 for r in escape if r[3])
+    print(f"\nCooperative scenarios cleaned up: {n_coop}/{len(cooperative)}")
+    print(f"Escape scenarios cleaned up:      {n_esc}/{len(escape)}")
 
 
 if __name__ == "__main__":

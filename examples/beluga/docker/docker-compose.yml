@@ -32,7 +32,7 @@ services:
     security_opt:
       - "unmask=/sys/fs/cgroup"
     systemd: always
-    cgroupns: "host" 
+    cgroupns: "host"
     stdin_open: true
     tty: true
     profiles: ["production"]
