@@ -20,6 +20,7 @@ layer and decorators during a run.
 """
 
 import datetime
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -76,6 +77,7 @@ def _iteration_folder_name(iteration: int) -> str:
     return f"iter_{iteration + 1}"
 
 
+@dataclass(frozen=True)
 class Context:
     """Carries all namespaced information for one benchmark variant.
 
@@ -142,19 +144,19 @@ class Context:
             defaults to "source.path.parent".
         """
         # ctx.variant
-        self.variant = SimpleNamespace(**variant)
+        object.__setattr__(self, "variant", SimpleNamespace(**variant))
 
         # ctx.options
-        self.options = SimpleNamespace(**options)
+        object.__setattr__(self, "options", SimpleNamespace(**options))
 
         # ctx.source
-        self.source = source
+        object.__setattr__(self, "source", source)
 
         # ctx.inputs
-        self.inputs = SimpleNamespace()
+        object.__setattr__(self, "inputs", SimpleNamespace())
 
         # ctx.iteration
-        self.iteration = iteration
+        object.__setattr__(self, "iteration", iteration)
 
         # TODO: Consider moving path construction logic into OutputInfo itself,
         # giving it a constructor that takes base_dir, variation_index, and
@@ -171,10 +173,14 @@ class Context:
         self._variant_index = variant_index
         variant_dir = base / _variant_folder_name(variant_index)
         iteration_dir = variant_dir / _iteration_folder_name(iteration)
-        self.output = OutputInfo(
-            base_dir=base,
-            variant_dir=variant_dir,
-            iteration_dir=iteration_dir,
+        object.__setattr__(
+            self,
+            "output",
+            OutputInfo(
+                base_dir=base,
+                variant_dir=variant_dir,
+                iteration_dir=iteration_dir,
+            ),
         )
 
         self._setup_directories()
@@ -182,7 +188,9 @@ class Context:
         # as parameters.
 
         # ctx.shell
-        self.shell = ShellProxy(dry_run=getattr(self.options, "dry_run", False))
+        object.__setattr__(
+            self, "shell", ShellProxy(dry_run=getattr(self.options, "dry_run", False))
+        )
         self._started_at = datetime.datetime.now().isoformat()
         self._write_metadata()
 

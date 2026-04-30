@@ -112,7 +112,7 @@ def benchmark(variants, num_iterations):
                         variant_index=variant_index,
                         output_dir=output_dir,
                     )
-                    ctx.inputs = resolved_inputs
+                    object.__setattr__(ctx, "inputs", resolved_inputs)
                     fn(ctx)
 
         wrapper.input = inputs.register
