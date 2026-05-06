@@ -17,6 +17,7 @@
 import pytest
 
 from lambkin.core.ctx import Context
+from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.benchmark import benchmark
 from lambkin.core.decorators.input import InputRegistry
 
@@ -72,10 +73,16 @@ def test_hook_with_extra_parameters_raises():
         registry.register(bad_hook)
 
 
-def test_hook_returning_none_raises():
+def test_hook_returning_none_raises(tmp_path):
     """A hook that returns None raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = Context(
+        variant={},
+        iteration=0,
+        options={},
+        source=Source("/my_benchmark.py"),
+        output_dir=tmp_path,
+    )
 
     def dataset(ctx):
         return None
@@ -85,10 +92,16 @@ def test_hook_returning_none_raises():
         registry.resolve(ctx)
 
 
-def test_hook_with_no_return_raises():
+def test_hook_with_no_return_raises(tmp_path):
     """A hook with no return statement raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = Context(
+        variant={},
+        iteration=0,
+        options={},
+        source=Source("/my_benchmark.py"),
+        output_dir=tmp_path,
+    )
 
     def dataset(ctx):
         pass
@@ -98,10 +111,16 @@ def test_hook_with_no_return_raises():
         registry.resolve(ctx)
 
 
-def test_hook_returning_empty_string_raises():
+def test_hook_returning_empty_string_raises(tmp_path):
     """A hook that returns an empty string raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = Context(
+        variant={},
+        iteration=0,
+        options={},
+        source=Source("/my_benchmark.py"),
+        output_dir=tmp_path,
+    )
 
     def dataset(ctx):
         return ""
@@ -111,10 +130,16 @@ def test_hook_returning_empty_string_raises():
         registry.resolve(ctx)
 
 
-def test_hook_returning_blank_string_raises():
+def test_hook_returning_blank_string_raises(tmp_path):
     """A hook that returns a whitespace-only string raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = Context(
+        variant={},
+        iteration=0,
+        options={},
+        source=Source("/my_benchmark.py"),
+        output_dir=tmp_path,
+    )
 
     def dataset(ctx):
         return "   "

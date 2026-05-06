@@ -81,26 +81,29 @@ def _iteration_folder_name(iteration: int) -> str:
 class Context:
     """Carries all namespaced information for one benchmark variant.
 
-    Builds all namespaced sub-objects (variant, inputs, options, output)
-    from the given parameters and automatically creates the required output
-    folders on disk.
+    Immutable by design: all fields are set once at construction time
+    and cannot be reassigned afterwards. Any attempt to set or delete
+    an attribute after construction raises an AttributeError.
 
     Attributes:
     ----------
-    BENCHMARKS_DIRNAME : str
-        Name for the benchmarks directory.
-    variation:
+    variant : SimpleNamespace
         Namespaced algorithm parameters for this run.
         All key-value pairs from the variant dict are exposed as attributes.
-    source:
-        Source object describing the benchmark script being executed.
-    inputs:
-        Namespaced input information.
-    options:
+    options : SimpleNamespace
         Namespaced runtime options.
         All key-value pairs from the options dict are exposed as attributes.
-    output:
-        Namespaced output paths.
+    inputs : SimpleNamespace
+        Namespaced input information, injected by the benchmark runner
+        after resolving all registered input hooks.
+    iteration : int
+        Zero-based repetition index within this variant.
+    source : Source
+        Source object describing the benchmark script being executed.
+    output : OutputInfo
+        Namespaced output paths for this variant and iteration.
+    shell : ShellProxy
+        Shell proxy for running commands during the benchmark.
     """
 
     BENCHMARKS_DIRNAME = "results"
@@ -111,6 +114,7 @@ class Context:
         iteration: int,
         options: dict[str, Any],
         source: Source,
+        inputs: SimpleNamespace | None = None,
         variant_index: int = 0,
         output_dir: Path | str | None = None,
     ) -> None:
@@ -153,16 +157,16 @@ class Context:
         object.__setattr__(self, "source", source)
 
         # ctx.inputs
-        object.__setattr__(self, "inputs", SimpleNamespace())
+        object.__setattr__(self, "inputs", inputs)
 
         # ctx.iteration
         object.__setattr__(self, "iteration", iteration)
 
-        # TODO: Consider moving path construction logic into OutputInfo itself,
-        # giving it a constructor that takes base_dir, variation_index, and
-        # iteration and derives variation_dir and iteration_dir internally. This
-        # would make OutputInfo a cohesive object that owns everything
-        # path-related.
+        # TODO(teresa-ortega): Consider moving path construction logic into
+        # OutputInfo itself, giving it a constructor that takes base_dir,
+        # variation_index, and iteration and derives variation_dir and
+        # iteration_dir internally. This would make OutputInfo a cohesive object
+        # that owns everything path-related
 
         # ctx.output
         base = (
@@ -170,7 +174,6 @@ class Context:
             if output_dir
             else source.path.parent / Context.BENCHMARKS_DIRNAME
         )
-        self._variant_index = variant_index
         variant_dir = base / _variant_folder_name(variant_index)
         iteration_dir = variant_dir / _iteration_folder_name(iteration)
         object.__setattr__(

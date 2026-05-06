@@ -14,9 +14,7 @@
 
 """Unit tests for the benchmark decorator in lambkin.core.decorators."""
 
-from dataclasses import FrozenInstanceError
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -179,31 +177,3 @@ def test_benchmark_empty_variants_raises_error(tmp_path):
         @benchmark(variants=[], num_iterations=1)
         def fn(ctx):
             pass
-
-
-def test_context_is_immutable(tmp_path):
-    """Context fields cannot be reassigned after construction."""
-    source = Source("/my_benchmark.py")
-    ctx = Context(
-        variant={"sensor_model": "beam"},
-        iteration=0,
-        options={"dry_run": True},
-        source=source,
-        variant_index=0,
-        output_dir=tmp_path,
-    )
-
-    with pytest.raises(FrozenInstanceError):
-        ctx.variant = SimpleNamespace()
-
-    with pytest.raises(FrozenInstanceError):
-        ctx.options = SimpleNamespace()
-
-    with pytest.raises(FrozenInstanceError):
-        ctx.inputs = SimpleNamespace()
-
-    with pytest.raises(FrozenInstanceError):
-        ctx.iteration = 99
-
-    with pytest.raises(FrozenInstanceError):
-        ctx.shell = None

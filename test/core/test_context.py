@@ -228,3 +228,31 @@ def test_context_default_output_dir(tmp_path):
         source=source,
     )
     assert ctx.output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
+
+
+def test_context_is_immutable(tmp_path):
+    """Context fields cannot be reassigned after construction."""
+    source = Source("/my_benchmark.py")
+    ctx = Context(
+        variant={"sensor_model": "beam"},
+        iteration=0,
+        options={"dry_run": True},
+        source=source,
+        variant_index=0,
+        output_dir=tmp_path,
+    )
+
+    with pytest.raises(AttributeError):
+        ctx.variant = SimpleNamespace()
+
+    with pytest.raises(AttributeError):
+        ctx.options = SimpleNamespace()
+
+    with pytest.raises(AttributeError):
+        ctx.inputs = SimpleNamespace()
+
+    with pytest.raises(AttributeError):
+        ctx.iteration = 99
+
+    with pytest.raises(AttributeError):
+        ctx.shell = None
