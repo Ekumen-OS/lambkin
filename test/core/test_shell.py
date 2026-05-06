@@ -14,72 +14,157 @@
 
 """Unit tests for the shell class in lambkin.core.shell."""
 
+import subprocess
+
 import pytest
 
-from lambkin.core.shell import ShellProxy
+from lambkin.core.shell import CommandError, ShellProxy
+
+# ── fixtures ──────────────────────────────────────────────────────────────────
 
 
 @pytest.fixture
 def shell():
-    """Return a fresh ShellProxy instance for each test."""
+    """Return a ShellProxy in real execution mode."""
+    return ShellProxy(dry_run=False)
+
+
+@pytest.fixture
+def dry_shell():
+    """Return a ShellProxy in dry-run mode."""
     return ShellProxy(dry_run=True)
 
 
-def test_simple_command(shell, capsys):
-    """Test that a simple single-level command is printed correctly."""
-    shell.ros2.launch("beluga.launch.xml")
-    assert capsys.readouterr().out == "[CMD]: ros2 launch beluga.launch.xml\n"
+# ── dry-run: command construction ─────────────────────────────────────────────
 
 
-def test_chained_command(shell, capsys):
-    """Test that chained attribute access builds the command word by word."""
-    shell.ros2.bag.play("my_bag")
-    assert capsys.readouterr().out == "[CMD]: ros2 bag play my_bag\n"
+def test_simple_command(dry_shell, capsys):
+    """A single-level command is printed correctly."""
+    dry_shell.echo("hello")
+    assert capsys.readouterr().out == "[DRY RUN] echo hello\n"
 
 
-def test_multiple_args(shell, capsys):
-    """Test that multiple positional arguments are appended in order."""
-    shell.ros2.bag.play("my_bag", "--clock", "-r", "1.0")
-    assert capsys.readouterr().out == "[CMD]: ros2 bag play my_bag --clock -r 1.0\n"
+def test_chained_command(dry_shell, capsys):
+    """Chained attribute access builds the command word by word."""
+    dry_shell.ros2.bag.play("my_bag")
+    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag\n"
 
 
-def test_kwarg_becomes_flag(shell, capsys):
-    """Test that keyword arguments are converted to --flag value pairs."""
-    shell.evo_ape.bag2("output.mcap", save_results="out.zip")
+def test_multiple_positional_args(dry_shell, capsys):
+    """Multiple positional arguments are appended in order."""
+    dry_shell.ros2.bag.play("my_bag", "--clock", "-r", "1.0")
+    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag --clock -r 1.0\n"
+
+
+def test_kwarg_becomes_flag(dry_shell, capsys):
+    """Keyword arguments are converted to --flag value pairs."""
+    dry_shell.evo_ape.bag2("output.mcap", save_results="out.zip")
     assert (
         capsys.readouterr().out
-        == "[CMD]: evo_ape bag2 output.mcap --save-results out.zip\n"
+        == "[DRY RUN] evo_ape bag2 output.mcap --save-results out.zip\n"
     )
 
 
-def test_arbitrary_tool(shell, capsys):
-    """Test that any top-level tool name works without hardcoding."""
-    shell.evo.traj("output.mcap")
-    assert capsys.readouterr().out == "[CMD]: evo traj output.mcap\n"
+def test_kwarg_true_is_standalone_flag(dry_shell, capsys):
+    """A boolean True kwarg produces a standalone flag."""
+    dry_shell.ros2.bag.play("my_bag", clock=True)
+    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag --clock\n"
 
 
-def test_kwarg_true_is_standalone_flag(shell, capsys):
-    """Test that a boolean True kwarg produces a standalone flag."""
-    shell.ros2.bag.play("my_bag", clock=True)
-    assert capsys.readouterr().out == "[CMD]: ros2 bag play my_bag --clock\n"
+def test_kwarg_false_is_omitted(dry_shell, capsys):
+    """A boolean False kwarg is omitted entirely."""
+    dry_shell.ros2.bag.play("my_bag", clock=False)
+    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag\n"
 
 
-def test_kwarg_false_is_ignored(shell, capsys):
-    """Test that a boolean False kwarg is ignored."""
-    shell.ros2.bag.play("my_bag", clock=False)
-    assert capsys.readouterr().out == "[CMD]: ros2 bag play my_bag\n"
-
-
-def test_path_with_spaces(shell, capsys):
-    """Test that positional args with spaces are correctly quoted."""
-    shell.ros2.bag.play("/my path/to/bag.mcap")
-    assert capsys.readouterr().out == "[CMD]: ros2 bag play '/my path/to/bag.mcap'\n"
-
-
-def test_kwarg_multiple_underscores_converted(shell, capsys):
-    """Test that multiple underscores in kwarg names are converted to dashes."""
-    shell.evo_ape.bag2("output.mcap", save_all_results="out.zip")
+def test_kwarg_multiple_underscores_converted(dry_shell, capsys):
+    """Multiple underscores in kwarg names are all converted to dashes."""
+    dry_shell.evo_ape.bag2("output.mcap", save_all_results="out.zip")
     assert (
         capsys.readouterr().out
-        == "[CMD]: evo_ape bag2 output.mcap --save-all-results out.zip\n"
+        == "[DRY RUN] evo_ape bag2 output.mcap --save-all-results out.zip\n"
     )
+
+
+def test_path_with_spaces(dry_shell, capsys):
+    """Positional args with spaces are quoted correctly."""
+    dry_shell.ros2.bag.play("/my path/to/bag.mcap")
+    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play '/my path/to/bag.mcap'\n"
+
+
+def test_arbitrary_tool(dry_shell, capsys):
+    """Any top-level tool name works without hardcoding."""
+    dry_shell.evo.traj("output.mcap")
+    assert capsys.readouterr().out == "[DRY RUN] evo traj output.mcap\n"
+
+
+# ── real execution ────────────────────────────────────────────────────────────
+
+
+def test_successful_command(shell):
+    """A successful command returns a CompletedProcess with returncode 0."""
+    result = shell.echo("hello")
+    assert result is not None
+    assert result.returncode == 0
+
+
+def test_returns_completed_process(shell):
+    """__call__ returns a CompletedProcess instance on success."""
+    result = shell.true()
+    assert isinstance(result, subprocess.CompletedProcess)
+
+
+def test_failed_command_raises_command_error(shell):
+    """A command that exits with non-zero raises CommandError."""
+    with pytest.raises(CommandError):
+        shell.false()
+
+
+def test_command_error_carries_returncode(shell):
+    """CommandError carries the non-zero return code of the failed command."""
+    with pytest.raises(CommandError) as exc_info:
+        shell.false()
+    assert exc_info.value.returncode == 1
+
+
+def test_command_error_carries_argv(shell):
+    """CommandError carries the argv list of the failed command."""
+    with pytest.raises(CommandError) as exc_info:
+        shell.false()
+    assert exc_info.value.command == ["false"]
+
+
+def test_path_with_spaces_no_shell_injection(shell, tmp_path):
+    """A path with spaces is passed as a single token, not split by a shell."""
+    target = tmp_path / "my file.txt"
+    shell.touch(str(target))
+    assert target.exists()
+
+
+def test_kwarg_value_with_spaces_no_injection(shell, tmp_path):
+    """A kwarg value with spaces is passed as a single token."""
+    target = tmp_path / "out file.txt"
+    shell.touch(str(target))
+    assert target.exists()
+
+
+def test_unknown_command_raises_file_not_found(shell):
+    """An unknown command raises FileNotFoundError, not CommandError."""
+    with pytest.raises(FileNotFoundError):
+        shell.this_command_does_not_exist_at_all()
+
+
+def test_dry_run_returns_none(dry_shell):
+    """In dry-run mode, __call__ returns None instead of CompletedProcess."""
+    result = dry_shell.echo("hello")
+    assert result is None
+
+
+def test_chained_proxy_independence(dry_shell, capsys):
+    """Each chained proxy is independent — reusing a base proxy works correctly."""
+    base = dry_shell.ros2.bag
+    base.play("bag1")
+    base.record("bag2")
+    out = capsys.readouterr().out
+    assert "[DRY RUN] ros2 bag play bag1" in out
+    assert "[DRY RUN] ros2 bag record bag2" in out
