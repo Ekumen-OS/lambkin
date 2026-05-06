@@ -85,6 +85,5 @@ class InputRegistry:
         for hook in self._hooks:
             result = hook(ctx)
             _validate_result(hook, result)
-            resolved[hook.__name__] = result  # dict local, ctx no se toca
-
+            resolved[hook.__name__] = result
         return SimpleNamespace(**resolved)
