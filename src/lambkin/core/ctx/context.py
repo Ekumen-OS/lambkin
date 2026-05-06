@@ -81,29 +81,26 @@ def _iteration_folder_name(iteration: int) -> str:
 class Context:
     """Carries all namespaced information for one benchmark variant.
 
-    Immutable by design: all fields are set once at construction time
-    and cannot be reassigned afterwards. Any attempt to set or delete
-    an attribute after construction raises an AttributeError.
+    Builds all namespaced sub-objects (variant, inputs, options, output)
+    from the given parameters and automatically creates the required output
+    folders on disk.
 
     Attributes:
     ----------
-    variant : SimpleNamespace
+    BENCHMARKS_DIRNAME : str
+        Name for the benchmarks directory.
+    variation:
         Namespaced algorithm parameters for this run.
         All key-value pairs from the variant dict are exposed as attributes.
-    options : SimpleNamespace
+    source:
+        Source object describing the benchmark script being executed.
+    inputs:
+        Namespaced input information.
+    options:
         Namespaced runtime options.
         All key-value pairs from the options dict are exposed as attributes.
-    inputs : SimpleNamespace
-        Namespaced input information, injected by the benchmark runner
-        after resolving all registered input hooks.
-    iteration : int
-        Zero-based repetition index within this variant.
-    source : Source
-        Source object describing the benchmark script being executed.
-    output : OutputInfo
-        Namespaced output paths for this variant and iteration.
-    shell : ShellProxy
-        Shell proxy for running commands during the benchmark.
+    output:
+        Namespaced output paths.
     """
 
     BENCHMARKS_DIRNAME = "results"
