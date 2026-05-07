@@ -159,6 +159,9 @@ class Context:
         # ctx.iteration
         object.__setattr__(self, "iteration", iteration)
 
+        # ctx._variant_index
+        object.__setattr__(self, "_variant_index", variant_index)
+
         # TODO(teresa-ortega): Consider moving path construction logic into
         # OutputInfo itself, giving it a constructor that takes base_dir,
         # variation_index, and iteration and derives variation_dir and
@@ -191,7 +194,7 @@ class Context:
         object.__setattr__(
             self, "shell", ShellProxy(dry_run=getattr(self.options, "dry_run", False))
         )
-        self._started_at = datetime.datetime.now().isoformat()
+        object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
         self._write_metadata()
 
     def _write_metadata(self) -> None:
