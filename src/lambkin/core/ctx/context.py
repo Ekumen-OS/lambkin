@@ -19,9 +19,12 @@ configuration, runtime metadata, and cleanup hooks. Shared across the process
 layer and decorators during a run.
 """
 
+import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+
+import yaml
 
 from lambkin.core.shell import ShellProxy
 
@@ -165,6 +168,7 @@ class Context:
             if output_dir
             else source.path.parent / Context.BENCHMARKS_DIRNAME
         )
+        self._variant_index = variant_index
         variant_dir = base / _variant_folder_name(variant_index)
         iteration_dir = variant_dir / _iteration_folder_name(iteration)
         self.output = OutputInfo(
@@ -179,6 +183,32 @@ class Context:
 
         # ctx.shell
         self.shell = ShellProxy(dry_run=getattr(self.options, "dry_run", False))
+        self._started_at = datetime.datetime.now().isoformat()
+        self._write_metadata()
+
+    def _write_metadata(self) -> None:
+        """Write a YAML metadata file to the iteration output directory.
+
+        Serializes run identity, parameters, source, and output paths
+        to 'metadata.yaml inside 'output.iteration_dir'. The file
+        is written once at context creation time and is not updated afterwards.
+        """
+        metadata = {
+            "started_at": self._started_at,
+            "variant_index": self._variant_index,
+            "iteration": self.iteration,
+            "variant": vars(self.variant),
+            "options": vars(self.options),
+            "source": str(self.source.path),
+            "output": {
+                "base_dir": str(self.output.base_dir),
+                "variant_dir": str(self.output.variant_dir),
+                "iteration_dir": str(self.output.iteration_dir),
+            },
+        }
+        meta_path = self.output.iteration_dir / "metadata.yaml"
+        with open(meta_path, "w") as f:
+            yaml.dump(metadata, f, default_flow_style=False, sort_keys=False)
 
     def _setup_directories(self) -> None:
         """Create variant and iteration directories."""
