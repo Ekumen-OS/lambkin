@@ -20,8 +20,6 @@ import pytest
 
 from lambkin.core.shell import CommandError, ShellProxy
 
-# ── fixtures ──────────────────────────────────────────────────────────────────
-
 
 @pytest.fixture
 def shell():
@@ -33,9 +31,6 @@ def shell():
 def dry_shell():
     """Return a ShellProxy in dry-run mode."""
     return ShellProxy(dry_run=True)
-
-
-# ── dry-run: command construction ─────────────────────────────────────────────
 
 
 def test_simple_command(dry_shell, capsys):
@@ -98,9 +93,6 @@ def test_arbitrary_tool(dry_shell, capsys):
     assert capsys.readouterr().out == "[DRY RUN] evo traj output.mcap\n"
 
 
-# ── real execution ────────────────────────────────────────────────────────────
-
-
 def test_successful_command(shell):
     """A successful command returns a CompletedProcess with returncode 0."""
     result = shell.echo("hello")
@@ -114,10 +106,37 @@ def test_returns_completed_process(shell):
     assert isinstance(result, subprocess.CompletedProcess)
 
 
-def test_failed_command_raises_command_error(shell):
-    """A command that exits with non-zero raises CommandError."""
-    with pytest.raises(CommandError):
+def test_not_found_raises_command_error(shell):
+    """A command that does not exist raises CommandError with a helpful message."""
+    with pytest.raises(CommandError) as exc_info:
+        shell.this_command_does_not_exist_at_all()
+    assert exc_info.value.returncode is None
+    assert "not found" in str(exc_info.value).lower()
+
+
+def test_permission_error_raises_command_error(shell, tmp_path):
+    """A non-executable file raises CommandError with a helpful message."""
+    script = tmp_path / "script.sh"
+    script.write_text("#!/bin/bash\necho hello\n")
+    script.chmod(0o644)
+    with pytest.raises(CommandError) as exc_info:
+        shell.__getattr__(str(script))()
+    assert exc_info.value.returncode is None
+    assert "permission" in str(exc_info.value).lower()
+
+
+def test_command_error_message_contains_command(shell):
+    """CommandError message contains the command that failed."""
+    with pytest.raises(CommandError) as exc_info:
         shell.false()
+    assert "false" in str(exc_info.value)
+
+
+def test_not_found_message_contains_command_name(shell):
+    """CommandError message for not found contains the command name."""
+    with pytest.raises(CommandError) as exc_info:
+        shell.this_command_does_not_exist_at_all()
+    assert "this_command_does_not_exist_at_all" in str(exc_info.value)
 
 
 def test_command_error_carries_returncode(shell):
@@ -146,12 +165,6 @@ def test_kwarg_value_with_spaces_no_injection(shell, tmp_path):
     target = tmp_path / "out file.txt"
     shell.touch(str(target))
     assert target.exists()
-
-
-def test_unknown_command_raises_file_not_found(shell):
-    """An unknown command raises FileNotFoundError, not CommandError."""
-    with pytest.raises(FileNotFoundError):
-        shell.this_command_does_not_exist_at_all()
 
 
 def test_dry_run_returns_none(dry_shell):

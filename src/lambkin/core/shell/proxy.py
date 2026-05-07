@@ -26,25 +26,30 @@ from typing import Any
 
 
 class CommandError(Exception):
-    """Raised when a shell command exits with a non-zero return code.
+    """Raised when a shell command cannot be started or exits with an error.
 
-    Wraps subprocess.CalledProcessError to decouple the rest of the codebase
-    from the subprocess module and to carry the argv list and return code in a
-    single, inspectable object.
+    Attributes:
+        command:    The argv list passed to the operating system.
+        returncode: Exit code of the process, or None if it never started.
     """
 
-    def __init__(self, command: list[str], returncode: int) -> None:
-        """Initialize the error with the command that failed and its return code.
+    def __init__(
+        self,
+        command: list[str],
+        message: str,
+        returncode: int | None = None,
+    ) -> None:
+        """Initialize the error with the command that failed and its cause.
 
         Args:
-            command: The argv list that was passed to the operating system.
-            returncode: The non-zero exit code returned by the process.
+            command:    The argv list that was passed to the operating system.
+            message:    Human-readable description of the failure.
+            returncode: The exit code returned by the process, or None if it
+                        never started.
         """
         self.command = command
         self.returncode = returncode
-        super().__init__(
-            f"Command {shlex.join(command)!r} failed with return code {returncode}"
-        )
+        super().__init__(message)
 
 
 class _CommandProxy:
@@ -138,7 +143,28 @@ class _CommandProxy:
         try:
             return subprocess.run(argv, check=True)
         except subprocess.CalledProcessError as e:
-            raise CommandError(argv, e.returncode) from e
+            raise CommandError(
+                argv,
+                f"Command {shlex.join(argv)!r} failed with return code {e.returncode}.",
+                returncode=e.returncode,
+            ) from e
+        except FileNotFoundError:
+            raise CommandError(
+                argv,
+                f"Command not found: {argv[0]!r}. "
+                f"Make sure it is installed and available on PATH.",
+            ) from None
+        except PermissionError:
+            raise CommandError(
+                argv,
+                f"Permission denied: {argv[0]!r} is not executable."
+                f"Check file permissions.",
+            ) from None
+        except OSError as e:
+            raise CommandError(
+                argv,
+                f"OS error while starting {argv[0]!r}: {e}.",
+            ) from e
 
 
 class ShellProxy:
