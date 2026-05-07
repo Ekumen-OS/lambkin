@@ -84,6 +84,12 @@ def benchmark(variants, num_iterations):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             source = Source(path=inspect.getfile(fn))
+            # The base context creates a directory for variant 1 / iteration 1
+            # containing a metadata file with the information available at this
+            # point in time.
+            # This directory will later be overwritten with the
+            # actual data collected for variant 1 / iteration 1 during
+            # execution.
             base_ctx = Context(
                 variant={},
                 iteration=0,
@@ -92,6 +98,8 @@ def benchmark(variants, num_iterations):
                 variant_index=0,
                 output_dir=output_dir,
             )
+            # TODO(teresa-ortega): Consider an alternative approach for managing
+            # the base context.
             inputs.resolve(base_ctx)
             resolved_inputs = base_ctx.inputs
             for variant_index, variant in enumerate(variants):
