@@ -21,6 +21,7 @@ injecting their return values into "ctx.inputs" under the hook's function name.
 """
 
 import inspect
+from types import SimpleNamespace
 
 
 def _validate_result(hook_fn, result) -> None:
@@ -74,8 +75,15 @@ class InputRegistry:
         return hook_fn
 
     def resolve(self, ctx):
-        """Resolve all registered input hooks."""
+        """Resolve all registered input hooks and return a SimpleNamespace snapshot.
+
+        Collects all hook results into a local dict first so ctx is never
+        mutated during resolution. The returned snapshot is passed to the
+        Context constructor by the benchmark runner.
+        """
+        resolved = {}
         for hook in self._hooks:
             result = hook(ctx)
             _validate_result(hook, result)
-            setattr(ctx.inputs, hook.__name__, result)
+            resolved[hook.__name__] = result
+        return SimpleNamespace(**resolved)

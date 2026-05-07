@@ -42,12 +42,14 @@ def test_register_returns_original_function():
 def test_registered_hook_name_is_preserved():
     """The ctx.inputs attribute name is the hook's __name__."""
     registry = InputRegistry()
+    ctx = Context.__new__(Context)
 
     def my_dataset(ctx):
-        return "x"
+        return "some_value"
 
     registry.register(my_dataset)
-    assert registry._hooks[0].__name__ == "my_dataset"
+    result = registry.resolve(ctx)
+    assert hasattr(result, "my_dataset")
 
 
 def test_hook_with_no_parameters_raises():

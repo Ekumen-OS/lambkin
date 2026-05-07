@@ -100,8 +100,7 @@ def benchmark(variants, num_iterations):
             )
             # TODO(teresa-ortega): Consider an alternative approach for managing
             # the base context.
-            inputs.resolve(base_ctx)
-            resolved_inputs = base_ctx.inputs
+            resolved_inputs = inputs.resolve(base_ctx)
             for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
                     ctx = Context(
@@ -109,10 +108,10 @@ def benchmark(variants, num_iterations):
                         iteration=iteration,
                         options=options,
                         source=source,
+                        inputs=resolved_inputs,
                         variant_index=variant_index,
                         output_dir=output_dir,
                     )
-                    ctx.inputs = resolved_inputs
                     fn(ctx)
 
         wrapper.input = inputs.register

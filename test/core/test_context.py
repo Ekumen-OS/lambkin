@@ -178,24 +178,8 @@ def test_source_path_is_set_correctly(ctx):
 
 
 def test_inputs_defaults_to_empty_namespace(ctx):
-    """ctx.inputs is an empty SimpleNamespace when no inputs are registered."""
-    assert isinstance(ctx.inputs, SimpleNamespace)
-    assert vars(ctx.inputs) == {}
-
-
-def test_inputs_can_be_dynamically_populated(ctx):
-    """ctx.inputs correctly accepts dynamic attribute assignments via setattr().
-
-    This verifies the behavior required by the @nominal.input system.
-    """
-    test_dataset = "/data/bags/run1.bag"
-    test_folder = "/data/my_folder"
-
-    ctx.inputs.dataset = test_dataset
-    ctx.inputs.my_folder = test_folder
-
-    assert ctx.inputs.dataset == test_dataset
-    assert ctx.inputs.my_folder == test_folder
+    """ctx.inputs is None when no inputs are registered."""
+    assert ctx.inputs is None
 
 
 @pytest.mark.parametrize("iteration", [0, 1, 5, 42])
@@ -228,3 +212,31 @@ def test_context_default_output_dir(tmp_path):
         source=source,
     )
     assert ctx.output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
+
+
+def test_context_is_immutable(tmp_path):
+    """Context fields cannot be reassigned after construction."""
+    source = Source("/my_benchmark.py")
+    ctx = Context(
+        variant={"sensor_model": "beam"},
+        iteration=0,
+        options={"dry_run": True},
+        source=source,
+        variant_index=0,
+        output_dir=tmp_path,
+    )
+
+    with pytest.raises(AttributeError):
+        ctx.variant = SimpleNamespace()
+
+    with pytest.raises(AttributeError):
+        ctx.options = SimpleNamespace()
+
+    with pytest.raises(AttributeError):
+        ctx.inputs = SimpleNamespace()
+
+    with pytest.raises(AttributeError):
+        ctx.iteration = 99
+
+    with pytest.raises(AttributeError):
+        ctx.shell = None
