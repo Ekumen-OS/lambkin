@@ -1,0 +1,141 @@
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""cgroup v2 utilities for process lifecycle management in lambkin benchmarks."""
+
+from __future__ import annotations
+
+import os
+import signal
+import time
+import uuid
+from pathlib import Path
+
+
+def find_delegated_cgroup() -> Path:
+    """Return the delegated cgroup for the current process.
+
+    Returns:
+    -------
+    Path
+        The cgroup directory for the current process.
+
+    Raises:
+    ------
+    RuntimeError
+        If no cgroup v2 directory is found.
+    """
+    cgroup_file = Path("/proc/self/cgroup")
+    for line in cgroup_file.read_text().splitlines():
+        if line.startswith("0::"):
+            rel = line[3:].strip()
+            return Path("/sys/fs/cgroup") / rel.lstrip("/")
+    raise RuntimeError("No cgroup v2 found.")
+
+
+def make_cgroup(parent: Path, name: str) -> Path:
+    """Create a child cgroup under parent and return its path.
+
+    Parameters
+    ----------
+    parent : Path
+        The parent cgroup directory.
+    name : str
+        Name for the new child cgroup.
+
+    Returns:
+    -------
+    Path
+        The path to the newly created cgroup directory.
+    """
+    child = parent / name
+    child.mkdir(exist_ok=True)
+    return child
+
+
+def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
+    """Terminate all processes in a cgroup with a graduated signal sequence.
+
+    Sends SIGTERM to all members first, waits for the grace period, then
+    sends SIGKILL to any survivors.
+
+    Parameters
+    ----------
+    cgroup : Path
+        The cgroup directory to kill.
+    grace_period : float
+        Seconds to wait after SIGTERM before sending SIGKILL.
+    """
+    procs_file = cgroup / "cgroup.procs"
+
+    for pid_str in procs_file.read_text().split():
+        try:
+            os.kill(int(pid_str), signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
+    deadline = time.monotonic() + grace_period
+    while time.monotonic() < deadline:
+        if not procs_file.read_text().strip():
+            return
+        time.sleep(0.05)
+
+    for pid_str in procs_file.read_text().split():
+        try:
+            os.kill(int(pid_str), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        if not procs_file.read_text().strip():
+            return
+        time.sleep(0.05)
+
+
+def remove_cgroup(cgroup: Path) -> None:
+    """Remove a cgroup directory once it is empty.
+
+    Parameters
+    ----------
+    cgroup : Path
+        The cgroup directory to remove.
+    """
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        try:
+            cgroup.rmdir()
+            return
+        except OSError:
+            time.sleep(0.05)
+
+
+def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
+    """Create a cgroup for one benchmark iteration.
+
+    Parameters
+    ----------
+    delegated : Path
+        The delegated cgroup for this process.
+    iteration_dir : Path
+        The iteration output directory, used to derive a unique cgroup name.
+
+    Returns:
+    -------
+    Path
+        The path to the newly created iteration cgroup directory.
+    """
+    name = (
+        f"iter-{iteration_dir.parent.name}-{iteration_dir.name}-{uuid.uuid4().hex[:8]}"
+    )
+    return make_cgroup(delegated, name)

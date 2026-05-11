@@ -18,3 +18,7 @@ Provides two execution modes:
 - background: non-blocking process launch.
 - foreground: blocking process execution.
 """
+
+from .background import BackgroundProcess, ProcessDiedUnexpectedlyError, background
+
+__all__ = ["BackgroundProcess", "ProcessDiedUnexpectedlyError", "background"]

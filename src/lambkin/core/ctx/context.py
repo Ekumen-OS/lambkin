@@ -28,6 +28,7 @@ from typing import Any
 import yaml
 
 from lambkin.common import defaults
+from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
 from lambkin.core.shell import ShellProxy
 
 from .source import Source
@@ -188,6 +189,13 @@ class Context:
         )
 
         self._setup_directories()
+        # TODO(teresa-ortega): Implement a metadata file to remap folder names
+        # as parameters.
+        iteration_cgroup = make_iteration_cgroup(
+            find_delegated_cgroup(),
+            iteration_dir,
+        )
+        object.__setattr__(self, "iteration_cgroup", iteration_cgroup)
 
         # ctx.shell
         object.__setattr__(
@@ -196,6 +204,7 @@ class Context:
             ShellProxy(
                 dry_run=getattr(self.options, "dry_run", defaults.DRY_RUN),
                 cwd=iteration_dir,
+                cgroup=iteration_cgroup,
             ),
         )
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
