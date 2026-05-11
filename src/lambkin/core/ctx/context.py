@@ -176,6 +176,7 @@ class Context:
         )
         variant_dir = base / _variant_folder_name(variant_index)
         iteration_dir = variant_dir / _iteration_folder_name(iteration)
+        object.__setattr__(self, "iteration_dir", iteration_dir)
         object.__setattr__(
             self,
             "output",
@@ -192,7 +193,12 @@ class Context:
 
         # ctx.shell
         object.__setattr__(
-            self, "shell", ShellProxy(dry_run=getattr(self.options, "dry_run", False))
+            self,
+            "shell",
+            ShellProxy(
+                dry_run=getattr(self.options, "dry_run", False),
+                cwd=self.iteration_dir,
+            ),
         )
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
         self._write_metadata()

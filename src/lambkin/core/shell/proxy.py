@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import shlex
 import subprocess
+from pathlib import Path
 from typing import Any
 
 
@@ -64,15 +65,20 @@ class _CommandProxy:
     obtain the first proxy in a chain.
     """
 
-    def __init__(self, parts: list[str], dry_run: bool = False) -> None:
+    def __init__(
+        self, parts: list[str], dry_run: bool = False, cwd: Path | None = None
+    ) -> None:
         """Initialize the proxy with the command tokens accumulated so far.
 
         Args:
             parts: The list of command tokens accumulated so far.
             dry_run: If True, commands are printed instead of executed.
+            cwd: Working directory for the command when dispatched. Inherited
+            from ShellProxy and propagated through every chained proxy.
         """
         self._parts = parts
         self._dry_run = dry_run
+        self._cwd = cwd
 
     def __getattr__(self, name: str) -> _CommandProxy:
         """Append a new token to the command and return a new proxy.
@@ -86,7 +92,7 @@ class _CommandProxy:
         Returns:
             A new proxy with the token appended.
         """
-        return _CommandProxy(self._parts + [name], self._dry_run)
+        return _CommandProxy(self._parts + [name], self._dry_run, self._cwd)
 
     def _build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.
@@ -141,7 +147,7 @@ class _CommandProxy:
             print(f"[DRY RUN] {shlex.join(argv)}")
             return None
         try:
-            return subprocess.run(argv, check=True)
+            return subprocess.run(argv, check=True, cwd=self._cwd)
         except subprocess.CalledProcessError as e:
             raise CommandError(
                 argv,
@@ -157,7 +163,7 @@ class _CommandProxy:
         except PermissionError:
             raise CommandError(
                 argv,
-                f"Permission denied: {argv[0]!r} is not executable."
+                f"Permission denied: {argv[0]!r} is not executable. "
                 f"Check file permissions.",
             ) from None
         except OSError as e:
@@ -183,13 +189,16 @@ class ShellProxy:
     for testing and for recording what a benchmark would do without running it.
     """
 
-    def __init__(self, dry_run: bool = False) -> None:
+    def __init__(self, dry_run: bool = False, cwd: Path | None = None) -> None:
         """Initialize the ShellProxy.
 
         Args:
             dry_run: If True, commands are printed instead of executed.
+            cwd: Working directory for all commands dispatched through this proxy.
+            If None, the current working directory of the process is used.
         """
         self._dry_run = dry_run
+        self._cwd = cwd
 
     def __getattr__(self, name: str) -> _CommandProxy:
         """Start building a new command from the given top-level token.
@@ -200,4 +209,4 @@ class ShellProxy:
         Returns:
             A CommandProxy with the first token set.
         """
-        return _CommandProxy([name], self._dry_run)
+        return _CommandProxy([name], self._dry_run, self._cwd)
