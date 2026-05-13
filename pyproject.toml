@@ -58,3 +58,4 @@ pythonpath = [".",
 
 [project.scripts]
 lambkin = "lambkin.cli:main"
+
