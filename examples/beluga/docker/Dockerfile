@@ -3,9 +3,6 @@ FROM ros:jazzy-ros-base AS base
 RUN apt-get update && apt-get install -y \
     curl \
     python3-pip \
-    systemd \
-    systemd-sysv \
-    dbus \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ws
