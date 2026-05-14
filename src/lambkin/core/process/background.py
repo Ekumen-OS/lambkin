@@ -151,7 +151,6 @@ class BackgroundProcess:
             daemon=True,
         )
         self._monitor.start()
-        print(f"[DEBUG] launching {self._argv} cwd={self._cwd}")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
