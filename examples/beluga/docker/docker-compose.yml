@@ -8,6 +8,12 @@ services:
     image: lambkin_ros_dev:jazzy
     container_name: lambkin_developer
     network_mode: "host"
+    # Podman: enables systemd and cgroup v2 delegation
+    # systemd: always
+    # Docker: unmasks /sys/fs/cgroup without granting extra privileges
+    # Uncomment if using Docker instead of Podman:
+    # security_opt:
+    #   - "unmask=/sys/fs/cgroup"
     stdin_open: true
     tty: true
     profiles: ["development"]
@@ -28,6 +34,12 @@ services:
     image: lambkin_ros:jazzy
     container_name: lambkin_production
     network_mode: "host"
+    # Podman: enables systemd and cgroup v2 delegation
+    # systemd: always
+    # Docker: unmasks /sys/fs/cgroup without granting extra privileges
+    # Uncomment if using Docker instead of Podman:
+    # security_opt:
+    #   - "unmask=/sys/fs/cgroup"
     stdin_open: true
     tty: true
     profiles: ["production"]

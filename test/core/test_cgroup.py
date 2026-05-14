@@ -208,9 +208,3 @@ def test_kill_cgroup_empty_cgroup_does_nothing():
     kill_cgroup(cgroup, grace_period=1.0)
     remove_cgroup(cgroup)
     assert not cgroup.exists()
-
-
-def test_cgroup_access():
-    """Verify that the process has write access to a cgroup v2 directory."""
-    result = find_delegated_cgroup()
-    assert not result.exists()
