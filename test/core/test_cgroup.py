@@ -42,7 +42,7 @@ def test_find_delegated_cgroup_returns_path():
 def test_find_delegated_cgroup_raises_if_no_cgroup_v2(tmp_path):
     """find_delegated_cgroup raises RuntimeError if no cgroup v2 line found."""
     fake_proc_cgroup = tmp_path / "cgroup"
-    fake_proc_cgroup.write_text("1:cpu:/user.slice\n")  # cgroup v1, no 0::
+    fake_proc_cgroup.write_text("1:cpu:/user.slice\n")
 
     with patch(
         "lambkin.core.process.cgroup.Path",
@@ -69,7 +69,7 @@ def test_make_cgroup_returns_path(tmp_path):
 def test_make_cgroup_is_idempotent(tmp_path):
     """make_cgroup does not raise if directory already exists."""
     make_cgroup(tmp_path, "test-cgroup")
-    result = make_cgroup(tmp_path, "test-cgroup")  # second call
+    result = make_cgroup(tmp_path, "test-cgroup")
     assert result.exists()
 
 
