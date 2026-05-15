@@ -177,3 +177,24 @@ def test_benchmark_empty_variants_raises_error(tmp_path):
         @benchmark(variants=[], num_iterations=1)
         def fn(ctx):
             pass
+
+
+def test_parse_options_includes_dry_run_by_default():
+    """_parse_options always includes dry_run even when no user options are declared."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert "dry_run" in result
+    assert result["dry_run"] is False
+
+
+def test_parse_options_dry_run_can_be_set_via_cli():
+    """_parse_options returns dry_run=True when --dry-run is passed."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--dry-run"])
+    assert result["dry_run"] is True
