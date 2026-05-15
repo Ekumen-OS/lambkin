@@ -41,7 +41,7 @@ def test_parse_options_returns_empty_dict_when_no_options():
         pass
 
     result = _parse_options(fn, [])
-    assert result == {}
+    assert result == {"dry_run": False}
 
 
 def test_parse_options_returns_defaults_when_no_args():
@@ -53,7 +53,7 @@ def test_parse_options_returns_defaults_when_no_args():
         pass
 
     result = _parse_options(fn, [])
-    assert result == {"clock_rate": 100.0, "sensor_topic": "/scan"}
+    assert result == {"dry_run": False, "clock_rate": 100.0, "sensor_topic": "/scan"}
 
 
 def test_parse_options_returns_cli_values_when_provided():
@@ -65,7 +65,7 @@ def test_parse_options_returns_cli_values_when_provided():
         pass
 
     result = _parse_options(fn, ["--clock-rate", "50.0"])
-    assert result == {"clock_rate": 50.0, "sensor_topic": "/scan"}
+    assert result == {"dry_run": False, "clock_rate": 50.0, "sensor_topic": "/scan"}
 
 
 def test_benchmark_preserves_metadata(variants, tmp_path):
