@@ -55,3 +55,6 @@ convention = "google"
 testpaths = ["test"]
 pythonpath = [".",
              "examples", "src"]
+
+[project.scripts]
+lambkin = "lambkin.cli:main"
