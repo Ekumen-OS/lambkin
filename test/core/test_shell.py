@@ -134,10 +134,12 @@ def test_command_error_carries_returncode_and_argv(shell):
     assert exc_info.value.command == ["false"]
 
 
-def test_dry_run_returns_none(dry_shell):
-    """In dry-run mode, __call__ returns None instead of CompletedProcess."""
+def test_dry_run_returns_completed_process(dry_shell):
+    """In dry-run mode, __call__ returns a dummy CompletedProcess with returncode=0."""
     result = dry_shell.echo("hello")
-    assert result is None
+    assert isinstance(result, subprocess.CompletedProcess)
+    assert result.returncode == 0
+    assert result.args == ["echo", "hello"]
 
 
 def test_chained_proxy_independence(dry_shell, capsys):

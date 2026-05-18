@@ -136,8 +136,8 @@ class _CommandProxy:
             **kwargs: Keyword arguments converted to --flag value pairs.
 
         Returns:
-            The CompletedProcess instance returned by subprocess.run, or None
-            in dry-run mode.
+            The CompletedProcess instance returned by subprocess.run,or a
+            dummy CompletedProcess(argv, returncode=0) in dry-run mode.
 
         Raises:
             CommandError: If the process exits with a non-zero return code.
@@ -145,7 +145,7 @@ class _CommandProxy:
         argv = self._build_argv(*args, **kwargs)
         if self._dry_run:
             print(f"[DRY RUN] {shlex.join(argv)}")
-            return None
+            return subprocess.CompletedProcess(argv, returncode=0)
         try:
             # TODO(teresa-ortega): subprocess.run inherits stdout/stderr from
             # the parent process, so all output goes directly to the terminal
