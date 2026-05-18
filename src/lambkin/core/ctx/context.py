@@ -194,7 +194,7 @@ class Context:
             "shell",
             ShellProxy(
                 dry_run=getattr(self.options, "dry_run", False),
-                cwd=variant_dir / _iteration_folder_name(iteration),
+                cwd=iteration_dir,
             ),
         )
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
