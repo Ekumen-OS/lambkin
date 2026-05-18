@@ -154,6 +154,8 @@ class _CommandProxy:
                 f"Command {shlex.join(argv)!r} failed with return code {e.returncode}.",
                 returncode=e.returncode,
             ) from e
+        # FileNotFoundError and PermissionError must come before OSError,
+        # as they are subclasses of it. Order matters here.
         except FileNotFoundError:
             raise CommandError(
                 argv,
