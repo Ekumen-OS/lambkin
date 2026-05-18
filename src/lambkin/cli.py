@@ -56,7 +56,10 @@ def main() -> None:
         print("Usage: lambkin <script.py> [args...]", file=sys.stderr)
         sys.exit(1)
 
-    script = Path(sys.argv[1])
+    script = Path(sys.argv[1]).resolve()
+    if not script.exists():
+        print(f"Error: script not found: {script}", file=sys.stderr)
+        sys.exit(1)
     args = sys.argv[2:]
 
     cgroup_scope = f"lambkin-{script.stem}.scope"
