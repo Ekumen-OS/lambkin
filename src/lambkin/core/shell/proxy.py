@@ -147,6 +147,11 @@ class _CommandProxy:
             print(f"[DRY RUN] {shlex.join(argv)}")
             return None
         try:
+            # TODO(teresa-ortega): subprocess.run inherits stdout/stderr from
+            # the parent process, so all output goes directly to the terminal
+            # with no way to capture, redirect, or log it. When logging is
+            # revisited, consider switching to subprocess.Popen for full control
+            # over stdout/stderr streams.
             return subprocess.run(argv, check=True, cwd=self._cwd)
         except subprocess.CalledProcessError as e:
             raise CommandError(
