@@ -19,6 +19,14 @@ without requiring the user to declare them via ``@lambkin.option``.
 These options are merged with any user-defined options by ``@benchmark``
 before parsing, so they are always available on ``ctx.options``.
 
+.. warning::
+    The option names defined here are reserved. Declaring any of them
+    via ``@lambkin.option`` in user benchmarks will raise a Click error
+    at parse time due to duplicate parameter names.
+
+    Reserved options:
+        - ``--dry-run``
+
 Typical usage::
 
     # ctx.options.dry_run is always available, no @lambkin.option needed
@@ -28,11 +36,11 @@ Typical usage::
 
 import click
 
-SDK_OPTIONS: list[click.Option] = [
+SDK_OPTIONS: tuple[click.Option, ...] = (
     click.Option(
         ["--dry-run"],
         is_flag=True,
         default=False,
-        help="Print commands without executing them.",
+        help="Run the benchmark in dry-run mode: commands are logged but not executed.",
     ),
-]
+)
