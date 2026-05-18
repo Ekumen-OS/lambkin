@@ -27,7 +27,7 @@ before parsing, so they are always available on ``ctx.options``.
     Reserved options:
         - ``--dry-run``
 
-Typical usage::
+Typical usage:
 
     # ctx.options.dry_run is always available, no @lambkin.option needed
     def my_benchmark(ctx):
