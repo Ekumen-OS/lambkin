@@ -63,16 +63,21 @@ def main() -> None:
     args = sys.argv[2:]
 
     cgroup_scope = f"lambkin-{script.stem}.scope"
-
-    result = subprocess.run(
-        [
-            "systemd-run",
-            "--scope",
-            f"--unit={cgroup_scope}",
-            "--user",
-            sys.executable,
-            str(script),
-            *args,
-        ],
-    )
+    try:
+        result = subprocess.run(
+            [
+                "systemd-run",
+                "--scope",
+                f"--unit={cgroup_scope}",
+                "--user",
+                sys.executable,
+                str(script),
+                *args,
+            ],
+        )
+    except FileNotFoundError:
+        print(
+            "Error: 'systemd-run' not found. lambkin requires systemd.", file=sys.stderr
+        )
+        sys.exit(127)
     sys.exit(result.returncode)
