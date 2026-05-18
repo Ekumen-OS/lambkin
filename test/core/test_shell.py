@@ -112,6 +112,7 @@ def test_not_found_raises_command_error(shell):
         shell.this_command_does_not_exist_at_all()
     assert exc_info.value.returncode is None
     assert "not found" in str(exc_info.value).lower()
+    assert "this_command_does_not_exist_at_all" in str(exc_info.value)
 
 
 def test_permission_error_raises_command_error(shell, tmp_path):
@@ -125,46 +126,12 @@ def test_permission_error_raises_command_error(shell, tmp_path):
     assert "permission" in str(exc_info.value).lower()
 
 
-def test_command_error_message_contains_command(shell):
-    """CommandError message contains the command that failed."""
-    with pytest.raises(CommandError) as exc_info:
-        shell.false()
-    assert "false" in str(exc_info.value)
-
-
-def test_not_found_message_contains_command_name(shell):
-    """CommandError message for not found contains the command name."""
-    with pytest.raises(CommandError) as exc_info:
-        shell.this_command_does_not_exist_at_all()
-    assert "this_command_does_not_exist_at_all" in str(exc_info.value)
-
-
-def test_command_error_carries_returncode(shell):
+def test_command_error_carries_returncode_and_argv(shell):
     """CommandError carries the non-zero return code of the failed command."""
     with pytest.raises(CommandError) as exc_info:
         shell.false()
     assert exc_info.value.returncode == 1
-
-
-def test_command_error_carries_argv(shell):
-    """CommandError carries the argv list of the failed command."""
-    with pytest.raises(CommandError) as exc_info:
-        shell.false()
     assert exc_info.value.command == ["false"]
-
-
-def test_path_with_spaces_no_shell_injection(shell, tmp_path):
-    """A path with spaces is passed as a single token, not split by a shell."""
-    target = tmp_path / "my file.txt"
-    shell.touch(str(target))
-    assert target.exists()
-
-
-def test_kwarg_value_with_spaces_no_injection(shell, tmp_path):
-    """A kwarg value with spaces is passed as a single token."""
-    target = tmp_path / "out file.txt"
-    shell.touch(str(target))
-    assert target.exists()
 
 
 def test_dry_run_returns_none(dry_shell):
@@ -181,3 +148,10 @@ def test_chained_proxy_independence(dry_shell, capsys):
     out = capsys.readouterr().out
     assert "[DRY RUN] ros2 bag play bag1" in out
     assert "[DRY RUN] ros2 bag record bag2" in out
+
+
+def test_path_with_spaces_no_shell_injection(shell, tmp_path):
+    """A path with spaces is passed as a single token, not split by the shell."""
+    target = tmp_path / "my file.txt"
+    shell.touch(str(target))
+    assert target.exists()
