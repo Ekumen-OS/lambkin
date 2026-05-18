@@ -189,8 +189,7 @@ class Context:
         )
 
         self._setup_directories()
-        # TODO(teresa-ortega): Implement a metadata file to remap folder names
-        # as parameters.
+
         iteration_cgroup = make_iteration_cgroup(
             find_delegated_cgroup(),
             iteration_dir,
