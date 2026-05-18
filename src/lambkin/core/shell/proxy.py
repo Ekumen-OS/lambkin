@@ -109,8 +109,8 @@ class _CommandProxy:
         hyphens. A boolean True value produces a standalone flag. A boolean
         False value is omitted entirely.
 
-        This method is shared by __call__ and will be shared by background()
-        when that is implemented, so that argv construction is never duplicated.
+        This method is shared by __call__ and background() to avoid duplicating
+        argv construction logic.
 
         Args:
             *args: Positional arguments to append as tokens.
