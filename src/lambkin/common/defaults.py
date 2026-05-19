@@ -12,15 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Common utilities and primitives shared across the lambkin SDK.
+"""Default values for lambkin SDK options."""
 
-Exposes named_product and all base exceptions for convenience.
-"""
-
-from .defaults import DRY_RUN_DEFAULT
-from .named_product import named_product
-
-__all__ = [
-    "named_product",
-    "DRY_RUN_DEFAULT",
-]
+DRY_RUN_DEFAULT: bool = False
