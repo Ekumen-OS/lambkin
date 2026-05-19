@@ -27,6 +27,7 @@ from typing import Any
 
 import yaml
 
+from lambkin.common import defaults
 from lambkin.core.shell import ShellProxy
 
 from .source import Source
@@ -187,12 +188,15 @@ class Context:
         )
 
         self._setup_directories()
-        # TODO(teresa-ortega): Implement a metadata file to remap folder names
-        # as parameters.
 
         # ctx.shell
         object.__setattr__(
-            self, "shell", ShellProxy(dry_run=getattr(self.options, "dry_run", False))
+            self,
+            "shell",
+            ShellProxy(
+                dry_run=getattr(self.options, "dry_run", defaults.DRY_RUN),
+                cwd=iteration_dir,
+            ),
         )
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
         self._write_metadata()
