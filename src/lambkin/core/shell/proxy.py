@@ -123,7 +123,7 @@ class _CommandProxy:
                 extra.extend([flag, str(value)])
         return self._parts + extra
 
-    def __call__(self, *args: Any, **kwargs: Any) -> subprocess.CompletedProcess | None:
+    def __call__(self, *args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
         """Finalise the command and dispatch it to the operating system.
 
         In dry-run mode, prints the command and returns None. In real mode,
@@ -136,7 +136,7 @@ class _CommandProxy:
             **kwargs: Keyword arguments converted to --flag value pairs.
 
         Returns:
-            The CompletedProcess instance returned by subprocess.run,or a
+            The CompletedProcess instance returned by subprocess.run, or a
             dummy CompletedProcess(argv, returncode=0) in dry-run mode.
 
         Raises:

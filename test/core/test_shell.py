@@ -106,7 +106,7 @@ def test_returns_completed_process(shell):
     assert isinstance(result, subprocess.CompletedProcess)
 
 
-def test_not_found_raises_command_error(shell):
+def test_not_found_raises_command_error_and_contains_command_name(shell):
     """A command that does not exist raises CommandError with a helpful message."""
     with pytest.raises(CommandError) as exc_info:
         shell.this_command_does_not_exist_at_all()
