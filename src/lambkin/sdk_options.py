@@ -36,12 +36,14 @@ Typical usage:
 
 import click
 
+from lambkin.common import defaults
+
 SDK_OPTIONS: tuple[click.Option, ...] = (
     click.Option(
         ["--dry-run"],
         is_flag=True,
         show_default=True,
-        default=False,
+        default=defaults.DRY_RUN,
         help="Run the benchmark in dry-run mode: commands are logged but not executed.",
     ),
 )
