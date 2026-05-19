@@ -24,7 +24,6 @@ Typical usage::
     lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
-import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -53,40 +52,21 @@ def main() -> None:
     SystemExit
         Always — propagates the child process return code.
     """
-    parser = argparse.ArgumentParser(prog="lambkin")
-    parser.add_argument("script", type=str)
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Stop any existing run of the same benchmark and re-launch.",
-    )
-    args, forwarded = parser.parse_known_args()
+    # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
+    # (e.g. detect an already active scope, support partial restarts).
+    # To be addressed in phase 6.
+    if len(sys.argv) < 2:
+        print("Usage: lambkin <script.py> [args...]", file=sys.stderr)
+        sys.exit(1)
 
-    script = Path(args.script).resolve()
+    script = Path(sys.argv[1]).resolve()
     if not script.exists():
         print(f"Error: script not found: {script}", file=sys.stderr)
         sys.exit(1)
 
+    args = sys.argv[2:]
+
     cgroup_scope = f"lambkin-{script.stem}.scope"
-    check = subprocess.run(
-        ["systemctl", "--user", "is-active", cgroup_scope],
-        capture_output=True,
-    )
-    scope_active = check.returncode == 0
-
-    if scope_active and not args.overwrite:
-        print(
-            f"Error: scope '{cgroup_scope}' is already active. "
-            "Use --overwrite to stop it and re-launch.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    if scope_active and args.overwrite:
-        subprocess.run(
-            ["systemctl", "--user", "stop", cgroup_scope],
-            capture_output=True,
-        )
 
     try:
         result = subprocess.run(
@@ -97,7 +77,7 @@ def main() -> None:
                 "--user",
                 sys.executable,
                 str(script),
-                *forwarded,
+                *args,
             ],
         )
     except KeyboardInterrupt:
@@ -105,7 +85,7 @@ def main() -> None:
             ["systemctl", "--user", "stop", cgroup_scope],
             capture_output=True,
         )
-        sys.exit(130)  # convención: 128 + SIGINT
+        sys.exit(130)
     except FileNotFoundError:
         print(
             "Error: 'systemd-run' not found. lambkin requires systemd.",

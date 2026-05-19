@@ -30,11 +30,11 @@ def dummy_script(tmp_path):
 
 
 def test_missing_script_argument(capsys):
-    """Exits with code 2 (argparse default) if no script is given."""
+    """Exits with code 1 if no script is given."""
     with patch("sys.argv", ["lambkin"]):
         with pytest.raises(SystemExit) as exc:
             main()
-    assert exc.value.code == 2
+    assert exc.value.code == 1
 
 
 def test_script_not_found(capsys):
@@ -53,27 +53,16 @@ def test_relative_path_is_resolved(tmp_path, monkeypatch, dummy_script):
     with patch("sys.argv", ["lambkin", "bench.py"]):
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
-
-            mock_run.side_effect = [
-                MagicMock(returncode=1),
-                MagicMock(returncode=0),
-            ]
             with pytest.raises(SystemExit):
                 main()
-
-    systemd_call = mock_run.call_args_list[1]
-    cmd = systemd_call[0][0]
-    assert str(dummy_script) in cmd
+            cmd = mock_run.call_args[0][0]
+            assert str(dummy_script) in cmd
 
 
 def test_systemd_not_found(capsys, dummy_script):
     """Exits with code 127 and prints a clear error if systemd-run is missing."""
     with patch("sys.argv", ["lambkin", str(dummy_script)]):
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = [
-                MagicMock(returncode=1),
-                FileNotFoundError,
-            ]
+        with patch("subprocess.run", side_effect=FileNotFoundError):
             with pytest.raises(SystemExit) as exc:
                 main()
     assert exc.value.code == 127
@@ -81,44 +70,13 @@ def test_systemd_not_found(capsys, dummy_script):
     assert "systemd" in captured.err
 
 
-def test_scope_already_active_without_overwrite(capsys, dummy_script):
-    """Exits with code 1 and clear error if scope is active and --overwrite not set."""
-    with patch("sys.argv", ["lambkin", str(dummy_script)]):
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0)
-            with pytest.raises(SystemExit) as exc:
-                main()
-    assert exc.value.code == 1
-    captured = capsys.readouterr()
-    assert "overwrite" in captured.err
-
-
-def test_scope_already_active_with_overwrite(dummy_script):
-    """With --overwrite, stops existing scope and re-launches."""
-    with patch("sys.argv", ["lambkin", str(dummy_script), "--overwrite"]):
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = [
-                MagicMock(returncode=0),
-                MagicMock(returncode=0),
-                MagicMock(returncode=0),
-            ]
-            with pytest.raises(SystemExit):
-                main()
-    calls = mock_run.call_args_list
-    assert "stop" in calls[1][0][0]
-
-
 def test_keyboard_interrupt_stops_scope(dummy_script):
     """Ctrl-C stops the cgroup scope before exiting with code 130."""
     with patch("sys.argv", ["lambkin", str(dummy_script)]):
         with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = [
-                MagicMock(returncode=1),
-                KeyboardInterrupt,
-                MagicMock(returncode=0),
-            ]
+            mock_run.side_effect = [KeyboardInterrupt, MagicMock(returncode=0)]
             with pytest.raises(SystemExit) as exc:
                 main()
     assert exc.value.code == 130
     calls = mock_run.call_args_list
-    assert "stop" in calls[2][0][0]
+    assert "stop" in calls[1][0][0]
