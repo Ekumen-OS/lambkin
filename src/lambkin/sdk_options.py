@@ -40,7 +40,8 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
     click.Option(
         ["--dry-run"],
         is_flag=True,
-        default=False,
+        show_default=True,
+        default=True,
         help="Run the benchmark in dry-run mode: commands are logged but not executed.",
     ),
 )
