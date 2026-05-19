@@ -96,7 +96,6 @@ def test_arbitrary_tool(dry_shell, capsys):
 def test_successful_command(shell):
     """A successful command returns a CompletedProcess with returncode 0."""
     result = shell.echo("hello")
-    assert result is not None
     assert result.returncode == 0
 
 
