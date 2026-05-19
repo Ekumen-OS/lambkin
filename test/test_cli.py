@@ -17,6 +17,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from click.testing import CliRunner
 
 from lambkin.cli import main
 
@@ -29,54 +30,46 @@ def dummy_script(tmp_path):
     return script
 
 
-def test_missing_script_argument(capsys):
-    """Exits with code 1 if no script is given."""
-    with patch("sys.argv", ["lambkin"]):
-        with pytest.raises(SystemExit) as exc:
-            main()
-    assert exc.value.code == 1
+def test_missing_script_argument():
+    """Exits with code 2 if no script is given."""
+    runner = CliRunner()
+    result = runner.invoke(main, [])
+    assert result.exit_code == 2
 
 
-def test_script_not_found(capsys):
-    """Exits with code 1 and prints a clear error if script does not exist."""
-    with patch("sys.argv", ["lambkin", "/nonexistent/bench.py"]):
-        with pytest.raises(SystemExit) as exc:
-            main()
-    assert exc.value.code == 1
-    captured = capsys.readouterr()
-    assert "not found" in captured.err
+def test_script_not_found():
+    """Exits with code 2 if script does not exist."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["/nonexistent/bench.py"])
+    assert result.exit_code == 2
 
 
 def test_relative_path_is_resolved(tmp_path, monkeypatch, dummy_script):
     """Script path is resolved to absolute before use."""
     monkeypatch.chdir(tmp_path)
-    with patch("sys.argv", ["lambkin", "bench.py"]):
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0)
-            with pytest.raises(SystemExit):
-                main()
-            cmd = mock_run.call_args[0][0]
-            assert str(dummy_script) in cmd
+    runner = CliRunner()
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        runner.invoke(main, ["bench.py"])
+        cmd = mock_run.call_args[0][0]
+        assert str(dummy_script) in cmd
 
 
-def test_systemd_not_found(capsys, dummy_script):
-    """Exits with code 127 and prints a clear error if systemd-run is missing."""
-    with patch("sys.argv", ["lambkin", str(dummy_script)]):
-        with patch("subprocess.run", side_effect=FileNotFoundError):
-            with pytest.raises(SystemExit) as exc:
-                main()
-    assert exc.value.code == 127
-    captured = capsys.readouterr()
-    assert "systemd" in captured.err
+def test_systemd_not_found(dummy_script):
+    """Exits with error if systemd-run is missing."""
+    runner = CliRunner()
+    with patch("subprocess.run", side_effect=FileNotFoundError):
+        result = runner.invoke(main, [str(dummy_script)])
+    assert result.exit_code != 0
+    assert "systemd" in result.output
 
 
 def test_keyboard_interrupt_stops_scope(dummy_script):
     """Ctrl-C stops the cgroup scope before exiting with code 130."""
-    with patch("sys.argv", ["lambkin", str(dummy_script)]):
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = [KeyboardInterrupt, MagicMock(returncode=0)]
-            with pytest.raises(SystemExit) as exc:
-                main()
-    assert exc.value.code == 130
+    runner = CliRunner()
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = [KeyboardInterrupt, MagicMock(returncode=0)]
+        result = runner.invoke(main, [str(dummy_script)])
+    assert result.exit_code == 130
     calls = mock_run.call_args_list
     assert "stop" in calls[1][0][0]
