@@ -14,13 +14,14 @@
 
 """Common utilities and primitives shared across the lambkin SDK.
 
-Exposes named_product and all base exceptions for convenience.
+Provides defaults, named products, and base exceptions.
 """
 
-from .defaults import DRY_RUN_DEFAULT
+from lambkin.common import defaults
+
 from .named_product import named_product
 
 __all__ = [
+    "defaults",
     "named_product",
-    "DRY_RUN_DEFAULT",
 ]

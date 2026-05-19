@@ -27,7 +27,7 @@ from typing import Any
 
 import yaml
 
-from lambkin.common.defaults import DRY_RUN_DEFAULT
+from lambkin.common import defaults
 from lambkin.core.shell import ShellProxy
 
 from .source import Source
@@ -194,7 +194,7 @@ class Context:
             self,
             "shell",
             ShellProxy(
-                dry_run=getattr(self.options, "dry_run", DRY_RUN_DEFAULT),
+                dry_run=getattr(self.options, "dry_run", defaults.DRY_RUN),
                 cwd=iteration_dir,
             ),
         )

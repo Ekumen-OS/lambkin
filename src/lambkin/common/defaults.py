@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Default values for lambkin SDK options."""
+"""Default values shared across the lambkin SDK."""
 
-DRY_RUN_DEFAULT: bool = False
+DRY_RUN: bool = False
