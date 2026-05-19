@@ -28,8 +28,60 @@ import subprocess
 import sys
 from pathlib import Path
 
+import click
+from click.formatting import HelpFormatter
 
-def main() -> None:
+
+class LambkinCommand(click.Command):
+    """Custom Click command that renders SDK and custom options separately."""
+
+    def format_help(self, ctx: click.Context, formatter: HelpFormatter) -> None:
+        """Write the full help text with SDK and custom options sections."""
+        formatter.write_paragraph()
+        formatter.write_text(
+            "Usage: lambkin [OPTIONS] SCRIPT [SDK_OPTIONS] [CUSTOM_OPTIONS]"
+        )
+        formatter.write_paragraph()
+        formatter.write_text(
+            "LAMBKIN is a benchmarking SDK for robotics applications. "
+            "It runs your benchmark script inside a systemd cgroup scope, "
+            "ensuring all child processes are tracked and cleaned up automatically."
+        )
+        formatter.write_paragraph()
+
+        with formatter.section("Options"):
+            formatter.write_dl([("--help", "Show this message and exit.")])
+
+        with formatter.section("SDK Options (always available)"):
+            formatter.write_dl(
+                [
+                    (
+                        "--dry-run",
+                        "Run the benchmark in dry-run mode: "
+                        "commands are logged but not executed.",
+                    ),
+                    (
+                        "--show-options",
+                        "List all SDK and custom options available "
+                        "for this benchmark script and exit.",
+                    ),
+                ]
+            )
+
+        with formatter.section("Custom Options (script-defined)"):
+            formatter.write_text(
+                "Options registered in your benchmark script via @lambkin.option.\n"
+                "\nRun 'lambkin SCRIPT --show-options' to list them."
+            )
+
+
+@click.command(
+    cls=LambkinCommand,
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+@click.argument("script", type=click.Path(exists=True, path_type=Path))
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def main(script: Path, args: tuple) -> None:
     """Launch a lambkin benchmark script inside a systemd cgroup scope.
 
     Re-executes ``script`` with the same Python interpreter, wrapped in
@@ -55,17 +107,6 @@ def main() -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-    if len(sys.argv) < 2:
-        print("Usage: lambkin <script.py> [args...]", file=sys.stderr)
-        sys.exit(1)
-
-    script = Path(sys.argv[1]).resolve()
-    if not script.exists():
-        print(f"Error: script not found: {script}", file=sys.stderr)
-        sys.exit(1)
-
-    args = sys.argv[2:]
-
     cgroup_scope = f"lambkin-{script.stem}.scope"
 
     try:
@@ -82,15 +123,13 @@ def main() -> None:
         )
     except KeyboardInterrupt:
         subprocess.run(
-            ["systemctl", "--user", "stop", cgroup_scope],
+            ["systemctl", "--user", "stop", "--wait", cgroup_scope],
             capture_output=True,
         )
         sys.exit(130)
-    except FileNotFoundError:
-        print(
-            "Error: 'systemd-run' not found. lambkin requires systemd.",
-            file=sys.stderr,
-        )
-        sys.exit(127)
+    except FileNotFoundError as err:
+        raise click.ClickException(
+            "'systemd-run' not found. lambkin requires systemd."
+        ) from err
 
     sys.exit(result.returncode)
