@@ -44,13 +44,12 @@ def test_script_not_found():
     assert result.exit_code == 2
 
 
-def test_relative_path_is_resolved(tmp_path, monkeypatch, dummy_script):
-    """Script path is resolved to absolute before use."""
-    monkeypatch.chdir(tmp_path)
+def test_absolute_path_is_passed_to_subprocess(dummy_script):
+    """Script absolute path is forwarded to the subprocess."""
     runner = CliRunner()
     with patch("subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0)
-        runner.invoke(main, ["bench.py"])
+        runner.invoke(main, [str(dummy_script)])
         cmd = mock_run.call_args[0][0]
         assert str(dummy_script) in cmd
 

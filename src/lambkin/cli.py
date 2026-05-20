@@ -96,7 +96,6 @@ def main(script: Path, args: tuple) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-    script = script.resolve()
     cgroup_scope = f"lambkin-{script.stem}.scope"
 
     try:
