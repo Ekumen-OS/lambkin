@@ -14,12 +14,11 @@
 
 """Entry point for the lambkin CLI.
 
-Exposes the ``lambkin`` command, registered as a console script in
-``pyproject.toml``. When invoked, it re-executes the given benchmark
-script under a transient systemd scope so that all child processes
-are placed in a dedicated cgroup v2 hierarchy automatically.
+When invoked, it re-executes the given benchmark script under a
+transient systemd scope so that all child processes are placed in a
+dedicated cgroup v2 hierarchy automatically.
 
-Typical usage::
+Typical usage:
 
     lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
