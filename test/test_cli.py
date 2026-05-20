@@ -47,17 +47,17 @@ def test_script_not_found():
 def test_absolute_path_is_passed_to_subprocess(dummy_script):
     """Script absolute path is forwarded to the subprocess."""
     runner = CliRunner()
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
+    with patch("subprocess.Popen") as mock_popen:
+        mock_popen.return_value = MagicMock(returncode=0)
         runner.invoke(main, [str(dummy_script)])
-        cmd = mock_run.call_args[0][0]
+        cmd = mock_popen.call_args[0][0]
         assert str(dummy_script) in cmd
 
 
 def test_systemd_not_found(dummy_script):
     """Exits with error if systemd-run is missing."""
     runner = CliRunner()
-    with patch("subprocess.run", side_effect=FileNotFoundError):
+    with patch("subprocess.Popen", side_effect=FileNotFoundError):
         result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code != 0
     assert "systemd" in result.output
@@ -66,12 +66,15 @@ def test_systemd_not_found(dummy_script):
 def test_keyboard_interrupt_stops_scope(dummy_script):
     """Ctrl-C stops the cgroup scope before exiting with code 130."""
     runner = CliRunner()
-    with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = [KeyboardInterrupt, MagicMock(returncode=0)]
-        result = runner.invoke(main, [str(dummy_script)])
+    with patch("subprocess.Popen") as mock_popen:
+        mock_proc = MagicMock()
+        mock_proc.wait.side_effect = KeyboardInterrupt
+        mock_popen.return_value = mock_proc
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 130
-    calls = mock_run.call_args_list
-    assert "stop" in calls[1][0][0]
+    assert "stop" in mock_run.call_args[0][0]
 
 
 def test_help_output_contains_expected_sections():
