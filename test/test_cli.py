@@ -72,3 +72,13 @@ def test_keyboard_interrupt_stops_scope(dummy_script):
     assert result.exit_code == 130
     calls = mock_run.call_args_list
     assert "stop" in calls[1][0][0]
+
+
+def test_help_output_contains_expected_sections():
+    """Help output contains the expected sections."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["--help"])
+    assert result.exit_code == 0
+    assert "SDK Options (always available)" in result.output
+    assert "Custom Options (script-defined)" in result.output
+    assert "--dry-run" in result.output
