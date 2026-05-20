@@ -86,12 +86,11 @@ def main(script: Path, args: tuple) -> None:
     unchanged, so SDK and user-defined CLI options (e.g. ``--dry-run``,
     ``--clock-rate``) are passed through transparently.
 
-    Exits with the same return code as the child process.
-
-    Raises:
-    ------
-    SystemExit
-        Always — propagates the child process return code.
+    Exit codes:
+        0    The benchmark script completed successfully.
+        1    An error occurred (e.g. systemd-run not found).
+        130  The benchmark was interrupted via Ctrl-C (SIGINT).
+        N    Any other return code is propagated from the benchmark script.
     """
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
