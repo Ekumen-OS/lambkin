@@ -85,3 +85,43 @@ def test_help_output_contains_expected_sections():
     assert "SDK Options (always available)" in result.output
     assert "Custom Options (script-defined)" in result.output
     assert "--dry-run" in result.output
+
+
+def test_show_options_no_options_registered(tmp_path):
+    """Script with no @lambkin.option shows a 'no options' message."""
+    script = tmp_path / "bench.py"
+    script.write_text("# dummy benchmark")
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(script), "--show-options"])
+
+    assert result.exit_code == 0
+    assert "No options registered in this script." in result.output
+
+
+def test_show_options_displays_registered_options(tmp_path):
+    """Script with @lambkin.option shows name, help and default."""
+    script = tmp_path / "bench.py"
+    script.write_text(
+        "import lambkin\n"
+        "@lambkin.option('--clock-rate', default=100.0)\n"
+        "def my_benchmark(ctx): pass\n"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(script), "--show-options"])
+
+    assert result.exit_code == 0
+    assert "--clock-rate" in result.output
+    assert "100.0" in result.output
+
+
+def test_show_options_does_not_reach_systemd(tmp_path):
+    """--show-options exits before launching systemd-run."""
+    script = tmp_path / "bench.py"
+    script.write_text("# dummy benchmark")
+
+    runner = CliRunner()
+    with patch("subprocess.Popen") as mock_popen:
+        runner.invoke(main, [str(script), "--show-options"])
+        mock_popen.assert_not_called()
