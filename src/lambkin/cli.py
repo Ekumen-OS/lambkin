@@ -125,7 +125,7 @@ def main(script: Path, args: tuple) -> None:
 
     signal.signal(signal.SIGINT, _handle_sigint)
     try:
-        result = subprocess.Popen(
+        proc = subprocess.Popen(
             [
                 "systemd-run",
                 "--scope",
@@ -136,7 +136,7 @@ def main(script: Path, args: tuple) -> None:
                 *args,
             ],
         )
-        result.wait()
+        proc.wait()
     except KeyboardInterrupt:
         _stop_scope(cgroup_scope)
         sys.exit(130)
@@ -145,4 +145,4 @@ def main(script: Path, args: tuple) -> None:
             "'systemd-run' not found. lambkin requires systemd."
         ) from err
 
-    sys.exit(result.returncode)
+    sys.exit(proc.returncode)
