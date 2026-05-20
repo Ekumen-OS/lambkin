@@ -24,6 +24,7 @@ Typical usage::
     lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -64,6 +65,28 @@ class LambkinCommand(click.Command):
             formatter.write_text("Run 'lambkin SCRIPT --show-options' to list them.")
 
 
+def _stop_scope(cgroup_scope: str) -> None:
+    """Stop a systemd cgroup scope, waiting up to 30 seconds for it to terminate.
+
+    Parameters
+    ----------
+    cgroup_scope : str
+        The name of the systemd scope to stop.
+    """
+    try:
+        subprocess.run(
+            ["systemctl", "--user", "stop", cgroup_scope],
+            capture_output=True,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        click.echo(
+            f"Warning: timed out waiting for scope '{cgroup_scope}' to stop. "
+            "Some processes may still be running.",
+            err=True,
+        )
+
+
 @click.command(
     cls=LambkinCommand,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
@@ -97,8 +120,12 @@ def main(script: Path, args: tuple) -> None:
     # To be addressed in phase 6.
     cgroup_scope = f"lambkin-{script.stem}.scope"
 
+    def _handle_sigint(signum, frame):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGINT, _handle_sigint)
     try:
-        result = subprocess.run(
+        result = subprocess.Popen(
             [
                 "systemd-run",
                 "--scope",
@@ -109,11 +136,9 @@ def main(script: Path, args: tuple) -> None:
                 *args,
             ],
         )
+        result.wait()
     except KeyboardInterrupt:
-        subprocess.run(
-            ["systemctl", "--user", "stop", "--wait", cgroup_scope],
-            capture_output=True,
-        )
+        _stop_scope(cgroup_scope)
         sys.exit(130)
     except FileNotFoundError as err:
         raise click.ClickException(
