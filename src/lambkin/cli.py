@@ -31,6 +31,8 @@ from pathlib import Path
 import click
 from click.formatting import HelpFormatter
 
+from lambkin.sdk_options import SDK_OPTIONS
+
 
 class LambkinCommand(click.Command):
     """Custom Click command that renders SDK and custom options separately."""
@@ -53,26 +55,13 @@ class LambkinCommand(click.Command):
             formatter.write_dl([("--help", "Show this message and exit.")])
 
         with formatter.section("SDK Options (always available)"):
-            formatter.write_dl(
-                [
-                    (
-                        "--dry-run",
-                        "Run the benchmark in dry-run mode: "
-                        "commands are logged but not executed.",
-                    ),
-                    (
-                        "--show-options",
-                        "List all SDK and custom options available "
-                        "for this benchmark script and exit.",
-                    ),
-                ]
-            )
+            formatter.write_dl([(opt.opts[0], opt.help or "") for opt in SDK_OPTIONS])
 
         with formatter.section("Custom Options (script-defined)"):
             formatter.write_text(
-                "Options registered in your benchmark script via @lambkin.option.\n"
-                "\nRun 'lambkin SCRIPT --show-options' to list them."
+                "Options registered in your benchmark script via @lambkin.option."
             )
+            formatter.write_text("Run 'lambkin SCRIPT --show-options' to list them.")
 
 
 @click.command(
