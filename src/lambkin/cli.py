@@ -31,6 +31,10 @@ from pathlib import Path
 import click
 from click.formatting import HelpFormatter
 
+from lambkin.common.exceptions import (
+    LambkinSystemdNotFoundError,
+    LambkinSystemdScopeTimeoutError,
+)
 from lambkin.sdk_options import SDK_OPTIONS
 
 
@@ -78,12 +82,11 @@ def _stop_scope(cgroup_scope: str) -> None:
             capture_output=True,
             timeout=30,
         )
-    except subprocess.TimeoutExpired:
-        click.echo(
-            f"Warning: timed out waiting for scope '{cgroup_scope}' to stop. "
-            "Some processes may still be running.",
-            err=True,
-        )
+    except subprocess.TimeoutExpired as err:
+        raise LambkinSystemdScopeTimeoutError(
+            f"Timed out waiting for scope '{cgroup_scope}' to stop. "
+            "Some processes may still be running."
+        ) from err
 
 
 @click.command(
@@ -140,7 +143,7 @@ def main(script: Path, args: tuple) -> None:
         _stop_scope(cgroup_scope)
         sys.exit(130)
     except FileNotFoundError as err:
-        raise click.ClickException(
+        raise LambkinSystemdNotFoundError(
             "'systemd-run' not found. lambkin requires systemd."
         ) from err
 

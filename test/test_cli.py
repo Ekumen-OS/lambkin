@@ -60,7 +60,7 @@ def test_systemd_not_found(dummy_script):
     with patch("subprocess.Popen", side_effect=FileNotFoundError):
         result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code != 0
-    assert "systemd" in result.output
+    assert "systemd" in str(result.exception)
 
 
 def test_keyboard_interrupt_stops_scope(dummy_script):
