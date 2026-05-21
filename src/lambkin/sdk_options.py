@@ -48,7 +48,6 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
     click.Option(
         ["--show-options"],
         is_flag=True,
-        show_default=True,
         default=False,
         help="List all options registered via @lambkin.option.",
     ),
