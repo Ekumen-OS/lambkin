@@ -17,11 +17,12 @@
 Provides defaults, named products, and base exceptions.
 """
 
-from lambkin.common import defaults
+from lambkin.common import defaults, exceptions
 
 from .named_product import named_product
 
 __all__ = [
     "defaults",
     "named_product",
+    "exceptions",
 ]

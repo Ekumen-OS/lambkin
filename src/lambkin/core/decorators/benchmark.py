@@ -36,14 +36,16 @@ import click
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
+from lambkin.sdk_options import SDK_OPTIONS
 
 
 def _parse_options(fn, cli_args):
     """Parse CLI options from fn.__lambkin_options__ and return a dict."""
-    registered = getattr(fn, "__lambkin_options__", [])
-    if not registered:
+    user_options = getattr(fn, "__lambkin_options__", [])
+    all_options = list(SDK_OPTIONS) + user_options
+    if not all_options:
         return {}
-    cmd = click.Command(name="benchmark", params=registered)
+    cmd = click.Command(name="benchmark", params=all_options)
     click_ctx = cmd.make_context("benchmark", list(cli_args))
     return click_ctx.params
 
