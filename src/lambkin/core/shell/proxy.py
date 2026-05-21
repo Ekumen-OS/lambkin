@@ -131,6 +131,7 @@ class CommandProxy:
         Returns:
             The complete argv list ready to pass to the operating system.
         """
+        kwargs.pop("log_output", None)
         extra: list[str] = []
         for arg in args:
             extra.append(str(arg))
@@ -161,7 +162,9 @@ class CommandProxy:
         Raises:
             CommandError: If the process exits with a non-zero return code.
         """
-        argv = self.build_argv(*args, **kwargs)
+        log_output = kwargs.pop("log_output", None)
+        log_output = self._resolve_log_output(log_output)
+        argv = self._build_argv(*args, **kwargs)
         if self._dry_run:
             print(f"[DRY RUN] {shlex.join(argv)}")
             return subprocess.CompletedProcess(argv, returncode=0)
