@@ -32,6 +32,7 @@ import inspect
 import sys
 
 import click
+from click.formatting import HelpFormatter
 
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
@@ -40,9 +41,7 @@ from lambkin.sdk_options import SDK_OPTIONS
 
 
 def _show_options(fn) -> None:
-    """Print all options registered via @lambkin.option on fn and exit."""
-    from click.formatting import HelpFormatter
-
+    """Print all options registered via @lambkin.option on fn."""
     user_options = getattr(fn, "__lambkin_options__", [])
     formatter = HelpFormatter()
     if not user_options:
