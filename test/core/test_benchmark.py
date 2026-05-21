@@ -212,3 +212,35 @@ def test_parse_options_dry_run_can_be_set_via_cli():
 
     result = _parse_options(fn, ["--dry-run"])
     assert result["dry_run"] is True
+
+
+def test_show_options_no_options_registered(capsys):
+    """No @lambkin.option shows a 'no options' message."""
+
+    @benchmark(variants=[{}], num_iterations=1)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit) as exc:
+        fn(args=["--show-options"])
+
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "No options registered in this script." in captured.out
+
+
+def test_show_options_displays_registered_options(capsys):
+    """@lambkin.option entries are shown with name and default."""
+
+    @benchmark(variants=[{}], num_iterations=1)
+    @option("--clock-rate", default=100.0)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit) as exc:
+        fn(args=["--show-options"])
+
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "--clock-rate" in captured.out
+    assert "100.0" in captured.out

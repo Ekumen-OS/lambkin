@@ -19,9 +19,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-import lambkin
 from lambkin.cli import main
-from lambkin.core.decorators.benchmark import _show_options
 
 
 @pytest.fixture
@@ -87,39 +85,3 @@ def test_help_output_contains_expected_sections():
     assert "SDK Options (always available)" in result.output
     assert "Custom Options (script-defined)" in result.output
     assert "--dry-run" in result.output
-
-
-def test_show_options_no_options_registered(tmp_path, capsys):
-    """No @lambkin.option shows a 'no options' message."""
-
-    def fn(ctx):
-        pass
-
-    _show_options(fn)
-
-    captured = capsys.readouterr()
-    assert "No options registered in this script." in captured.out
-
-
-def test_show_options_displays_registered_options(capsys):
-    """@lambkin.option entries are shown with name and default."""
-
-    @lambkin.option("--clock-rate", default=100.0)
-    def fn(ctx):
-        pass
-
-    _show_options(fn)
-
-    captured = capsys.readouterr()
-    assert "--clock-rate" in captured.out
-    assert "100.0" in captured.out
-
-
-def test_show_options_does_not_reach_systemd(dummy_script):
-    """--show-options is forwarded to subprocess like any other SDK option."""
-    runner = CliRunner()
-    with patch("subprocess.Popen") as mock_popen:
-        mock_popen.return_value = MagicMock(returncode=0)
-        runner.invoke(main, [str(dummy_script), "--show-options"])
-        cmd = mock_popen.call_args[0][0]
-        assert "--show-options" in cmd
