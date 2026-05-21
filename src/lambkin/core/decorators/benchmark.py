@@ -44,10 +44,12 @@ def _show_options(fn) -> None:
     """Print all options registered via @lambkin.option on fn."""
     user_options = getattr(fn, "__lambkin_options__", [])
     formatter = HelpFormatter()
-    if not user_options:
-        formatter.write_text("No options registered in this script.")
-    else:
-        with formatter.section("Custom Options"):
+    with formatter.section("SDK Options"):
+        formatter.write_dl([(opt.opts[0], opt.help or "") for opt in SDK_OPTIONS])
+    with formatter.section("Custom Options"):
+        if not user_options:
+            formatter.write_text("No options registered in this script.")
+        else:
             formatter.write_dl(
                 [
                     (
