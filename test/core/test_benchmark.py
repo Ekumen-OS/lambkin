@@ -42,7 +42,10 @@ def test_parse_options_returns_empty_dict_when_no_options():
         pass
 
     result = _parse_options(fn, [])
-    assert result == {"dry_run": defaults.DRY_RUN}
+    assert result == {
+        "dry_run": defaults.DRY_RUN,
+        "show_options": False,
+    }
 
 
 def test_parse_options_returns_defaults_when_no_args():
@@ -56,6 +59,7 @@ def test_parse_options_returns_defaults_when_no_args():
     result = _parse_options(fn, [])
     assert result == {
         "dry_run": defaults.DRY_RUN,
+        "show_options": False,
         "clock_rate": 100.0,
         "sensor_topic": "/scan",
     }
@@ -72,6 +76,7 @@ def test_parse_options_returns_cli_values_when_provided():
     result = _parse_options(fn, ["--clock-rate", "50.0"])
     assert result == {
         "dry_run": defaults.DRY_RUN,
+        "show_options": False,
         "clock_rate": 50.0,
         "sensor_topic": "/scan",
     }

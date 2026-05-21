@@ -19,7 +19,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
+import lambkin
 from lambkin.cli import main
+from lambkin.core.decorators.benchmark import _show_options
 
 
 @pytest.fixture
@@ -87,41 +89,37 @@ def test_help_output_contains_expected_sections():
     assert "--dry-run" in result.output
 
 
-def test_show_options_no_options_registered(tmp_path):
-    """Script with no @lambkin.option shows a 'no options' message."""
-    script = tmp_path / "bench.py"
-    script.write_text("# dummy benchmark")
+def test_show_options_no_options_registered(tmp_path, capsys):
+    """No @lambkin.option shows a 'no options' message."""
 
-    runner = CliRunner()
-    result = runner.invoke(main, [str(script), "--show-options"])
+    def fn(ctx):
+        pass
 
-    assert result.exit_code == 0
-    assert "No options registered in this script." in result.output
+    _show_options(fn)
 
-
-def test_show_options_displays_registered_options(tmp_path):
-    """Script with @lambkin.option shows name, help and default."""
-    script = tmp_path / "bench.py"
-    script.write_text(
-        "import lambkin\n"
-        "@lambkin.option('--clock-rate', default=100.0)\n"
-        "def my_benchmark(ctx): pass\n"
-    )
-
-    runner = CliRunner()
-    result = runner.invoke(main, [str(script), "--show-options"])
-
-    assert result.exit_code == 0
-    assert "--clock-rate" in result.output
-    assert "100.0" in result.output
+    captured = capsys.readouterr()
+    assert "No options registered in this script." in captured.out
 
 
-def test_show_options_does_not_reach_systemd(tmp_path):
-    """--show-options exits before launching systemd-run."""
-    script = tmp_path / "bench.py"
-    script.write_text("# dummy benchmark")
+def test_show_options_displays_registered_options(capsys):
+    """@lambkin.option entries are shown with name and default."""
 
+    @lambkin.option("--clock-rate", default=100.0)
+    def fn(ctx):
+        pass
+
+    _show_options(fn)
+
+    captured = capsys.readouterr()
+    assert "--clock-rate" in captured.out
+    assert "100.0" in captured.out
+
+
+def test_show_options_does_not_reach_systemd(dummy_script):
+    """--show-options is forwarded to subprocess like any other SDK option."""
     runner = CliRunner()
     with patch("subprocess.Popen") as mock_popen:
-        runner.invoke(main, [str(script), "--show-options"])
-        mock_popen.assert_not_called()
+        mock_popen.return_value = MagicMock(returncode=0)
+        runner.invoke(main, [str(dummy_script), "--show-options"])
+        cmd = mock_popen.call_args[0][0]
+        assert "--show-options" in cmd

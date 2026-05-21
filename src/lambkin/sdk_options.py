@@ -26,12 +26,18 @@ before parsing, so they are always available on ``ctx.options``.
 
     Reserved options:
         - ``--dry-run``
+        - ``--show-options``
 
-Typical usage:
+Typical usage::
 
     # ctx.options.dry_run is always available, no @lambkin.option needed
     def my_benchmark(ctx):
-        ctx.options.dry_run
+        if ctx.options.dry_run:
+            ...
+
+Note:
+    ``--show-options`` behaves like ``--help``: it prints registered
+    options and exits immediately, never reaching the benchmark body.
 """
 
 import click
@@ -45,5 +51,12 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
         show_default=True,
         default=defaults.DRY_RUN,
         help="Run the benchmark in dry-run mode: commands are logged but not executed.",
+    ),
+    click.Option(
+        ["--show-options"],
+        is_flag=True,
+        show_default=True,
+        default=False,
+        help="List all options registered via @lambkin.option.",
     ),
 )

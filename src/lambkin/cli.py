@@ -23,7 +23,6 @@ Typical usage:
     lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
-import importlib.util
 import signal
 import subprocess
 import sys
@@ -64,40 +63,6 @@ class LambkinCommand(click.Command):
                 "Options registered in your benchmark script via @lambkin.option."
             )
             formatter.write_text("Run 'lambkin SCRIPT --show-options' to list them.")
-
-
-def _show_options(script: Path) -> None:
-    """Load the benchmark script and print all registered @lambkin.option entries."""
-    spec = importlib.util.spec_from_file_location("_lambkin_user_script", script)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-    options = []
-    for name in dir(module):
-        obj = getattr(module, name)
-        if callable(obj) and hasattr(obj, "__lambkin_options__"):
-            options.extend(obj.__lambkin_options__)
-
-    formatter = HelpFormatter()
-    if not options:
-        formatter.write_text("No options registered in this script.")
-    else:
-        with formatter.section("Custom Options"):
-            formatter.write_dl(
-                [
-                    (
-                        opt.opts[0],
-                        (opt.help or "")
-                        + (
-                            f"  [default: {opt.default}]"
-                            if opt.default is not None
-                            else ""
-                        ),
-                    )
-                    for opt in options
-                ]
-            )
-    click.echo(formatter.getvalue(), nl=False)
 
 
 def _stop_scope(cgroup_scope: str) -> None:
@@ -152,9 +117,6 @@ def main(script: Path, args: tuple) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-    if "--show-options" in args:
-        _show_options(script)
-        sys.exit(0)
 
     cgroup_scope = f"lambkin-{script.stem}.scope"
 

@@ -39,6 +39,18 @@ from lambkin.core.decorators.input import InputRegistry
 from lambkin.sdk_options import SDK_OPTIONS
 
 
+def _show_options(fn) -> None:
+    """Print all options registered via @lambkin.option on fn and exit."""
+    user_options = getattr(fn, "__lambkin_options__", [])
+    if not user_options:
+        print("No options registered in this script.")
+    else:
+        print("Custom Options:")
+        for opt in user_options:
+            default = f"  [default: {opt.default}]" if opt.default is not None else ""
+            print(f"  {opt.opts[0]:<30} {opt.help or ''}{default}")
+
+
 def _parse_options(fn, cli_args):
     """Parse CLI options from fn.__lambkin_options__ and return a dict."""
     user_options = getattr(fn, "__lambkin_options__", [])
@@ -85,6 +97,9 @@ def benchmark(variants, num_iterations):
         def wrapper(args=None, output_dir=None):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
+            if options.get("show_options"):
+                _show_options(fn)
+                sys.exit(0)
             source = Source(path=inspect.getfile(fn))
             # The base context creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this
