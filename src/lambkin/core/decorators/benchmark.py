@@ -41,14 +41,29 @@ from lambkin.sdk_options import SDK_OPTIONS
 
 def _show_options(fn) -> None:
     """Print all options registered via @lambkin.option on fn and exit."""
+    from click.formatting import HelpFormatter
+
     user_options = getattr(fn, "__lambkin_options__", [])
+    formatter = HelpFormatter()
     if not user_options:
-        print("No options registered in this script.")
+        formatter.write_text("No options registered in this script.")
     else:
-        print("Custom Options:")
-        for opt in user_options:
-            default = f"  [default: {opt.default}]" if opt.default is not None else ""
-            print(f"  {opt.opts[0]:<30} {opt.help or ''}{default}")
+        with formatter.section("Custom Options"):
+            formatter.write_dl(
+                [
+                    (
+                        opt.opts[0],
+                        (opt.help or "")
+                        + (
+                            f"  [default: {opt.default}]"
+                            if opt.default is not None
+                            else ""
+                        ),
+                    )
+                    for opt in user_options
+                ]
+            )
+    click.echo(formatter.getvalue(), nl=False)
 
 
 def _parse_options(fn, cli_args):
