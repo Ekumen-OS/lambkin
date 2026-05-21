@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 import pytest
 
+from lambkin.common import defaults
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.benchmark import _parse_options, benchmark
@@ -41,7 +42,7 @@ def test_parse_options_returns_empty_dict_when_no_options():
         pass
 
     result = _parse_options(fn, [])
-    assert result == {}
+    assert result == {"dry_run": defaults.DRY_RUN}
 
 
 def test_parse_options_returns_defaults_when_no_args():
@@ -53,7 +54,11 @@ def test_parse_options_returns_defaults_when_no_args():
         pass
 
     result = _parse_options(fn, [])
-    assert result == {"clock_rate": 100.0, "sensor_topic": "/scan"}
+    assert result == {
+        "dry_run": defaults.DRY_RUN,
+        "clock_rate": 100.0,
+        "sensor_topic": "/scan",
+    }
 
 
 def test_parse_options_returns_cli_values_when_provided():
@@ -65,7 +70,11 @@ def test_parse_options_returns_cli_values_when_provided():
         pass
 
     result = _parse_options(fn, ["--clock-rate", "50.0"])
-    assert result == {"clock_rate": 50.0, "sensor_topic": "/scan"}
+    assert result == {
+        "dry_run": defaults.DRY_RUN,
+        "clock_rate": 50.0,
+        "sensor_topic": "/scan",
+    }
 
 
 def test_benchmark_preserves_metadata(variants, tmp_path):
@@ -177,3 +186,24 @@ def test_benchmark_empty_variants_raises_error(tmp_path):
         @benchmark(variants=[], num_iterations=1)
         def fn(ctx):
             pass
+
+
+def test_parse_options_includes_dry_run_by_default():
+    """_parse_options always includes dry_run even when no user options are declared."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert "dry_run" in result
+    assert result["dry_run"] is defaults.DRY_RUN
+
+
+def test_parse_options_dry_run_can_be_set_via_cli():
+    """_parse_options returns dry_run=True when --dry-run is passed."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--dry-run"])
+    assert result["dry_run"] is True

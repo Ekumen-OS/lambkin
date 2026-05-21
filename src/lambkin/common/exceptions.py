@@ -17,3 +17,15 @@
 All errors raised by lambkin inherit from LambkinError, allowing callers to
 catch SDK-specific failures with a single except clause.
 """
+
+
+class LambkinError(Exception):
+    """Base class for all lambkin SDK errors."""
+
+
+class LambkinSystemdNotFoundError(LambkinError):
+    """Raised when systemd-run is not found on the system."""
+
+
+class LambkinSystemdScopeTimeoutError(LambkinError):
+    """Raised when a systemd scope fails to stop within the timeout period."""
