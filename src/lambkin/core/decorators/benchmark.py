@@ -32,11 +32,39 @@ import inspect
 import sys
 
 import click
+from click.formatting import HelpFormatter
 
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
 from lambkin.sdk_options import SDK_OPTIONS
+
+
+def _show_options(fn) -> None:
+    """Print all options registered via @lambkin.option on fn."""
+    user_options = getattr(fn, "__lambkin_options__", [])
+    formatter = HelpFormatter()
+    with formatter.section("SDK Options"):
+        formatter.write_dl([(opt.opts[0], opt.help or "") for opt in SDK_OPTIONS])
+    with formatter.section("Custom Options"):
+        if not user_options:
+            formatter.write_text("No options registered in this script.")
+        else:
+            formatter.write_dl(
+                [
+                    (
+                        opt.opts[0],
+                        (opt.help or "")
+                        + (
+                            f"  [default: {opt.default}]"
+                            if opt.default is not None
+                            else ""
+                        ),
+                    )
+                    for opt in user_options
+                ]
+            )
+    click.echo(formatter.getvalue(), nl=False)
 
 
 def _parse_options(fn, cli_args):
@@ -85,6 +113,9 @@ def benchmark(variants, num_iterations):
         def wrapper(args=None, output_dir=None):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
+            if options.get("show_options"):
+                _show_options(fn)
+                sys.exit(0)
             source = Source(path=inspect.getfile(fn))
             # The base context creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this
