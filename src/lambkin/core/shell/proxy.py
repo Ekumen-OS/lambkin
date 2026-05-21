@@ -25,6 +25,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from lambkin.common import defaults
+
 
 class CommandError(Exception):
     """Raised when a shell command cannot be started or exits with an error.
@@ -71,6 +73,7 @@ class CommandProxy:
         dry_run: bool = False,
         cwd: Path | None = None,
         cgroup: Path | None = None,
+        benchmark_log_output: str | None = None,
     ) -> None:
         """Initialize the proxy with the command tokens accumulated so far.
 
@@ -79,11 +82,15 @@ class CommandProxy:
         dry_run: If True, commands are printed instead of executed.
         cwd: Working directory for the command when dispatched.
         cgroup: Iteration cgroup directory for background processes.
+        benchmark_log_output: Log output mode set via CLI. Overrides any
+        per-call log_output argument. None means no CLI override was
+        provided.
         """
         self._parts = parts
         self._dry_run = dry_run
         self._cwd = cwd
         self._cgroup = cgroup
+        self._benchmark_log_output = benchmark_log_output
 
     def __getattr__(self, name: str) -> CommandProxy:
         """Append a new token to the command and return a new proxy.
@@ -98,8 +105,21 @@ class CommandProxy:
             A new proxy with the token appended.
         """
         return CommandProxy(
-            self._parts + [name], self._dry_run, self._cwd, self._cgroup
+            self._parts + [name],
+            self._dry_run,
+            self._cwd,
+            self._cgroup,
+            self._benchmark_log_output,
         )
+
+    def _resolve_log_output(self, per_call: str | None) -> str:
+        print(f"[DEBUG] benchmark_log_output: {self._benchmark_log_output}")
+        print(f"[DEBUG] per_call: {per_call}")
+        if self._benchmark_log_output is not None:
+            return self._benchmark_log_output
+        if per_call is not None:
+            return per_call
+        return defaults.LOG_OUTPUT
 
     def get_cgroup(self) -> Path | None:
         """Return the iteration cgroup directory."""
@@ -164,6 +184,7 @@ class CommandProxy:
         """
         log_output = kwargs.pop("log_output", None)
         log_output = self._resolve_log_output(log_output)
+        print(f"[DEBUG] log_output resuelto: {log_output}")
         argv = self._build_argv(*args, **kwargs)
         if self._dry_run:
             print(f"[DRY RUN] {shlex.join(argv)}")
@@ -230,6 +251,7 @@ class ShellProxy:
         dry_run: bool = False,
         cwd: Path | None = None,
         cgroup: Path | None = None,
+        log_output: str | None = None,
     ) -> None:
         """Initialize the ShellProxy.
 
@@ -237,10 +259,13 @@ class ShellProxy:
             dry_run: If True, commands are printed instead of executed.
             cwd: Working directory for all commands dispatched through this proxy.
             cgroup: Iteration cgroup directory for background processes.
+            log_output: Log output mode set via CLI. Overrides any per-call
+            log_output argument. None means no CLI override was provided.
         """
         self._dry_run = dry_run
         self._cwd = cwd
         self._cgroup = cgroup
+        self._log_output = log_output
 
     def __getattr__(self, name: str) -> CommandProxy:
         """Start building a new command from the given top-level token.
@@ -251,4 +276,10 @@ class ShellProxy:
         Returns:
             A CommandProxy with the first token set.
         """
-        return CommandProxy([name], self._dry_run, self._cwd, self._cgroup)
+        return CommandProxy(
+            [name],
+            self._dry_run,
+            self._cwd,
+            self._cgroup,
+            self._log_output,
+        )

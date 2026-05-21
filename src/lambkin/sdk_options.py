@@ -51,4 +51,11 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
         default=False,
         help="List all options registered via @lambkin.option.",
     ),
+    click.Option(
+        ["--log-output"],
+        type=click.Choice(["file", "console", "both"]),
+        show_default=True,
+        default=None,
+        help="Where to route process output: file, console, or both.",
+    ),
 )
