@@ -171,7 +171,14 @@ class CommandProxy:
             # with no way to capture, redirect, or log it. When logging is
             # revisited, consider switching to subprocess.Popen for full control
             # over stdout/stderr streams.
-            return subprocess.run(argv, check=True, cwd=self._cwd)
+            proc = subprocess.Popen(
+                argv,
+                cwd=self._cwd,
+            )
+            proc.wait()
+            if proc.returncode != 0:
+                raise subprocess.CalledProcessError(proc.returncode, argv)
+            return subprocess.CompletedProcess(argv, returncode=proc.returncode)
         except subprocess.CalledProcessError as e:
             raise CommandError(
                 argv,
