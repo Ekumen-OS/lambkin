@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from lambkin.common import defaults
+from lambkin.core.shell.tee import TeeStream
 
 
 class CommandError(Exception):
@@ -74,6 +75,7 @@ class CommandProxy:
         cwd: Path | None = None,
         cgroup: Path | None = None,
         benchmark_log_output: str | None = None,
+        call_counts: dict[str, int] | None = None,
     ) -> None:
         """Initialize the proxy with the command tokens accumulated so far.
 
@@ -85,12 +87,16 @@ class CommandProxy:
         benchmark_log_output: Log output mode set via CLI. Overrides any
         per-call log_output argument. None means no CLI override was
         provided.
+        call_counts: Shared dictionary tracking how many times each command
+        has been launched in the current iteration, used to append
+        numeric suffixes to log file names to avoid collisions.
         """
         self._parts = parts
         self._dry_run = dry_run
         self._cwd = cwd
         self._cgroup = cgroup
         self._benchmark_log_output = benchmark_log_output
+        self._call_counts = call_counts or {}
 
     def __getattr__(self, name: str) -> CommandProxy:
         """Append a new token to the command and return a new proxy.
@@ -110,6 +116,7 @@ class CommandProxy:
             self._cwd,
             self._cgroup,
             self._benchmark_log_output,
+            self._call_counts,
         )
 
     def _resolve_log_output(self, per_call: str | None) -> str:
@@ -133,7 +140,19 @@ class CommandProxy:
         """Return the dry run flag."""
         return self._dry_run
 
-    def build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
+    def _open_streams(self, log_output: str, argv: list[str]) -> tuple:
+        base = self._log_base(argv)
+        out = open(self._cwd / f"{base}.stdout.log", "w")
+        err = open(self._cwd / f"{base}.stderr.log", "w")
+        return out, err
+
+    def _open_tee_streams(self, argv: list[str]) -> tuple:
+        base = self._log_base(argv)
+        tee_out = TeeStream(self._cwd / f"{base}.stdout.log")
+        tee_err = TeeStream(self._cwd / f"{base}.stderr.log")
+        return tee_out, tee_err
+
+    def _build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.
 
         Positional arguments are appended as discrete tokens. Keyword arguments
@@ -195,11 +214,37 @@ class CommandProxy:
             # with no way to capture, redirect, or log it. When logging is
             # revisited, consider switching to subprocess.Popen for full control
             # over stdout/stderr streams.
-            proc = subprocess.Popen(
-                argv,
-                cwd=self._cwd,
-            )
+            if log_output == "both":
+                stdout, stderr = self._open_tee_streams(argv)
+                proc = subprocess.Popen(
+                    argv,
+                    cwd=self._cwd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                stdout.start(proc.stdout)
+                stderr.start(proc.stderr)
+            elif log_output == "file":
+                stdout, stderr = self._open_streams(argv)
+                proc = subprocess.Popen(
+                    argv,
+                    cwd=self._cwd,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
+            else:
+                proc = subprocess.Popen(
+                    argv,
+                    cwd=self._cwd,
+                )
+                stdout, stderr = None, None
+
             proc.wait()
+            if stdout:
+                stdout.close()
+            if stderr:
+                stderr.close()
             if proc.returncode != 0:
                 raise subprocess.CalledProcessError(proc.returncode, argv)
             return subprocess.CompletedProcess(argv, returncode=proc.returncode)
@@ -266,6 +311,7 @@ class ShellProxy:
         self._cwd = cwd
         self._cgroup = cgroup
         self._log_output = log_output
+        self._call_counts: dict[str, int] = {}
 
     def __getattr__(self, name: str) -> CommandProxy:
         """Start building a new command from the given top-level token.
@@ -282,4 +328,5 @@ class ShellProxy:
             self._cwd,
             self._cgroup,
             self._log_output,
+            self._call_counts,
         )
