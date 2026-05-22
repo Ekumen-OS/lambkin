@@ -194,7 +194,6 @@ class Context:
             find_delegated_cgroup(),
             iteration_dir,
         )
-        object.__setattr__(self, "iteration_cgroup", iteration_cgroup)
 
         # ctx.shell
         object.__setattr__(
