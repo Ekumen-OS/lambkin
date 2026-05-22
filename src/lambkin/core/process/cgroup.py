@@ -21,6 +21,8 @@ import time
 import uuid
 from pathlib import Path
 
+from lambkin.common import defaults
+
 
 def find_delegated_cgroup() -> Path:
     """Return the delegated cgroup for the current process.
@@ -88,7 +90,7 @@ def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
     while time.monotonic() < deadline:
         if not procs_file.read_text().strip():
             return
-        time.sleep(0.05)
+        time.sleep(defaults.CGROUP_POLL_INTERVAL)
 
     for pid_str in procs_file.read_text().split():
         try:
@@ -96,11 +98,11 @@ def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
         except ProcessLookupError:
             pass
 
-    deadline = time.monotonic() + 5.0
+    deadline = time.monotonic() + defaults.SIGKILL_GRACE_PERIOD
     while time.monotonic() < deadline:
         if not procs_file.read_text().strip():
             return
-        time.sleep(0.05)
+        time.sleep(defaults.CGROUP_POLL_INTERVAL)
 
 
 def remove_cgroup(cgroup: Path) -> None:
@@ -111,13 +113,13 @@ def remove_cgroup(cgroup: Path) -> None:
     cgroup : Path
         The cgroup directory to remove.
     """
-    deadline = time.monotonic() + 5.0
+    deadline = time.monotonic() + defaults.SIGKILL_GRACE_PERIOD
     while time.monotonic() < deadline:
         try:
             cgroup.rmdir()
             return
         except OSError:
-            time.sleep(0.05)
+            time.sleep(defaults.CGROUP_POLL_INTERVAL)
 
 
 def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
