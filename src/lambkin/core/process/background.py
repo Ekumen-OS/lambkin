@@ -28,37 +28,9 @@ from pathlib import Path
 from typing import Any
 
 from lambkin.common import defaults
+from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
 from lambkin.core.shell.proxy import CommandProxy
-
-
-class ProcessDiedUnexpectedlyError(Exception):
-    """Raised when a background process exits before the context manager does.
-
-    Attributes:
-    ----------
-    argv : list[str]
-        The command that died.
-    returncode : int
-        The exit code of the process.
-    """
-
-    def __init__(self, argv: list[str], returncode: int) -> None:
-        """Initialize with the command and its exit code.
-
-        Parameters
-        ----------
-        argv : list[str]
-            The command that died.
-        returncode : int
-            The exit code of the process.
-        """
-        self.argv = argv
-        self.returncode = returncode
-        super().__init__(
-            f"Background process {argv[0]!r} died unexpectedly "
-            f"with return code {returncode}."
-        )
 
 
 class BackgroundProcess:
@@ -173,7 +145,7 @@ class BackgroundProcess:
 
         if exc_type is None and self._died_unexpectedly:
             returncode = self._proc.poll()
-            raise ProcessDiedUnexpectedlyError(self._argv, returncode or 1)
+            raise LambkinProcessDiedUnexpectedlyError(self._argv, returncode or 1)
 
 
 def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProcess:

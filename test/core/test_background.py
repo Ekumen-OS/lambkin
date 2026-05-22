@@ -19,8 +19,8 @@ import time
 
 import pytest
 
+from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import (
-    ProcessDiedUnexpectedlyError,
     background,
 )
 from lambkin.core.shell.proxy import ShellProxy
@@ -74,8 +74,8 @@ def test_background_dry_run_no_cgroup_created(dry_shell, fake_cgroup):
 
 
 def test_process_died_unexpectedly_error_message():
-    """ProcessDiedUnexpectedlyError carries argv and returncode."""
-    err = ProcessDiedUnexpectedlyError(["my_tool", "--flag"], 1)
+    """LambkinProcessDiedUnexpectedlyError carries argv and returncode."""
+    err = LambkinProcessDiedUnexpectedlyError(["my_tool", "--flag"], 1)
     assert err.argv == ["my_tool", "--flag"]
     assert err.returncode == 1
     assert "my_tool" in str(err)
@@ -83,8 +83,8 @@ def test_process_died_unexpectedly_error_message():
 
 
 def test_process_died_unexpectedly_error_is_exception():
-    """ProcessDiedUnexpectedlyError is an Exception subclass."""
-    assert issubclass(ProcessDiedUnexpectedlyError, Exception)
+    """LambkinProcessDiedUnexpectedlyError is an Exception subclass."""
+    assert issubclass(LambkinProcessDiedUnexpectedlyError, Exception)
 
 
 def test_background_builds_argv_from_proxy(dry_shell, capsys):
@@ -151,7 +151,7 @@ def test_background_process_cgroup_removed_on_exit(tmp_path):
 
 
 def test_background_process_raises_if_dies_unexpectedly(tmp_path):
-    """ProcessDiedUnexpectedlyError is raised if process dies before __exit__."""
+    """LambkinProcessDiedUnexpectedlyError is raised if process dies before __exit__."""
     from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
 
     iteration_dir = tmp_path / "var_1" / "iter_1"
@@ -159,7 +159,7 @@ def test_background_process_raises_if_dies_unexpectedly(tmp_path):
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
 
     shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
-    with pytest.raises(ProcessDiedUnexpectedlyError):
+    with pytest.raises(LambkinProcessDiedUnexpectedlyError):
         with background(shell.sleep, "0"):
             time.sleep(1)
 
