@@ -28,10 +28,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from lambkin.common import defaults
 from lambkin.core.process.cgroup import kill_cgroup, make_cgroup, remove_cgroup
 from lambkin.core.shell.proxy import CommandProxy
-
-GRACE_PERIOD = 3.0
 
 
 class ProcessDiedUnexpectedlyError(Exception):
@@ -177,7 +176,7 @@ class BackgroundProcess:
 
         self._exiting = True
 
-        kill_cgroup(self._cgroup, grace_period=GRACE_PERIOD)
+        kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
 
         if self._monitor is not None:
             self._monitor.join()

@@ -15,3 +15,4 @@
 """Default values shared across the lambkin SDK."""
 
 DRY_RUN: bool = False
+SIGTERM_GRACE_PERIOD: float = 3.0
