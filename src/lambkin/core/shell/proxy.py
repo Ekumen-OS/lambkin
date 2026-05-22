@@ -53,7 +53,7 @@ class CommandError(Exception):
         super().__init__(message)
 
 
-class _CommandProxy:
+class CommandProxy:
     """Builds a shell command lazily by chaining attribute access and calls.
 
     Each attribute access appends a new token to the command being constructed
@@ -85,7 +85,7 @@ class _CommandProxy:
         self._cwd = cwd
         self._cgroup = cgroup
 
-    def __getattr__(self, name: str) -> _CommandProxy:
+    def __getattr__(self, name: str) -> CommandProxy:
         """Append a new token to the command and return a new proxy.
 
         This allows chaining attribute access to build multi-word commands.
@@ -97,7 +97,7 @@ class _CommandProxy:
         Returns:
             A new proxy with the token appended.
         """
-        return _CommandProxy(
+        return CommandProxy(
             self._parts + [name], self._dry_run, self._cwd, self._cgroup
         )
 
@@ -220,7 +220,7 @@ class ShellProxy:
         self._cwd = cwd
         self._cgroup = cgroup
 
-    def __getattr__(self, name: str) -> _CommandProxy:
+    def __getattr__(self, name: str) -> CommandProxy:
         """Start building a new command from the given top-level token.
 
         Args:
@@ -229,4 +229,4 @@ class ShellProxy:
         Returns:
             A CommandProxy with the first token set.
         """
-        return _CommandProxy([name], self._dry_run, self._cwd, self._cgroup)
+        return CommandProxy([name], self._dry_run, self._cwd, self._cgroup)

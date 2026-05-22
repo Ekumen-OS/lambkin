@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from lambkin.core.process.cgroup import kill_cgroup, make_cgroup, remove_cgroup
-from lambkin.core.shell.proxy import _CommandProxy
+from lambkin.core.shell.proxy import CommandProxy
 
 GRACE_PERIOD = 3.0
 
@@ -189,12 +189,12 @@ class BackgroundProcess:
             raise ProcessDiedUnexpectedlyError(self._argv, returncode or 1)
 
 
-def background(proxy: _CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProcess:
+def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProcess:
     """Create a BackgroundProcess context manager from a command proxy.
 
     Parameters
     ----------
-    proxy : _CommandProxy
+    proxy : CommandProxy_
         A command proxy representing the command to run.
     *args :
         Positional arguments to append to the command.
