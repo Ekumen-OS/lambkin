@@ -21,5 +21,23 @@ cleanup and unexpected exit detection.
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 
 from .background import BackgroundProcess, background
+from .cgroup import (
+    find_delegated_cgroup,
+    kill_cgroup,
+    make_cgroup,
+    make_iteration_cgroup,
+    make_process_cgroup,
+    remove_cgroup,
+)
 
-__all__ = ["BackgroundProcess", "LambkinProcessDiedUnexpectedlyError", "background"]
+__all__ = [
+    "BackgroundProcess",
+    "LambkinProcessDiedUnexpectedlyError",
+    "background",
+    "find_delegated_cgroup",
+    "make_cgroup",
+    "kill_cgroup",
+    "remove_cgroup",
+    "make_iteration_cgroup",
+    "make_process_cgroup",
+]
