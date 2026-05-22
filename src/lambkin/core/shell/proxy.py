@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Any
 
 from lambkin.common import defaults
-from lambkin.core.shell.tee import TeeStream
 
 
 class CommandError(Exception):
@@ -146,12 +145,6 @@ class CommandProxy:
         err = open(self._cwd / f"{base}.stderr.log", "w")
         return out, err
 
-    def _open_tee_streams(self, argv: list[str]) -> tuple:
-        base = self._log_base(argv)
-        tee_out = TeeStream(self._cwd / f"{base}.stdout.log")
-        tee_err = TeeStream(self._cwd / f"{base}.stderr.log")
-        return tee_out, tee_err
-
     def _build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.
 
@@ -209,23 +202,7 @@ class CommandProxy:
             print(f"[DRY RUN] {shlex.join(argv)}")
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
-            # TODO(teresa-ortega): subprocess.run inherits stdout/stderr from
-            # the parent process, so all output goes directly to the terminal
-            # with no way to capture, redirect, or log it. When logging is
-            # revisited, consider switching to subprocess.Popen for full control
-            # over stdout/stderr streams.
-            if log_output == "both":
-                stdout, stderr = self._open_tee_streams(argv)
-                proc = subprocess.Popen(
-                    argv,
-                    cwd=self._cwd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-                stdout.start(proc.stdout)
-                stderr.start(proc.stderr)
-            elif log_output == "file":
+            if log_output == "file":
                 stdout, stderr = self._open_streams(argv)
                 proc = subprocess.Popen(
                     argv,
