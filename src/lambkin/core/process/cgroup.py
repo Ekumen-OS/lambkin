@@ -141,3 +141,22 @@ def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
         f"iter-{iteration_dir.parent.name}-{iteration_dir.name}-{uuid.uuid4().hex[:8]}"
     )
     return make_cgroup(delegated, name)
+
+
+def make_process_cgroup(parent: Path, argv: list[str]) -> Path:
+    """Create a cgroup for a background process.
+
+    Parameters
+    ----------
+    parent : Path
+        The parent cgroup directory (typically the iteration cgroup).
+    argv : list[str]
+        The command argv, used to derive a human-readable cgroup name.
+
+    Returns:
+    -------
+    Path
+        The path to the newly created cgroup directory.
+    """
+    name = f"{argv[0].split('/')[-1]}-{uuid.uuid4().hex[:8]}"
+    return make_cgroup(parent, name)

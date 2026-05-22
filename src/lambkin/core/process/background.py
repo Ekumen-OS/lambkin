@@ -24,12 +24,11 @@ from __future__ import annotations
 import os
 import subprocess
 import threading
-import uuid
 from pathlib import Path
 from typing import Any
 
 from lambkin.common import defaults
-from lambkin.core.process.cgroup import kill_cgroup, make_cgroup, remove_cgroup
+from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
 from lambkin.core.shell.proxy import CommandProxy
 
 
@@ -101,17 +100,6 @@ class BackgroundProcess:
         self._exiting: bool = False
         self._cwd = cwd
 
-    def _make_cgroup(self) -> Path:
-        """Create a unique child cgroup under the iteration cgroup.
-
-        Returns:
-        -------
-        Path
-            The path to the newly created cgroup directory.
-        """
-        name = f"{self._argv[0].split('/')[-1]}-{uuid.uuid4().hex[:8]}"
-        return make_cgroup(self._iteration_cgroup, name)
-
     def _enter_cgroup(self) -> None:
         """Write the current PID to cgroup.procs.
 
@@ -137,7 +125,7 @@ class BackgroundProcess:
             print(f"[DRY RUN BG] {' '.join(self._argv)}")
             return self
 
-        self._cgroup = self._make_cgroup()
+        self._cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)
 
         self._proc = subprocess.Popen(
             self._argv,
@@ -193,7 +181,7 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
 
     Parameters
     ----------
-    proxy : CommandProxy_
+    proxy : CommandProxy
         A command proxy representing the command to run.
     *args :
         Positional arguments to append to the command.
