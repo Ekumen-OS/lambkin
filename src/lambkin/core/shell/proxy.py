@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from lambkin.common import defaults
+from lambkin.core.shell.ros.launch import RosLaunchCommand
 
 
 class CommandError(Exception):
@@ -109,6 +110,15 @@ class CommandProxy:
         Returns:
             A new proxy with the token appended.
         """
+        if self._parts == ["ros2"] and name == "launch":
+            return RosLaunchCommand(
+                self._parts + [name],
+                self._dry_run,
+                self._cwd,
+                self._cgroup,
+                self._benchmark_log_output,
+                self._call_counts,
+            )
         return CommandProxy(
             self._parts + [name],
             self._dry_run,
@@ -138,6 +148,14 @@ class CommandProxy:
     def get_dry_run(self) -> bool:
         """Return the dry run flag."""
         return self._dry_run
+
+    def _make_popen(self, argv: list[str], stdout, stderr) -> subprocess.Popen:
+        return subprocess.Popen(
+            argv,
+            cwd=self._cwd,
+            stdout=stdout,
+            stderr=stderr,
+        )
 
     def _open_streams(self, log_output: str, argv: list[str]) -> tuple:
         base = self._log_base(argv)
@@ -196,7 +214,6 @@ class CommandProxy:
         """
         log_output = kwargs.pop("log_output", None)
         log_output = self._resolve_log_output(log_output)
-        print(f"[DEBUG] log_output resuelto: {log_output}")
         argv = self._build_argv(*args, **kwargs)
         if self._dry_run:
             print(f"[DRY RUN] {shlex.join(argv)}")
@@ -204,17 +221,9 @@ class CommandProxy:
         try:
             if log_output == "file":
                 stdout, stderr = self._open_streams(argv)
-                proc = subprocess.Popen(
-                    argv,
-                    cwd=self._cwd,
-                    stdout=stdout,
-                    stderr=stderr,
-                )
+                proc = self._make_popen(argv, stdout, stderr)
             else:
-                proc = subprocess.Popen(
-                    argv,
-                    cwd=self._cwd,
-                )
+                proc = self._make_popen(argv, None, None)
                 stdout, stderr = None, None
 
             proc.wait()
