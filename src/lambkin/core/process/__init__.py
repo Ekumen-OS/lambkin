@@ -14,9 +14,8 @@
 
 """Process execution utilities for benchmark runs.
 
-Provides two execution modes:
-- background: non-blocking process launch.
-- foreground: blocking process execution.
+Provides background process management via cgroups v2, with automatic
+cleanup and unexpected exit detection.
 """
 
 from .background import BackgroundProcess, ProcessDiedUnexpectedlyError, background
