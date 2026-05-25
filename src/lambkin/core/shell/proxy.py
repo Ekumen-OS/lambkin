@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Any
 
 from lambkin.common import defaults
-from lambkin.core.shell.ros.launch import RosLaunchCommand
 
 
 class CommandError(Exception):
@@ -68,6 +67,8 @@ class CommandProxy:
     obtain the first proxy in a chain.
     """
 
+    _specialisations: dict[tuple[str, ...], type] = {}
+
     def __init__(
         self,
         parts: list[str],
@@ -98,6 +99,16 @@ class CommandProxy:
         self._benchmark_log_output = benchmark_log_output
         self._call_counts = call_counts or {}
 
+    @classmethod
+    def register(cls, parts: tuple[str, ...], proxy_cls: type) -> None:
+        """Register a specialised proxy class for a given command prefix.
+
+        Args:
+            parts: The command tokens that trigger the specialisation.
+            proxy_cls: The proxy class to use for that command.
+        """
+        cls._specialisations[parts] = proxy_cls
+
     def __getattr__(self, name: str) -> CommandProxy:
         """Append a new token to the command and return a new proxy.
 
@@ -110,17 +121,10 @@ class CommandProxy:
         Returns:
             A new proxy with the token appended.
         """
-        if self._parts == ["ros2"] and name == "launch":
-            return RosLaunchCommand(
-                self._parts + [name],
-                self._dry_run,
-                self._cwd,
-                self._cgroup,
-                self._benchmark_log_output,
-                self._call_counts,
-            )
-        return CommandProxy(
-            self._parts + [name],
+        parts = tuple(self._parts + [name])
+        proxy_cls = self._specialisations.get(parts, CommandProxy)
+        return proxy_cls(
+            list(parts),
             self._dry_run,
             self._cwd,
             self._cgroup,
@@ -129,8 +133,17 @@ class CommandProxy:
         )
 
     def _resolve_log_output(self, per_call: str | None) -> str:
-        print(f"[DEBUG] benchmark_log_output: {self._benchmark_log_output}")
-        print(f"[DEBUG] per_call: {per_call}")
+        """Resolve the effective log output mode following precedence rules.
+
+        The resolution order from highest to lowest priority is:
+        benchmark-level option set via CLI, per-call override, default value.
+
+        Args:
+            per_call: Log output mode passed at the call site, or None if not provided.
+
+        Returns:
+            The resolved log output mode.
+        """
         if self._benchmark_log_output is not None:
             return self._benchmark_log_output
         if per_call is not None:
@@ -150,6 +163,16 @@ class CommandProxy:
         return self._dry_run
 
     def _make_popen(self, argv: list[str], stdout, stderr) -> subprocess.Popen:
+        """Create and return a subprocess with the given streams.
+
+        Args:
+            argv: The command to run as a list of tokens.
+            stdout: stdout stream configuration passed to subprocess.Popen.
+            stderr: stderr stream configuration passed to subprocess.Popen.
+
+        Returns:
+            The running subprocess.
+        """
         return subprocess.Popen(
             argv,
             cwd=self._cwd,
@@ -157,11 +180,40 @@ class CommandProxy:
             stderr=stderr,
         )
 
-    def _open_streams(self, log_output: str, argv: list[str]) -> tuple:
+    def _open_streams(self, argv: list[str]) -> tuple:
+        """Open log files for stdout and stderr in the iteration directory.
+
+        Args:
+            argv: The command argv, used to derive the log file base name.
+
+        Returns:
+            A tuple of (stdout_file, stderr_file) open for writing.
+        """
         base = self._log_base(argv)
         out = open(self._cwd / f"{base}.stdout.log", "w")
         err = open(self._cwd / f"{base}.stderr.log", "w")
         return out, err
+
+    def _log_base(self, argv: list[str]) -> str:
+        """Derive a unique log file base name from the command argv.
+
+        Filters out absolute paths and ROS parameter assignments, joins the
+        remaining tokens with underscores, and appends a numeric suffix if
+        the same command has been launched more than once in this iteration.
+
+        Args:
+            argv: The command argv to derive the base name from.
+
+        Returns:
+            A unique base name string, e.g. 'ros2_launch' or 'ros2_launch_1'.
+        """
+        base = "_".join(
+            arg for arg in argv if not arg.startswith("/") and ":=" not in arg
+        )
+        count = self._call_counts.get(base, 0)
+        self._call_counts[base] = count + 1
+        suffix = f"_{count}" if count > 0 else ""
+        return f"{base}{suffix}"
 
     def _build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.

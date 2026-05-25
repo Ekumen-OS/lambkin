@@ -11,11 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""ROS 2 command proxy specialisation."""
+"""ROS 2 command proxy specialisation.
+
+Provides a specialised command proxy for ros2 launch that injects
+ROS_LOG_DIR into the child process environment before execution,
+ensuring that ROS node logs are written to the iteration directory
+alongside all other benchmark artefacts.
+"""
 
 from __future__ import annotations
 
 import os
+import subprocess
 
 from lambkin.core.shell.proxy import CommandProxy
 
@@ -42,15 +49,24 @@ class RosLaunchCommand(CommandProxy):
         env["ROS_LOG_DIR"] = str(self._cwd)
         return env
 
-    def __call__(self, *args, **kwargs):
-        """Dispatch the command with ROS_LOG_DIR injected into the environment.
+    def _make_popen(self, argv, stdout, stderr) -> subprocess.Popen:
+        """Launch the process with ROS_LOG_DIR set to the iteration directory.
 
         Args:
-            *args: Positional arguments appended as tokens to the command.
-            **kwargs: Keyword arguments converted to --flag value pairs.
+            argv: The command to run.
+            stdout: stdout stream configuration.
+            stderr: stderr stream configuration.
 
         Returns:
-            The CompletedProcess instance returned by the parent class.
+            The running process.
         """
-        kwargs["env"] = self._make_env()
-        return super().__call__(*args, **kwargs)
+        return subprocess.Popen(
+            argv,
+            cwd=self._cwd,
+            stdout=stdout,
+            stderr=stderr,
+            env=self._make_env(),
+        )
+
+
+CommandProxy.register(("ros2", "launch"), RosLaunchCommand)
