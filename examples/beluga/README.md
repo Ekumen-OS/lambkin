@@ -117,7 +117,7 @@ podman run --rm \
 
 > [!WARNING]
 
-> Both runtimes require elevated privileges to support background process management. Docker runs with `--privileged`, granting the container broad access to host devices and kernel interfaces. Podman uses `--systemd=always`, which allows the container to interact with the host's cgroup v2 hierarchy. LAMBKIN requires these to create transient cgroup scopes that guarantee cleanup of all descendant processes when a benchmark step ends. Only use this in trusted, controlled environments where you own the container invocation — not suitable for shared CI runners or managed cloud environments.
+> Both runtimes require elevated privileges to support background process management. Docker runs with --privileged, granting the container broad access to host devices and kernel interfaces. Podman uses --systemd=always, which allows the container to interact with the host's cgroup v2 hierarchy. LAMBKIN requires these to create transient cgroup scopes that guarantee cleanup of all descendant processes when a benchmark step ends. Only use this in trusted, controlled environments where you own the container invocation — not suitable for shared CI runners or managed cloud environments.
 
 ## Usage
 
