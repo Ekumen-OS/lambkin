@@ -44,11 +44,50 @@ Registers a CLI option on a benchmark. Built on top of [`click`](https://click.p
 
 Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible through the context.
 
+**Background Process**
+
+A context manager that wraps a Shell command and manages its full lifecycle — start, monitor, and clean up — ensuring no orphaned processes survive when the benchmark ends or is interrupted. Uses cgroups v2 to guarantee kernel-level cleanup of the entire process tree, including descendants that have detached via setsid or setpgid. Used via lambkin.process.background(...)
+
+## CLI
+
+LAMBKIN exposes a lambkin command that runs your benchmark script inside a transient systemd cgroup scope, ensuring all child processes are tracked and cleaned up automatically.
+
+```bash
+Usage: lambkin [OPTIONS] SCRIPT [SDK_OPTIONS] [CUSTOM_OPTIONS]
+
+Options:
+  --help          Show this message and exit.
+
+SDK Options (always available):
+  --dry-run       Run the benchmark in dry-run mode: commands are logged but
+                  not executed.
+  --show-options  List all SDK and custom options available for this benchmark
+                  script and exit.
+
+Custom Options (script-defined):
+  Options registered in your benchmark script via @lambkin.option.
+  Run 'lambkin SCRIPT --show-options' to list them.
+```
+
+## Logging
+LAMBKIN uses Python's standard logging module for its own informational messages. Subprocess output is handled separately through output redirection — each process can be configured independently with _log_output.
+Three output modes are supported:
+
+* "console" — route subprocess stdout/stderr to the terminal.
+* "file" — write subprocess output to a per-process log file under the iteration output directory.
+
+The mode can be set at three levels, applied in precedence order:
+
+* Per-call — _log_output keyword at the call site, intercepted by LAMBKIN and never forwarded to the process.
+* Benchmark option — via @lambkin.option("--log-output", default="file").
+Environment variable — LAMBKIN_LOG_OUTPUT=both.
+ShellProxy default — ShellProxy(log_output="file").
 
 ## Requirements
 
 - Python 3.10+
 - [`uv`](https://github.com/astral-sh/uv)
+- Linux with cgroups v2 and systemd (required for background process management)
 
 ## Installation
 
@@ -91,11 +130,23 @@ if __name__ == "__main__":
     my_benchmark()
 
 ```
+**Run it with the CLI:**
 
-> **Note:** Real execution is not yet supported. `--dry-run` is the only supported mode at this time. The shell proxy prints commands rather than running them.
-> Background process orchestration will be implemented in subsequent phases.
+```bash
+lambkin my_benchmark.py --clock-rate 50.0
+```
 
+Inspect all available options without running:
+```bash
+lambkin my_benchmark.py --show-options
+```
+
+Validate the benchmark pipeline without executing any process:
+```bash
+lambkin my_benchmark.py --dry-run
+```
 For a complete, working example using the Beluga algorithm, see [`Beluga Example`](examples/beluga/beluga_benchmark.py).
+
 
 ## Expected Output
 
