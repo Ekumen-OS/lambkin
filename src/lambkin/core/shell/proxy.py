@@ -189,6 +189,8 @@ class CommandProxy:
         Returns:
             A tuple of (stdout_file, stderr_file) open for writing.
         """
+        if self._cwd is None:
+            return None, None
         base = self._log_base(argv)
         out = open(self._cwd / f"{base}.stdout.log", "w")
         err = open(self._cwd / f"{base}.stderr.log", "w")

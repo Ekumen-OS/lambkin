@@ -53,7 +53,7 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
     ),
     click.Option(
         ["--log-output"],
-        type=click.Choice(["file", "console", "both"]),
+        type=click.Choice(["file", "console"]),
         show_default=True,
         default=None,
         help="Where to route process output: file, console, or both.",
