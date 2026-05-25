@@ -49,14 +49,16 @@ volumes:
 
 ```bash
 cd examples/beluga/docker
-docker compose --profile development build
+docker compose --profile development build  # Docker
+podman compose --profile development build  # Podman
 ```
 
 ####  Production
 
 ```bash
 cd examples/beluga/docker
-docker compose --profile production build
+docker compose --profile production build  # Docker
+podman compose --profile production build  # Podman
 ```
 
 ### **3. Start the container**
@@ -67,9 +69,18 @@ Two Docker profiles are available depending on your use case.
 
 Mounts the repository as a volume so code changes are reflected immediately without rebuilding.
 
+**Docker**
+
 ```bash
 docker compose --profile development up -d
 docker compose --profile development exec lambkin_dev bash
+```
+
+**Podman**
+
+```bash
+podman compose --profile development up -d
+podman compose --profile development exec lambkin_dev bash
 ```
 
 Inside the container:
@@ -87,11 +98,25 @@ source install/setup.bash
 
 Builds a fully self-contained image with all dependencies pre-installed. No manual steps needed inside the container.
 
+**Docker**
+
 ```bash
-docker compose --profile production up -d
-docker compose --profile production exec lambkin_prod bash
+docker compose -f docker-compose.yml --profile production run --rm lambkin_prod bash
+```
+**Podman**
+
+```bash
+podman run --rm \
+  --name=lambkin_production \
+  --systemd=always \
+  --network=host \
+  -v "$(pwd)/../results:/ws/examples/beluga/results" \
+  -it lambkin_ros:jazzy bash
 ```
 
+
+> [!WARNING]
+Both runtimes require elevated privileges to support background process management. Docker runs with --privileged, granting the container broad access to host devices and kernel interfaces. Podman uses --systemd=always, which allows the container to interact with the host's cgroup v2 hierarchy. LAMBKIN requires these to create transient cgroup scopes that guarantee cleanup of all descendant processes when a benchmark step ends. Only use this in trusted, controlled environments where you own the container invocation — not suitable for shared CI runners or managed cloud environments.
 ## Usage
 
 Inside the Docker container/enviroment, run the following command:
