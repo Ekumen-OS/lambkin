@@ -126,7 +126,7 @@ podman run --rm \
 Inside the Docker container/enviroment, run the following command:
 
 ```bash
-uv run examples/beluga/beluga_benchmark.py
+uv run lambkin examples/beluga/beluga_benchmark.py
 ```
 
 Once complete, results are written to results/ organized by configuration (`var_<number>/iter_<number>`). Each iteration contains the recorded bag, TUM trajectory, and APE metrics.
