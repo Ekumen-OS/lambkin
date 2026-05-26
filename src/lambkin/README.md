@@ -70,18 +70,21 @@ Custom Options (script-defined):
 ```
 
 ## Logging
-LAMBKIN uses Python's standard logging module for its own informational messages. Subprocess output is handled separately through output redirection — each process can be configured independently with _log_output.
-Three output modes are supported:
 
-* "console" — route subprocess stdout/stderr to the terminal.
-* "file" — write subprocess output to a per-process log file under the iteration output directory.
+LAMBKIN uses Python's standard logging module for its own informational messages. Subprocess output is handled separately through output redirection — each process can be configured independently with `log_output`.
 
-The mode can be set at three levels, applied in precedence order:
+**Output modes**
 
-* Per-call — _log_output keyword at the call site, intercepted by LAMBKIN and never forwarded to the process.
-* Benchmark option — via @lambkin.option("--log-output", default="file").
-Environment variable — LAMBKIN_LOG_OUTPUT=both.
-ShellProxy default — ShellProxy(log_output="file").
+| Mode | Behavior |
+|------|-----------|
+| `"console"` | Routes subprocess stdout/stderr to the terminal |
+| `"file"` | Writes subprocess output to a per-process log file under the iteration output directory |
+
+**Precedence** (highest to lowest)
+
+1. **Per-call** — `_log_output` keyword at the call site
+2. **Benchmark option** — `@lambkin.option("--log-output", default="file")`
+3. **ShellProxy default** — `ShellProxy(log_output="file")`
 
 ## Requirements
 
