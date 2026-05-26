@@ -22,15 +22,15 @@ from lambkin.core.shell import CommandError, ShellProxy
 
 
 @pytest.fixture
-def shell():
+def shell(tmp_path):
     """Return a ShellProxy in real execution mode."""
-    return ShellProxy(dry_run=False)
+    return ShellProxy(dry_run=False, cwd=tmp_path)
 
 
 @pytest.fixture
-def dry_shell():
+def dry_shell(tmp_path):
     """Return a ShellProxy in dry-run mode."""
-    return ShellProxy(dry_run=True)
+    return ShellProxy(dry_run=True, cwd=tmp_path)
 
 
 def test_simple_command(dry_shell, capsys):
@@ -156,3 +156,41 @@ def test_path_with_spaces_no_shell_injection(shell, tmp_path):
     target = tmp_path / "my file.txt"
     shell.touch(str(target))
     assert target.exists()
+
+
+def test_log_output_default_is_file(shell):
+    """Default log_output mode is 'file'."""
+    assert shell.echo._resolve_log_output(None) == "file"
+
+
+def test_log_output_per_call_overrides_default(shell):
+    """Per-call log_output overrides the default."""
+    assert shell.echo._resolve_log_output("console") == "console"
+
+
+def test_log_output_cli_overrides_per_call(tmp_path):
+    """CLI log_output overrides per-call value."""
+    s = ShellProxy(dry_run=False, cwd=tmp_path, log_output="both")
+    assert s.echo._resolve_log_output("console") == "both"
+
+
+def test_log_base_appends_suffix_on_collision(shell):
+    """_log_base appends numeric suffix when same command launched twice."""
+    proxy = shell.ros2
+    assert proxy._log_base(["ros2", "launch"]) == "ros2_launch"
+    assert proxy._log_base(["ros2", "launch"]) == "ros2_launch_1"
+
+
+def test_getattr_returns_ros_launch_command(tmp_path):
+    """shell.ros2.launch returns a RosLaunchCommand."""
+    from lambkin.core.shell.ros.launch import RosLaunchCommand
+
+    s = ShellProxy(dry_run=False, cwd=tmp_path)
+    assert isinstance(s.ros2.launch, RosLaunchCommand)
+
+
+def test_file_mode_creates_log_files(tmp_path):
+    """In file mode, running a command creates stdout and stderr log files."""
+    s = ShellProxy(dry_run=False, cwd=tmp_path)
+    s.echo("hello")
+    assert len(list(tmp_path.glob("*.log"))) == 2
