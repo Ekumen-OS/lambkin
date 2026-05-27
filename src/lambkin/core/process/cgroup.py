@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import signal
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -119,6 +120,14 @@ def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
         if not procs_file.read_text().strip():
             return
         time.sleep(defaults.CGROUP_POLL_INTERVAL)
+    survivors = procs_file.read_text().split()
+    if survivors:
+        print(
+            f"[WARNING] {len(survivors)} process(es) survived SIGKILL in "
+            f"{cgroup} — this indicates a serious system problem. "
+            f"PIDs: {', '.join(survivors)}",
+            file=sys.stderr,
+        )
 
 
 def remove_cgroup(cgroup: Path) -> None:
@@ -136,6 +145,11 @@ def remove_cgroup(cgroup: Path) -> None:
             return
         except OSError:
             time.sleep(defaults.CGROUP_POLL_INTERVAL)
+    print(
+        f"[WARNING] Could not remove cgroup {cgroup} — "
+        "it may still contain processes that survived SIGKILL.",
+        file=sys.stderr,
+    )
 
 
 def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
