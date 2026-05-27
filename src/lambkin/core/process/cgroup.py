@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import signal
 import sys
@@ -143,8 +144,13 @@ def remove_cgroup(cgroup: Path) -> None:
         try:
             cgroup.rmdir()
             return
-        except OSError:
-            time.sleep(defaults.CGROUP_POLL_INTERVAL)
+        except OSError as e:
+            if e.errno == errno.ENOTEMPTY:
+                time.sleep(defaults.CGROUP_POLL_INTERVAL)
+            elif e.errno == errno.ENOENT:
+                return
+            else:
+                raise
     print(
         f"[WARNING] Could not remove cgroup {cgroup} — "
         "it may still contain processes that survived SIGKILL.",
