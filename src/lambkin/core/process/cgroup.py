@@ -41,8 +41,24 @@ def find_delegated_cgroup() -> Path:
     for line in cgroup_file.read_text().splitlines():
         if line.startswith("0::"):
             rel = line[3:].strip()
-            return Path("/sys/fs/cgroup") / rel.lstrip("/")
-    raise RuntimeError("No cgroup v2 found.")
+            candidate = Path("/sys/fs/cgroup") / rel.lstrip("/")
+            if not candidate.exists():
+                raise RuntimeError(
+                    f"cgroup v2 directory not found: {candidate}. "
+                    "Make sure cgroup v2 is enabled on this system."
+                )
+            if not os.access(candidate, os.W_OK):
+                raise RuntimeError(
+                    f"No write access to cgroup: {candidate}. "
+                    "Run with: systemd-run --user --scope, "
+                    "or use Podman with --systemd=always, "
+                    "or Docker with --privileged."
+                )
+            return candidate
+    raise RuntimeError(
+        "No cgroup v2 found in /proc/self/cgroup. "
+        "Make sure cgroup v2 is enabled on this system."
+    )
 
 
 def make_cgroup(parent: Path, name: str) -> Path:
