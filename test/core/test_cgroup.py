@@ -14,6 +14,7 @@
 
 """Unit tests for cgroup v2 lifecycle utilities."""
 
+import errno
 import os
 import subprocess
 import sys
@@ -101,7 +102,7 @@ def test_remove_cgroup_retries_until_empty(tmp_path):
         nonlocal call_count
         call_count += 1
         if call_count < 3:
-            raise OSError("not empty yet")
+            raise OSError(errno.ENOTEMPTY, "Directory not empty")
         original_rmdir(self)
 
     with patch.object(Path, "rmdir", rmdir_side_effect):
@@ -117,7 +118,9 @@ def test_remove_cgroup_gives_up_after_timeout(tmp_path):
     cgroup.mkdir()
 
     with (
-        patch.object(Path, "rmdir", side_effect=OSError("always fails")),
+        patch.object(
+            Path, "rmdir", side_effect=OSError(errno.ENOTEMPTY, "Directory not empty")
+        ),
         patch(
             "lambkin.core.process.cgroup.time.monotonic", side_effect=[0.0, 0.0, 10.0]
         ),
