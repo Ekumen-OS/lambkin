@@ -56,6 +56,6 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
         type=click.Choice(["file", "console"]),
         show_default=True,
         default=None,
-        help="Where to route process output: file, console, or both.",
+        help="Where to route process output: file or console.",
     ),
 )
