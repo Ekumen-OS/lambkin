@@ -20,9 +20,8 @@ import time
 import pytest
 
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
-from lambkin.core.process.background import (
-    background,
-)
+from lambkin.core.process.background import background
+from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
 from lambkin.core.shell.proxy import ShellProxy
 
 
@@ -122,8 +121,6 @@ def test_background_passes_dry_run_from_proxy(fake_cgroup, tmp_path):
 
 def test_background_process_starts_and_stops(tmp_path):
     """BackgroundProcess starts a real process and kills it on exit."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
-
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
@@ -137,8 +134,6 @@ def test_background_process_starts_and_stops(tmp_path):
 
 def test_background_process_cgroup_removed_on_exit(tmp_path):
     """BackgroundProcess removes its child cgroup on exit."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
-
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
@@ -152,8 +147,6 @@ def test_background_process_cgroup_removed_on_exit(tmp_path):
 
 def test_background_process_raises_if_dies_unexpectedly(tmp_path):
     """LambkinProcessDiedUnexpectedlyError is raised if process dies before __exit__."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
-
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
@@ -166,8 +159,6 @@ def test_background_process_raises_if_dies_unexpectedly(tmp_path):
 
 def test_background_process_nested(tmp_path):
     """Two nested BackgroundProcess instances both start and stop correctly."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
-
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
@@ -184,8 +175,6 @@ def test_background_process_nested(tmp_path):
 
 def test_background_process_cwd_is_used(tmp_path):
     """BackgroundProcess launches the process with the correct cwd."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
-
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)

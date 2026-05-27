@@ -157,8 +157,6 @@ def test_make_iteration_cgroup_unique_names(tmp_path):
 
 def test_kill_cgroup_terminates_cooperative_process():
     """kill_cgroup sends SIGTERM and the process exits cleanly."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup
-
     delegated = find_delegated_cgroup()
     cgroup = make_cgroup(delegated, "test-kill-cooperative")
 
@@ -176,8 +174,6 @@ def test_kill_cgroup_terminates_cooperative_process():
 
 def test_kill_cgroup_kills_non_cooperative_process():
     """kill_cgroup falls back to SIGKILL for processes ignoring SIGTERM."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup
-
     delegated = find_delegated_cgroup()
     cgroup = make_cgroup(delegated, "test-kill-non-cooperative")
 
@@ -200,8 +196,6 @@ def test_kill_cgroup_kills_non_cooperative_process():
 
 def test_kill_cgroup_empty_cgroup_does_nothing():
     """kill_cgroup on an empty cgroup does not raise."""
-    from lambkin.core.process.cgroup import find_delegated_cgroup
-
     delegated = find_delegated_cgroup()
     cgroup = make_cgroup(delegated, "test-kill-empty")
 
