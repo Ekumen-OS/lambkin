@@ -132,7 +132,6 @@ class BackgroundProcess:
             exception is already propagating.
         """
         if self._dry_run:
-            print(f"[DRY RUN BG STOP] {' '.join(self._argv)}")
             return
 
         self._exiting.set()
