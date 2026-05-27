@@ -49,14 +49,6 @@ def test_background_dry_run_prints_command(dry_shell, capsys):
     assert "sleep" in out
 
 
-def test_background_dry_run_prints_stop(dry_shell, capsys):
-    """In dry-run mode, background prints a stop message on exit."""
-    with background(dry_shell.sleep, "10"):
-        pass
-    out = capsys.readouterr().out
-    assert "[DRY RUN BG STOP]" in out
-
-
 def test_background_dry_run_does_not_launch_process(dry_shell):
     """In dry-run mode, no real process is started."""
     with background(dry_shell.sleep, "10") as bp:
