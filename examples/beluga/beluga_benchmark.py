@@ -35,16 +35,17 @@ def nominal(ctx):
     """
     with lambkin.process.background(
         ctx.shell.ros2.bag.record,
-        "-O",
+        "--output",
         "output.mcap",
         "-a",
     ):
         with lambkin.process.background(
             ctx.shell.ros2.launch,
-            ctx.source.path.parent / "beluga.launch.xml",
+            "beluga_ros2",
+            "beluga.launch.py",
             f"sensor_model:={ctx.variant.sensor_model}",
             f"num_particles:={ctx.variant.num_particles}",
-            f"map_file:={ctx.inputs.map}",
+            f"map_path:={ctx.inputs.map}",
         ):
             ctx.shell.ros2.bag.play(
                 ctx.inputs.dataset, "--clock", "-r", ctx.options.clock_rate
@@ -54,13 +55,13 @@ def nominal(ctx):
 @nominal.input
 def dataset(ctx):
     """Return the path to the MCAP dataset used as input for the benchmark."""
-    return "/mydataset/dataset.mcap"
+    return ctx.source.path.parent / "my_bags" / "my_bag.mcap"
 
 
 @nominal.input
 def map(ctx):
     """Return the path to the map file used for localization."""
-    return "my_map.yaml"
+    return "maps/map.yaml"
 
 
 if __name__ == "__main__":
