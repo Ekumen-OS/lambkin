@@ -18,8 +18,6 @@ Provides background process management via cgroups v2, with automatic
 cleanup and unexpected exit detection.
 """
 
-from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
-
 from .background import BackgroundProcess, background
 from .cgroup import (
     find_delegated_cgroup,
@@ -32,7 +30,6 @@ from .cgroup import (
 
 __all__ = [
     "BackgroundProcess",
-    "LambkinProcessDiedUnexpectedlyError",
     "background",
     "find_delegated_cgroup",
     "make_cgroup",

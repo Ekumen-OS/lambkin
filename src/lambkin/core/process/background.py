@@ -27,8 +27,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from lambkin.common import defaults
-from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
+from lambkin.common import defaults, exceptions
 from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
 from lambkin.core.shell.proxy import CommandProxy
 
@@ -147,7 +146,9 @@ class BackgroundProcess:
 
         if exc_type is None and self._died_unexpectedly:
             returncode = self._proc.poll()
-            raise LambkinProcessDiedUnexpectedlyError(self._argv, returncode or 1)
+            raise exceptions.LambkinProcessDiedUnexpectedlyError(
+                self._argv, returncode or 1
+            )
 
 
 def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProcess:
