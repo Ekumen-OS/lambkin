@@ -61,6 +61,8 @@ class BackgroundProcess:
             The cgroup directory for this iteration.
         dry_run : bool
             If True, print the command instead of executing it.
+        cwd : Path, optional
+            Working directory for the process. If None, inherits from the parent.
         """
         self._argv = argv
         self._iteration_cgroup = iteration_cgroup
@@ -69,7 +71,7 @@ class BackgroundProcess:
         self._proc: subprocess.Popen | None = None
         self._monitor: threading.Thread | None = None
         self._died_unexpectedly: bool = False
-        self._exiting: bool = False
+        self._exiting: threading.Event = threading.Event()
         self._cwd = cwd
 
     def _enter_cgroup(self) -> None:
@@ -82,7 +84,7 @@ class BackgroundProcess:
     def _monitor_process(self) -> None:
         """Monitor thread that detects if the process dies unexpectedly."""
         self._proc.wait()
-        if not self._exiting:
+        if not self._exiting.is_set():
             self._died_unexpectedly = True
 
     def __enter__(self) -> BackgroundProcess:
@@ -126,7 +128,7 @@ class BackgroundProcess:
 
         Raises:
         ------
-        ProcessDiedUnexpectedly
+        LambkinProcessDiedUnexpectedlyError
             If the process died before this method was called and no other
             exception is already propagating.
         """
@@ -134,7 +136,7 @@ class BackgroundProcess:
             print(f"[DRY RUN BG STOP] {' '.join(self._argv)}")
             return
 
-        self._exiting = True
+        self._exiting.set()
 
         kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
 
