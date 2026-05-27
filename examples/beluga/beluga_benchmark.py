@@ -33,14 +33,22 @@ def nominal(ctx):
     Args:
         ctx: Lambkin context with variant, options, source, and shell access.
     """
-    print(ctx)
-    ctx.shell.ros2.launch(
-        ctx.source.path.parent / "beluga.launch.xml",
-        f"sensor_model:={ctx.variant.sensor_model}",
-        f"num_particles:={ctx.variant.num_particles}",
-    )
-    ctx.shell.ros2.bag.play("--clock", "-r", ctx.options.clock_rate)
-    ctx.shell.evo_ape.bag2("output.mcap", save_results="out.zip")
+    with lambkin.process.background(
+        ctx.shell.ros2.bag.record,
+        "-O",
+        "output.mcap",
+        "-a",
+    ):
+        with lambkin.process.background(
+            ctx.shell.ros2.launch,
+            ctx.source.path.parent / "beluga.launch.xml",
+            f"sensor_model:={ctx.variant.sensor_model}",
+            f"num_particles:={ctx.variant.num_particles}",
+            f"map_file:={ctx.inputs.map}",
+        ):
+            ctx.shell.ros2.bag.play(
+                ctx.inputs.dataset, "--clock", "-r", ctx.options.clock_rate
+            )
 
 
 @nominal.input
