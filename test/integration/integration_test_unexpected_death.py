@@ -49,7 +49,7 @@ def main():
 
     print("Starting outer background process...")
     try:
-        with background(shell.__getattr__(sys.executable), "-c", COOPERATIVE) as bp1:
+        with background(shell.python3, "-c", COOPERATIVE) as bp1:
             print(f"Outer process started — pid={bp1._proc.pid}")
             print("Starting inner background process that will die quickly...")
             with background(
