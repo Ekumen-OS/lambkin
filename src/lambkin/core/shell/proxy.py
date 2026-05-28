@@ -101,7 +101,19 @@ class CommandProxy:
             self._parts + [name], self._dry_run, self._cwd, self._cgroup
         )
 
-    def _build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
+    def get_cgroup(self) -> Path | None:
+        """Return the iteration cgroup directory."""
+        return self._cgroup
+
+    def get_cwd(self) -> Path | None:
+        """Return the working directory."""
+        return self._cwd
+
+    def get_dry_run(self) -> bool:
+        """Return the dry run flag."""
+        return self._dry_run
+
+    def build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.
 
         Positional arguments are appended as discrete tokens. Keyword arguments
@@ -149,7 +161,7 @@ class CommandProxy:
         Raises:
             CommandError: If the process exits with a non-zero return code.
         """
-        argv = self._build_argv(*args, **kwargs)
+        argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
             print(f"[DRY RUN] {shlex.join(argv)}")
             return subprocess.CompletedProcess(argv, returncode=0)
