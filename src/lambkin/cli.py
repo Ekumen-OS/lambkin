@@ -68,10 +68,8 @@ class LambkinCommand(click.Command):
 def _stop_scope(cgroup_scope: str) -> None:
     """Stop a systemd cgroup scope, waiting up to 30 seconds for it to terminate.
 
-    Parameters
-    ----------
-    cgroup_scope : str
-        The name of the systemd scope to stop.
+    Args:
+        cgroup_scope: The name of the systemd scope to stop.
     """
     try:
         subprocess.run(
@@ -84,6 +82,11 @@ def _stop_scope(cgroup_scope: str) -> None:
             f"Timed out waiting for scope '{cgroup_scope}' to stop. "
             "Some processes may still be running."
         ) from err
+
+
+def _running_in_container() -> bool:
+    """Return True if running inside a container."""
+    return Path("/.dockerenv").exists() or Path("/run/.containerenv").exists()
 
 
 @click.command(
@@ -124,25 +127,29 @@ def main(script: Path, args: tuple) -> None:
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)
-    try:
-        proc = subprocess.Popen(
-            [
-                "systemd-run",
-                "--scope",
-                f"--unit={cgroup_scope}",
-                "--user",
-                sys.executable,
-                str(script),
-                *args,
-            ],
-        )
+    if _running_in_container():
+        proc = subprocess.Popen([sys.executable, str(script), *args])
         proc.wait()
-    except KeyboardInterrupt:
-        _stop_scope(cgroup_scope)
-        sys.exit(130)
-    except FileNotFoundError as err:
-        raise exceptions.LambkinSystemdNotFoundError(
-            "'systemd-run' not found. lambkin requires systemd."
-        ) from err
+    else:
+        try:
+            proc = subprocess.Popen(
+                [
+                    "systemd-run",
+                    "--scope",
+                    f"--unit={cgroup_scope}",
+                    "--user",
+                    sys.executable,
+                    str(script),
+                    *args,
+                ],
+            )
+            proc.wait()
+        except KeyboardInterrupt:
+            _stop_scope(cgroup_scope)
+            sys.exit(130)
+        except FileNotFoundError as err:
+            raise exceptions.LambkinSystemdNotFoundError(
+                "'systemd-run' not found. lambkin requires systemd."
+            ) from err
 
     sys.exit(proc.returncode)
