@@ -13,7 +13,9 @@
 # limitations under the License.
 """Integration test: normal execution with two nested background processes."""
 
+import shutil
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -41,28 +43,30 @@ def main():
     runs to completion, and both background processes are terminated in
     reverse order with their cgroups cleaned up.
     """
-    iteration_dir = Path("/tmp/integration_test/var_1/iter_1")
-    iteration_dir.mkdir(parents=True, exist_ok=True)
-    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+    iteration_dir = Path(tempfile.mkdtemp())
+    try:
+        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
 
-    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
 
-    print("Starting outer background process...")
-    with background(shell.python3, "-c", COOPERATIVE) as bp1:
-        print(f"Outer process started — pid={bp1._proc.pid}")
-        print("Starting inner background process...")
-        cgroup1 = bp1._cgroup
-        with background(shell.python3, "-c", COOPERATIVE) as bp2:
-            print(f"Inner process started — pid={bp2._proc.pid}")
-            print("Foreground running for 1s...")
-            cgroup2 = bp2._cgroup
-            time.sleep(1)
-            print("Foreground done.")
-        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-        print(f"Inner process dead: {bp2._proc.poll() is not None}")
-    print(f"Outer process dead: {bp1._proc.poll() is not None}")
-    assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-    print("Normal execution test passed")
+        print("Starting outer background process...")
+        with background(shell.python3, "-c", COOPERATIVE) as bp1:
+            print(f"Outer process started — pid={bp1._proc.pid}")
+            print("Starting inner background process...")
+            cgroup1 = bp1._cgroup
+            with background(shell.python3, "-c", COOPERATIVE) as bp2:
+                print(f"Inner process started — pid={bp2._proc.pid}")
+                print("Foreground running for 1s...")
+                cgroup2 = bp2._cgroup
+                time.sleep(1)
+                print("Foreground done.")
+            assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+            print(f"Inner process dead: {bp2._proc.poll() is not None}")
+        print(f"Outer process dead: {bp1._proc.poll() is not None}")
+        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
+        print("Normal execution test passed")
+    finally:
+        shutil.rmtree(iteration_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

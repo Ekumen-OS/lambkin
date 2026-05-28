@@ -14,7 +14,9 @@
 
 """Integration test: background process raises an exception intentionally."""
 
+import shutil
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -49,32 +51,34 @@ def main():
     exits with a non-zero return code, LambkinProcessDiedUnexpectedlyError is
     raised and all other background processes are terminated.
     """
-    iteration_dir = Path("/tmp/integration_test/var_1/iter_1")
-    iteration_dir.mkdir(parents=True, exist_ok=True)
-    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-
-    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
-
-    print("Starting outer background process...")
+    iteration_dir = Path(tempfile.mkdtemp())
     try:
-        with background(shell.python3, "-c", COOPERATIVE) as bp1:
-            print(f"Outer process started — pid={bp1._proc.pid}")
-            cgroup1 = bp1._cgroup
-            with background(shell.python3, "-c", RAISES) as bp2:
-                print(f"Inner process started — pid={bp2._proc.pid}")
-                print("Waiting for inner process to raise and die...")
-                cgroup2 = bp2._cgroup
-                time.sleep(2)
-    except LambkinProcessDiedUnexpectedlyError as e:
-        print(f"LambkinProcessDiedUnexpectedlyError raised correctly: {e}")
-        print(f"Inner process dead: {bp2._proc.poll() is not None}")
-        print(f"Outer process dead: {bp1._proc.poll() is not None}")
-        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-        print("Intentional exception in background test passed ")
-        return
+        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
 
-    print("ERROR: LambkinProcessDiedUnexpectedlyError was not raised ")
+        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+
+        print("Starting outer background process...")
+        try:
+            with background(shell.python3, "-c", COOPERATIVE) as bp1:
+                print(f"Outer process started — pid={bp1._proc.pid}")
+                cgroup1 = bp1._cgroup
+                with background(shell.python3, "-c", RAISES) as bp2:
+                    print(f"Inner process started — pid={bp2._proc.pid}")
+                    print("Waiting for inner process to raise and die...")
+                    cgroup2 = bp2._cgroup
+                    time.sleep(2)
+        except LambkinProcessDiedUnexpectedlyError as e:
+            print(f"LambkinProcessDiedUnexpectedlyError raised correctly: {e}")
+            print(f"Inner process dead: {bp2._proc.poll() is not None}")
+            print(f"Outer process dead: {bp1._proc.poll() is not None}")
+            assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+            assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
+            print("Intentional exception in background test passed ")
+            return
+
+        print("ERROR: LambkinProcessDiedUnexpectedlyError was not raised ")
+    finally:
+        shutil.rmtree(iteration_dir, ignore_errors=True)
     sys.exit(1)
 
 
