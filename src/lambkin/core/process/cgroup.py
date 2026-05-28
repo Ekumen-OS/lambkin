@@ -52,8 +52,8 @@ def find_delegated_cgroup() -> Path:
             if not os.access(candidate, os.W_OK):
                 raise RuntimeError(
                     f"No write access to cgroup: {candidate}. "
-                    "Run with: systemd-run --user --scope, "
-                    "or use Podman with --systemd=always, "
+                    "Run the benchmark with: uv run lambkin <your_benchmark.py>, "
+                    "or inside a container using Podman with --systemd=always "
                     "or Docker with --privileged."
                 )
             return candidate
