@@ -289,16 +289,15 @@ class CommandProxy:
         try:
             if log_output == "file":
                 stdout, stderr = self._open_streams(argv)
-                proc = self._make_popen(argv, stdout, stderr)
+                try:
+                    proc = self._make_popen(argv, stdout, stderr)
+                    proc.wait()
+                finally:
+                    stdout.close()
+                    stderr.close()
             else:
                 proc = self._make_popen(argv, None, None)
-                stdout, stderr = None, None
-
-            proc.wait()
-            if stdout:
-                stdout.close()
-            if stderr:
-                stderr.close()
+                proc.wait()
             if proc.returncode != 0:
                 raise subprocess.CalledProcessError(proc.returncode, argv)
             return subprocess.CompletedProcess(argv, returncode=proc.returncode)
