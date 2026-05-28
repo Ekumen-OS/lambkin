@@ -14,12 +14,9 @@
 """Integration test: normal execution with two nested background processes."""
 
 import shutil
-import sys
 import tempfile
 import time
 from pathlib import Path
-
-sys.path.insert(0, "src")
 
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import (

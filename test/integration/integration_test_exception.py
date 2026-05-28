@@ -20,8 +20,6 @@ import tempfile
 import time
 from pathlib import Path
 
-sys.path.insert(0, "src")
-
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import (
