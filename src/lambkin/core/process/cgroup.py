@@ -145,7 +145,7 @@ def remove_cgroup(cgroup: Path) -> None:
             cgroup.rmdir()
             return
         except OSError as e:
-            if e.errno == errno.ENOTEMPTY:
+            if e.errno == (errno.ENOTEMPTY, errno.EBUSY):
                 time.sleep(defaults.CGROUP_POLL_INTERVAL)
             elif e.errno == errno.ENOENT:
                 return
