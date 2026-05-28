@@ -22,7 +22,11 @@ sys.path.insert(0, "src")
 
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
-from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
+from lambkin.core.process.cgroup import (
+    cgroup_exists,
+    find_delegated_cgroup,
+    make_iteration_cgroup,
+)
 from lambkin.core.shell.proxy import ShellProxy
 
 COOPERATIVE = (
@@ -52,15 +56,17 @@ def main():
         with background(shell.python3, "-c", COOPERATIVE) as bp1:
             print(f"Outer process started — pid={bp1._proc.pid}")
             print("Starting inner background process that will die quickly...")
-            with background(
-                shell.__getattr__(sys.executable), "-c", DIES_QUICKLY
-            ) as bp2:
+            cgroup1 = bp1._cgroup
+            with background(shell.python3, "-c", DIES_QUICKLY) as bp2:
                 print(f"Inner process started — pid={bp2._proc.pid}")
                 print("Waiting for inner process to die...")
+                cgroup2 = bp2._cgroup
                 time.sleep(2)
     except LambkinProcessDiedUnexpectedlyError as e:
         print(f"LambkinProcessDiedUnexpectedlyError raised correctly: {e}")
         print(f"Outer process dead: {bp1._proc.poll() is not None}")
+        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
         print("Unexpected death test passed")
         return
 

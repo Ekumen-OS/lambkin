@@ -21,7 +21,11 @@ from pathlib import Path
 sys.path.insert(0, "src")
 
 from lambkin.core.process.background import background
-from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
+from lambkin.core.process.cgroup import (
+    cgroup_exists,
+    find_delegated_cgroup,
+    make_iteration_cgroup,
+)
 from lambkin.core.shell.proxy import ShellProxy
 
 COOPERATIVE = (
@@ -45,19 +49,21 @@ def main():
 
     print("Starting outer background process...")
     try:
-        with background(shell.__getattr__(sys.executable), "-c", COOPERATIVE) as bp1:
+        with background(shell.python3, "-c", COOPERATIVE) as bp1:
             print(f"Outer process started — pid={bp1._proc.pid}")
-            with background(
-                shell.__getattr__(sys.executable), "-c", COOPERATIVE
-            ) as bp2:
+            cgroup1 = bp1._cgroup
+            with background(shell.python3, "-c", COOPERATIVE) as bp2:
                 print(f"Inner process started — pid={bp2._proc.pid}")
                 print("Foreground failing...")
+                cgroup2 = bp2._cgroup
                 time.sleep(0.5)
                 raise RuntimeError("Foreground failed intentionally")
     except RuntimeError as e:
         print(f"RuntimeError propagated correctly: {e}")
         print(f"Inner process dead: {bp2._proc.poll() is not None}")
         print(f"Outer process dead: {bp1._proc.poll() is not None}")
+        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
         print("Foreground failure test passed")
         return
 

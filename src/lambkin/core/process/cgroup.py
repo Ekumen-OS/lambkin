@@ -196,3 +196,8 @@ def make_process_cgroup(parent: Path, argv: list[str]) -> Path:
     """
     name = f"{argv[0].split('/')[-1]}-{uuid.uuid4().hex[:8]}"
     return make_cgroup(parent, name)
+
+
+def cgroup_exists(cgroup: Path) -> bool:
+    """Return True if the cgroup directory exists."""
+    return cgroup.exists()
