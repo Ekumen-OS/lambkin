@@ -55,13 +55,19 @@ def nominal(ctx):
 @nominal.input
 def dataset(ctx):
     """Return the path to the MCAP dataset used as input for the benchmark."""
-    return ctx.source.path.parent / "my_bags" / "my_bag.mcap"
+    return ctx.source.path.parent / "rosbags" / "my_bag.mcap"
 
 
 @nominal.input
 def map(ctx):
     """Return the path to the map file used for localization."""
-    return "maps/map.yaml"
+    return ctx.source.path.parent / "maps" / "map.yaml"
+
+
+@nominal.input
+def groundtruth(ctx):
+    """Return the path to the ground truth file used for trajectory evaluation."""
+    return ctx.source.path.parent / "groundtruth" / "groundtruth.txt"
 
 
 if __name__ == "__main__":
