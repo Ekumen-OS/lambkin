@@ -194,6 +194,7 @@ class CommandProxy:
         base = self._log_base(argv)
         out = open(self._cwd / f"{base}.stdout.log", "w")
         err = open(self._cwd / f"{base}.stderr.log", "w")
+        print("open streams ")
         return out, err
 
     def _log_name(self, argv: list[str]) -> str:

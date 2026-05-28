@@ -176,9 +176,21 @@ def test_log_output_cli_overrides_per_call(tmp_path):
 
 def test_log_base_appends_suffix_on_collision(shell):
     """_log_base appends numeric suffix when same command launched twice."""
-    proxy = shell.ros2
+    proxy = shell.ros2.launch
     assert proxy._log_base(["ros2", "launch"]) == "ros2_launch"
     assert proxy._log_base(["ros2", "launch"]) == "ros2_launch_1"
+
+
+def test_same_command_twice_creates_distinct_log_files(tmp_path):
+    """Running the same command twice through_call creates distinct log file pairs."""
+    s = ShellProxy(dry_run=False, cwd=tmp_path)
+    proxy = s.echo
+    proxy()
+    proxy()
+    assert (tmp_path / "echo.stdout.log").exists()
+    assert (tmp_path / "echo.stderr.log").exists()
+    assert (tmp_path / "echo_1.stdout.log").exists()
+    assert (tmp_path / "echo_1.stderr.log").exists()
 
 
 def test_getattr_returns_ros_launch_command(tmp_path):
