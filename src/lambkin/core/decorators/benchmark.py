@@ -88,19 +88,16 @@ def benchmark(variants, num_iterations):
     function with it. Input hooks registered via @nominal.input are resolved
     before each call, injecting their return values into ctx.inputs.
 
-    Parameters
-    ----------
-    variants : iterable of dict
-        Sequence of variant dicts to sweep over. Each dict is exposed as
-        attributes on ctx.variant.
-    num_iterations : int
-        Number of times to repeat each variant. Controls the iter_<N> subfolders
-        under each variant directory.
+    Args:
+        variants : iterable of dict
+            Sequence of variant dicts to sweep over. Each dict is exposed as
+            attributes on ctx.variant.
+        num_iterations : int
+            Number of times to repeat each variant. Controls the iter_<N> subfolders
+            under each variant directory.
 
     Raises:
-    ------
-    ValueError
-        If variants is empty
+        ValueError: If variants is empty
     """
     if not variants:
         raise ValueError(

@@ -25,18 +25,14 @@ class Source:
     """Describes the benchmark source file.
 
     Attributes:
-    ----------
-    path:
-        Path to the source file of the benchmark.
+        path: Path to the source file of the benchmark.
     """
 
     def __init__(self, path: Path | str) -> None:
         """Initialize a Source with the path to the benchmark script.
 
-        Parameters
-        ----------
-        path : Path or str
-            Path to the source file of the benchmark.
+        Args:
+            path: Path to the source file of the benchmark.
         """
         self.path = Path(path)
 

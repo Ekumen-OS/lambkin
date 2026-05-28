@@ -49,9 +49,9 @@ class InputRegistry:
 
     Warning:
        Hooks are resolved with a base context containing dummy variant and
-       iteration values. Accessing ctx.variant or ctx.iteration inside a hook
-       will silently return empty/wrong values. Hooks should only depend on
-       ctx.options or other stable context fields.
+        iteration values. Accessing ``ctx.variant`` or ``ctx.iteration`` inside
+        a hook will silently return empty/wrong values. Hooks should only depend
+        on ``ctx.options`` or other stable context fields.
     """
 
     def __init__(self):
@@ -61,9 +61,10 @@ class InputRegistry:
     def register(self, hook_fn):
         """Decorator used to register a function as an input provider.
 
-        Warning: Do not access ctx.variant or ctx.iteration inside the hook,
-        they will contain dummy values at resolve time, leading to silent bugs
-        that are hard to trace.
+        Warning:
+            Do not access ``ctx.variant`` or ``ctx.iteration`` inside the hook;
+            they will contain dummy values at resolve time, leading to silent
+            bugs that are hard to trace.
         """
         _validate_hook_signature(hook_fn)
         existing_names = [h.__name__ for h in self._hooks]
