@@ -53,6 +53,7 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
     ),
     click.Option(
         ["--log-output"],
+        # TODO(teresa-ortega): add 'both' mode support
         type=click.Choice(["file", "console"]),
         show_default=True,
         default=None,

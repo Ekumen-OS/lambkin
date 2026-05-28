@@ -170,8 +170,8 @@ def test_log_output_per_call_overrides_default(shell):
 
 def test_log_output_cli_overrides_per_call(tmp_path):
     """CLI log_output overrides per-call value."""
-    s = ShellProxy(dry_run=False, cwd=tmp_path, log_output="both")
-    assert s.echo._resolve_log_output("console") == "both"
+    s = ShellProxy(dry_run=False, cwd=tmp_path, log_output="file")
+    assert s.echo._resolve_log_output("console") == "file"
 
 
 def test_log_base_appends_suffix_on_collision(shell):
