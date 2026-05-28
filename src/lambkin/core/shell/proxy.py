@@ -180,7 +180,7 @@ class CommandProxy:
             stderr=stderr,
         )
 
-    def _open_streams(self, argv: list[str]) -> tuple:
+    def _open_streams(self) -> tuple:
         """Open log files for stdout and stderr in the iteration directory.
 
         Args:
@@ -191,13 +191,12 @@ class CommandProxy:
         """
         if self._cwd is None:
             return None, None
-        base = self._log_base(argv)
+        base = self._log_base()
         out = open(self._cwd / f"{base}.stdout.log", "w")
         err = open(self._cwd / f"{base}.stderr.log", "w")
-        print("open streams ")
         return out, err
 
-    def _log_name(self, argv: list[str]) -> str:
+    def _log_name(self) -> str:
         """Derive a log file base name from the command argv, without any suffix.
 
         Filters out absolute paths and ROS parameter assignments and joins the
@@ -209,11 +208,9 @@ class CommandProxy:
         Returns:
             A base name string, e.g. 'ros2_launch'.
         """
-        return "_".join(
-            arg for arg in argv if not arg.startswith("/") and ":=" not in arg
-        )
+        return "_".join(self._parts)
 
-    def _log_base(self, argv: list[str]) -> str:
+    def _log_base(self) -> str:
         """Return a unique log file base name, appending a suffix on collision.
 
         Calls _log_name to derive the base, then increments the counter for
@@ -226,7 +223,7 @@ class CommandProxy:
         Returns:
             A unique base name string, e.g. 'ros2_launch' or 'ros2_launch_1'.
         """
-        base = self._log_name(argv)
+        base = self._log_name()
         count = self._call_counts.get(base, 0)
         self._call_counts[base] = count + 1
         suffix = f"_{count}" if count > 0 else ""
@@ -289,7 +286,7 @@ class CommandProxy:
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
             if log_output == "file":
-                stdout, stderr = self._open_streams(argv)
+                stdout, stderr = self._open_streams()
                 try:
                     proc = self._make_popen(argv, stdout, stderr)
                     proc.wait()
