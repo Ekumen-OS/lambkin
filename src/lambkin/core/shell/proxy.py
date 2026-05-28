@@ -196,12 +196,28 @@ class CommandProxy:
         err = open(self._cwd / f"{base}.stderr.log", "w")
         return out, err
 
-    def _log_base(self, argv: list[str]) -> str:
-        """Derive a unique log file base name from the command argv.
+    def _log_name(self, argv: list[str]) -> str:
+        """Derive a log file base name from the command argv, without any suffix.
 
-        Filters out absolute paths and ROS parameter assignments, joins the
-        remaining tokens with underscores, and appends a numeric suffix if
-        the same command has been launched more than once in this iteration.
+        Filters out absolute paths and ROS parameter assignments and joins the
+        remaining tokens with underscores.
+
+        Args:
+            argv: The command argv to derive the base name from.
+
+        Returns:
+            A base name string, e.g. 'ros2_launch'.
+        """
+        return "_".join(
+            arg for arg in argv if not arg.startswith("/") and ":=" not in arg
+        )
+
+    def _log_base(self, argv: list[str]) -> str:
+        """Return a unique log file base name, appending a suffix on collision.
+
+        Calls _log_name to derive the base, then increments the counter for
+        that name and appends a numeric suffix if the same command has been
+        launched more than once in this iteration.
 
         Args:
             argv: The command argv to derive the base name from.
@@ -209,9 +225,7 @@ class CommandProxy:
         Returns:
             A unique base name string, e.g. 'ros2_launch' or 'ros2_launch_1'.
         """
-        base = "_".join(
-            arg for arg in argv if not arg.startswith("/") and ":=" not in arg
-        )
+        base = self._log_name(argv)
         count = self._call_counts.get(base, 0)
         self._call_counts[base] = count + 1
         suffix = f"_{count}" if count > 0 else ""
