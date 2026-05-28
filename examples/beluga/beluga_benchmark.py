@@ -22,7 +22,7 @@ import lambkin
     ),
     num_iterations=2,
 )
-@lambkin.option("--clock-rate", default=100.0)
+@lambkin.option("--clock-rate", default=1.0)
 @lambkin.option("--sensor-topic", default="/scan")
 def nominal(ctx):
     """Run a nominal Beluga AMCL benchmark across sensor models and particle counts.
