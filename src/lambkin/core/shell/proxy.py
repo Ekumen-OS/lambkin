@@ -20,12 +20,15 @@ processes to be launched and managed through a consistent interface.
 
 from __future__ import annotations
 
+import logging
 import shlex
 import subprocess
 from pathlib import Path
 from typing import Any
 
 from lambkin.common import defaults
+
+logger = logging.getLogger(__name__)
 
 
 class CommandError(Exception):
@@ -282,7 +285,7 @@ class CommandProxy:
         log_output = self._resolve_log_output(log_output)
         argv = self._build_argv(*args, **kwargs)
         if self._dry_run:
-            print(f"[DRY RUN] {shlex.join(argv)}")
+            logger.debug("[DRY RUN] %s", shlex.join(argv))
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
             if log_output == "file":

@@ -29,6 +29,7 @@ Raises ValueError if variants is empty.
 
 import functools
 import inspect
+import logging
 import sys
 
 import click
@@ -111,6 +112,7 @@ def benchmark(variants, num_iterations):
 
         @functools.wraps(fn)
         def wrapper(args=None, output_dir=None):
+            logging.basicConfig(level=logging.DEBUG, format="%(message)s")
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             if options.get("show_options"):

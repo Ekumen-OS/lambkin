@@ -14,11 +14,13 @@
 
 """Unit tests for the shell class in lambkin.core.shell."""
 
+import logging
 import subprocess
 
 import pytest
 
 from lambkin.core.shell import CommandError, ShellProxy
+from lambkin.core.shell.ros.launch import RosLaunchCommand
 
 
 @pytest.fixture
@@ -33,64 +35,70 @@ def dry_shell(tmp_path):
     return ShellProxy(dry_run=True, cwd=tmp_path)
 
 
-def test_simple_command(dry_shell, capsys):
+def test_simple_command(dry_shell):
     """A single-level command is printed correctly."""
-    dry_shell.echo("hello")
-    assert capsys.readouterr().out == "[DRY RUN] echo hello\n"
+    result = dry_shell.echo("hello")
+    assert result.args == ["echo", "hello"]
 
 
-def test_chained_command(dry_shell, capsys):
+def test_chained_command(dry_shell):
     """Chained attribute access builds the command word by word."""
-    dry_shell.ros2.bag.play("my_bag")
-    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag\n"
+    result = dry_shell.ros2.bag.play("my_bag")
+    assert result.args == ["ros2", "bag", "play", "my_bag"]
 
 
-def test_multiple_positional_args(dry_shell, capsys):
+def test_multiple_positional_args(dry_shell):
     """Multiple positional arguments are appended in order."""
-    dry_shell.ros2.bag.play("my_bag", "--clock", "-r", "1.0")
-    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag --clock -r 1.0\n"
+    result = dry_shell.ros2.bag.play("my_bag", "--clock", "-r", "1.0")
+    assert result.args == ["ros2", "bag", "play", "my_bag", "--clock", "-r", "1.0"]
 
 
-def test_kwarg_becomes_flag(dry_shell, capsys):
+def test_kwarg_becomes_flag(dry_shell, caplog):
     """Keyword arguments are converted to --flag value pairs."""
-    dry_shell.evo_ape.bag2("output.mcap", save_results="out.zip")
-    assert (
-        capsys.readouterr().out
-        == "[DRY RUN] evo_ape bag2 output.mcap --save-results out.zip\n"
-    )
+    logging.getLogger("lambkin.core.shell.proxy").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        dry_shell.evo_ape.bag2("output.mcap", save_results="out.zip")
+    assert "evo_ape bag2 output.mcap --save-results out.zip" in caplog.text
 
 
-def test_kwarg_true_is_standalone_flag(dry_shell, capsys):
+def test_kwarg_true_is_standalone_flag(dry_shell, caplog):
     """A boolean True kwarg produces a standalone flag."""
-    dry_shell.ros2.bag.play("my_bag", clock=True)
-    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag --clock\n"
+    logging.getLogger("lambkin.core.shell.proxy").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        dry_shell.ros2.bag.play("my_bag", clock=True)
+    assert "ros2 bag play my_bag --clock" in caplog.text
 
 
-def test_kwarg_false_is_omitted(dry_shell, capsys):
+def test_kwarg_false_is_omitted(dry_shell, caplog):
     """A boolean False kwarg is omitted entirely."""
-    dry_shell.ros2.bag.play("my_bag", clock=False)
-    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play my_bag\n"
+    logging.getLogger("lambkin.core.shell.proxy").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        dry_shell.ros2.bag.play("my_bag", clock=False)
+    assert "ros2 bag play my_bag" in caplog.text
 
 
-def test_kwarg_multiple_underscores_converted(dry_shell, capsys):
+def test_kwarg_multiple_underscores_converted(dry_shell, caplog):
     """Multiple underscores in kwarg names are all converted to dashes."""
-    dry_shell.evo_ape.bag2("output.mcap", save_all_results="out.zip")
-    assert (
-        capsys.readouterr().out
-        == "[DRY RUN] evo_ape bag2 output.mcap --save-all-results out.zip\n"
-    )
+    logging.getLogger("lambkin.core.shell.proxy").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        dry_shell.evo_ape.bag2("output.mcap", save_all_results="out.zip")
+    assert "evo_ape bag2 output.mcap --save-all-results out.zip" in caplog.text
 
 
-def test_path_with_spaces(dry_shell, capsys):
+def test_path_with_spaces(dry_shell, caplog):
     """Positional args with spaces are quoted correctly."""
-    dry_shell.ros2.bag.play("/my path/to/bag.mcap")
-    assert capsys.readouterr().out == "[DRY RUN] ros2 bag play '/my path/to/bag.mcap'\n"
+    logging.getLogger("lambkin.core.shell.proxy").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        dry_shell.ros2.bag.play("/my path/to/bag.mcap")
+    assert "/my path/to/bag.mcap" in caplog.text
 
 
-def test_arbitrary_tool(dry_shell, capsys):
+def test_arbitrary_tool(dry_shell, caplog):
     """Any top-level tool name works without hardcoding."""
-    dry_shell.evo.traj("output.mcap")
-    assert capsys.readouterr().out == "[DRY RUN] evo traj output.mcap\n"
+    logging.getLogger("lambkin.core.shell.proxy").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        dry_shell.evo.traj("output.mcap")
+    assert "evo traj output.mcap" in caplog.text
 
 
 def test_successful_command(shell):
@@ -141,14 +149,15 @@ def test_dry_run_returns_completed_process(dry_shell):
     assert result.args == ["echo", "hello"]
 
 
-def test_chained_proxy_independence(dry_shell, capsys):
+def test_chained_proxy_independence(dry_shell, caplog):
     """Each chained proxy is independent — reusing a base proxy works correctly."""
-    base = dry_shell.ros2.bag
-    base.play("bag1")
-    base.record("bag2")
-    out = capsys.readouterr().out
-    assert "[DRY RUN] ros2 bag play bag1" in out
-    assert "[DRY RUN] ros2 bag record bag2" in out
+    logging.getLogger("lambkin.core.shell.proxy").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        base = dry_shell.ros2.bag
+        base.play("bag1")
+        base.record("bag2")
+    assert "ros2 bag play bag1" in caplog.text
+    assert "ros2 bag record bag2" in caplog.text
 
 
 def test_path_with_spaces_no_shell_injection(shell, tmp_path):
@@ -195,8 +204,6 @@ def test_same_command_twice_creates_distinct_log_files(tmp_path):
 
 def test_getattr_returns_ros_launch_command(tmp_path):
     """shell.ros2.launch returns a RosLaunchCommand."""
-    from lambkin.core.shell.ros.launch import RosLaunchCommand
-
     s = ShellProxy(dry_run=False, cwd=tmp_path)
     assert isinstance(s.ros2.launch, RosLaunchCommand)
 

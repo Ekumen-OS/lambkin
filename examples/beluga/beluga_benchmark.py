@@ -13,7 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 import lambkin
+
+logger = logging.getLogger(__name__)
 
 
 @lambkin.benchmark(
@@ -33,6 +37,7 @@ def nominal(ctx):
     Args:
         ctx: Lambkin context with variant, options, source, and shell access.
     """
+
     with lambkin.process.background(
         ctx.shell.ros2.bag.record,
         "--output",
