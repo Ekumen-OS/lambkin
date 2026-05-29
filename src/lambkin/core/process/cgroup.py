@@ -63,6 +63,23 @@ def find_delegated_cgroup() -> Path:
     )
 
 
+def find_app_slice() -> Path | None:
+    """Return the user app.slice cgroup if writable, else None.
+
+    Returns:
+    -------
+    Path or None
+        The app.slice cgroup path if it exists and is writable, else None.
+    """
+    uid = os.getuid()
+    app_slice = Path(
+        f"/sys/fs/cgroup/user.slice/user-{uid}.slice/user@{uid}.service/app.slice"
+    )
+    if app_slice.exists() and os.access(app_slice, os.W_OK):
+        return app_slice
+    return None
+
+
 def make_cgroup(parent: Path, name: str) -> Path:
     """Create a child cgroup under parent and return its path.
 

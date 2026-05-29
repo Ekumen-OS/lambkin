@@ -34,6 +34,7 @@ import click
 from click.formatting import HelpFormatter
 
 from lambkin.core.process.cgroup import (
+    find_app_slice,
     find_delegated_cgroup,
     kill_and_remove_cgroup_tree,
     make_cgroup,
@@ -96,8 +97,8 @@ def main(script: Path, args: tuple) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-    delegated = find_delegated_cgroup()
-    run_cgroup = make_cgroup(delegated, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
+    parent = find_app_slice() or find_delegated_cgroup()
+    run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
 
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
