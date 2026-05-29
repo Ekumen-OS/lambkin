@@ -14,7 +14,6 @@
 
 """Integration test: cgroup tree is fully removed after iteration ends."""
 
-import sys
 from pathlib import Path
 
 from lambkin.core.ctx.context import Context
@@ -43,7 +42,7 @@ def main():
         source=source,
         variant_index=0,
     ) as ctx:
-        with background(ctx.shell.__getattr__(sys.executable), "-c", COOPERATIVE) as bp:
+        with background(ctx.shell.python3, "-c", COOPERATIVE) as bp:
             child_cgroup = bp._cgroup
         iteration_cgroup = ctx._iteration_cgroup
 
