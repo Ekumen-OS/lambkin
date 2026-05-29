@@ -55,6 +55,6 @@ class LambkinProcessDiedUnexpectedlyError(LambkinError):
         self.argv = argv
         self.returncode = returncode
         super().__init__(
-            f"Background process {argv[0]!r} died unexpectedly "
+            f"Background process {' '.join(argv)!r} died unexpectedly "
             f"with return code {returncode}."
         )
