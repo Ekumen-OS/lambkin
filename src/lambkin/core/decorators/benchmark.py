@@ -37,6 +37,7 @@ from click.formatting import HelpFormatter
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
+from lambkin.core.process.cgroup import remove_cgroup
 from lambkin.sdk_options import SDK_OPTIONS
 
 
@@ -131,12 +132,13 @@ def benchmark(variants, num_iterations):
                 variant_index=0,
                 output_dir=output_dir,
             )
+            remove_cgroup(base_ctx._iteration_cgroup)
             # TODO(teresa-ortega): Consider an alternative approach for managing
             # the base context.
             resolved_inputs = inputs.resolve(base_ctx)
             for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
-                    ctx = Context(
+                    with Context(
                         variant=variant,
                         iteration=iteration,
                         options=options,
@@ -144,8 +146,8 @@ def benchmark(variants, num_iterations):
                         inputs=resolved_inputs,
                         variant_index=variant_index,
                         output_dir=output_dir,
-                    )
-                    fn(ctx)
+                    ) as ctx:
+                        fn(ctx)
 
         wrapper.input = inputs.register
         return wrapper

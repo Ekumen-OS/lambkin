@@ -62,11 +62,12 @@ def test_keyboard_interrupt_exits_130(dummy_script):
         mock_proc.wait.side_effect = KeyboardInterrupt
         mock_popen.return_value = mock_proc
         with patch("lambkin.cli.kill_cgroup") as mock_kill:
-            with patch("lambkin.cli.find_delegated_cgroup") as mock_find:
-                mock_find.return_value = MagicMock()
-                result = runner.invoke(main, [str(dummy_script)])
+            with patch("lambkin.cli.make_cgroup") as mock_make:
+                mock_make.return_value = MagicMock()
+                with patch("lambkin.cli.find_delegated_cgroup"):
+                    result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 130
-    mock_kill.assert_called_once_with(mock_find.return_value)
+    mock_kill.assert_called_once_with(mock_make.return_value)
 
 
 def test_help_output_contains_expected_sections():

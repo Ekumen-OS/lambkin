@@ -23,15 +23,22 @@ Typical usage:
     lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
+import os
 import signal
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 import click
 from click.formatting import HelpFormatter
 
-from lambkin.core.process.cgroup import find_delegated_cgroup, kill_cgroup
+from lambkin.core.process.cgroup import (
+    find_delegated_cgroup,
+    kill_cgroup,
+    make_cgroup,
+    remove_cgroup_tree,
+)
 from lambkin.sdk_options import SDK_OPTIONS
 
 
@@ -87,6 +94,8 @@ def main(script: Path, args: tuple) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
+    delegated = find_delegated_cgroup()
+    run_cgroup = make_cgroup(delegated, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
 
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
@@ -95,11 +104,13 @@ def main(script: Path, args: tuple) -> None:
     proc = subprocess.Popen(
         [sys.executable, str(script), *args],
         start_new_session=True,
+        preexec_fn=lambda: (run_cgroup / "cgroup.procs").write_text(str(os.getpid())),
     )
     try:
         proc.wait()
     except KeyboardInterrupt:
-        kill_cgroup(find_delegated_cgroup())
+        kill_cgroup(run_cgroup)
+        remove_cgroup_tree(run_cgroup)
         sys.exit(130)
 
     sys.exit(proc.returncode)

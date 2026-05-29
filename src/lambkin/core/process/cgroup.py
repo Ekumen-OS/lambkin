@@ -158,6 +158,31 @@ def remove_cgroup(cgroup: Path) -> None:
     )
 
 
+def remove_cgroup_tree(cgroup: Path) -> None:
+    """Remove a cgroup directory and all its descendants recursively.
+
+    Sends SIGKILL to all processes in the cgroup tree via ``cgroup.kill``,
+    waits for them to die, then removes all child cgroups depth-first
+    before removing the root.
+
+    Args:
+        cgroup : Path
+            The root cgroup directory to remove.
+    """
+    (cgroup / "cgroup.kill").write_text("1")
+
+    deadline = time.monotonic() + defaults.SIGKILL_GRACE_PERIOD
+    while time.monotonic() < deadline:
+        if not (cgroup / "cgroup.threads").read_text().strip():
+            break
+        time.sleep(defaults.CGROUP_POLL_INTERVAL)
+
+    for child in sorted(cgroup.iterdir(), reverse=True):
+        if child.is_dir():
+            remove_cgroup_tree(child)
+    remove_cgroup(cgroup)
+
+
 def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
     """Create a cgroup for one benchmark iteration.
 
