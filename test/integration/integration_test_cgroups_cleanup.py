@@ -17,8 +17,6 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, "src")
-
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.process.background import background
