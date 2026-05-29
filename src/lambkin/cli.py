@@ -80,10 +80,13 @@ class LambkinCommand(click.Command):
 def main(script: Path, args: tuple) -> None:
     """Launch a lambkin benchmark script.
 
-    Executes ``script`` with the same Python interpreter inside the current
-    user's delegated cgroup v2 scope. This guarantees that the full process
-    tree can be inspected and killed cleanly without leaving orphaned
-    processes behind.
+    Executes ``script`` with the same Python interpreter inside a dedicated
+    cgroup v2 child scope created under the current user's delegated cgroup.
+    This guarantees that the full process tree can be killed cleanly on
+    interruption without affecting the rest of the user session.
+
+    On Ctrl-C, all processes in the benchmark cgroup are terminated and the
+    cgroup tree is removed before exiting.
 
     Exit codes:
         0    The benchmark script completed successfully.
