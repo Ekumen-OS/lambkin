@@ -32,8 +32,8 @@ import yaml
 from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
     find_delegated_cgroup,
-    kill_and_remove_cgroup_tree,
     make_iteration_cgroup,
+    remove_cgroup_tree,
 )
 from lambkin.core.shell import ShellProxy
 
@@ -263,4 +263,4 @@ class Context:
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit the context manager and remove the iteration cgroup."""
-        kill_and_remove_cgroup_tree(self._iteration_cgroup)
+        remove_cgroup_tree(self._iteration_cgroup)

@@ -36,8 +36,9 @@ from click.formatting import HelpFormatter
 from lambkin.core.process.cgroup import (
     find_app_slice,
     find_delegated_cgroup,
-    kill_and_remove_cgroup_tree,
+    kill_cgroup_tree,
     make_cgroup,
+    remove_cgroup_tree,
 )
 from lambkin.sdk_options import SDK_OPTIONS
 
@@ -112,7 +113,9 @@ def main(script: Path, args: tuple) -> None:
     try:
         proc.wait()
     except KeyboardInterrupt:
-        kill_and_remove_cgroup_tree(run_cgroup)
+        kill_cgroup_tree(run_cgroup)
+        remove_cgroup_tree(run_cgroup)
         sys.exit(130)
-
+    kill_cgroup_tree(run_cgroup)
+    remove_cgroup_tree(run_cgroup)
     sys.exit(proc.returncode)
