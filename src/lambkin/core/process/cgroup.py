@@ -178,9 +178,15 @@ def remove_cgroup(cgroup: Path) -> None:
 def kill_cgroup_tree(cgroup: Path, grace_period: float = 3.0) -> None:
     """Kill all processes in a cgroup tree recursively.
 
-    Sends SIGKILL to all processes in the tree via ``cgroup.kill``
-    and waits for them to die.
-    ...
+    Sends SIGKILL to all processes in the tree via the ``cgroup.kill``
+    interface, which propagates to all descendants automatically, then
+    waits for all threads to exit.
+
+    Args:
+        cgroup : Path
+            The root cgroup directory to kill.
+        grace_period : float
+            Seconds to wait for all processes to die after SIGKILL.
     """
     (cgroup / "cgroup.kill").write_text("1")
     deadline = time.monotonic() + grace_period
@@ -193,8 +199,12 @@ def kill_cgroup_tree(cgroup: Path, grace_period: float = 3.0) -> None:
 def remove_cgroup_tree(cgroup: Path) -> None:
     """Remove a cgroup directory and all its descendants recursively.
 
-    Does not kill processes — call kill_cgroup_tree first if needed.
-    ...
+    Removes child cgroups depth-first before removing the root.
+    Does not kill processes — call ``kill_cgroup_tree`` first if needed.
+
+    Args:
+        cgroup : Path
+            The root cgroup directory to remove.
     """
     for child in sorted(cgroup.iterdir(), reverse=True):
         if child.is_dir():
