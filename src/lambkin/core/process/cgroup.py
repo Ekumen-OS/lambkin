@@ -158,12 +158,13 @@ def remove_cgroup(cgroup: Path) -> None:
     )
 
 
-def remove_cgroup_tree(cgroup: Path) -> None:
-    """Remove a cgroup directory and all its descendants recursively.
+def kill_and_remove_cgroup_tree(cgroup: Path) -> None:
+    """Kill all processes and remove a cgroup directory tree recursively.
 
-    Sends SIGKILL to all processes in the cgroup tree via ``cgroup.kill``,
+    Sends SIGKILL to all processes in the tree via ``cgroup.kill``,
     waits for them to die, then removes all child cgroups depth-first
-    before removing the root.
+    before removing the root. This combines killing and removal in a
+    single operation, calling ``kill_cgroup`` before this is redundant.
 
     Args:
         cgroup : Path
@@ -179,7 +180,7 @@ def remove_cgroup_tree(cgroup: Path) -> None:
 
     for child in sorted(cgroup.iterdir(), reverse=True):
         if child.is_dir():
-            remove_cgroup_tree(child)
+            kill_and_remove_cgroup_tree(child)
     remove_cgroup(cgroup)
 
 
