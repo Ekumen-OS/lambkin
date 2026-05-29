@@ -14,9 +14,9 @@
 
 """Entry point for the lambkin CLI.
 
-When invoked, it re-executes the given benchmark script under a
-transient systemd scope so that all child processes are placed in a
-dedicated cgroup v2 hierarchy automatically.
+When invoked, it executes the given benchmark script under the current
+user's delegated cgroup v2 scope, ensuring all child processes are
+tracked and cleaned up automatically.
 
 Typical usage:
 
@@ -31,7 +31,7 @@ from pathlib import Path
 import click
 from click.formatting import HelpFormatter
 
-from lambkin.common import exceptions
+from lambkin.core.process.cgroup import find_delegated_cgroup, kill_cgroup
 from lambkin.sdk_options import SDK_OPTIONS
 
 
@@ -65,30 +65,6 @@ class LambkinCommand(click.Command):
             formatter.write_text("Run 'lambkin SCRIPT --show-options' to list them.")
 
 
-def _stop_scope(cgroup_scope: str) -> None:
-    """Stop a systemd cgroup scope, waiting up to 30 seconds for it to terminate.
-
-    Args:
-        cgroup_scope: The name of the systemd scope to stop.
-    """
-    try:
-        subprocess.run(
-            ["systemctl", "--user", "stop", cgroup_scope],
-            capture_output=True,
-            timeout=30,
-        )
-    except subprocess.TimeoutExpired as err:
-        raise exceptions.LambkinSystemdScopeTimeoutError(
-            f"Timed out waiting for scope '{cgroup_scope}' to stop. "
-            "Some processes may still be running."
-        ) from err
-
-
-def _running_in_container() -> bool:
-    """Return True if running inside a container."""
-    return Path("/.dockerenv").exists() or Path("/run/.containerenv").exists()
-
-
 @click.command(
     cls=LambkinCommand,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
@@ -96,24 +72,15 @@ def _running_in_container() -> bool:
 @click.argument("script", type=click.Path(exists=True, path_type=Path))
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def main(script: Path, args: tuple) -> None:
-    """Launch a lambkin benchmark script inside a systemd cgroup scope.
+    """Launch a lambkin benchmark script.
 
-    Re-executes ``script`` with the same Python interpreter, wrapped in
-    ``systemd-run --scope`` so that every child process spawned during
-    the benchmark (ROS 2 nodes, bag players, etc.) is placed inside a
-    dedicated transient cgroup v2 scope.  This guarantees that the full
-    process tree can be inspected and killed cleanly without leaving
-    orphaned processes behind.
-
-    The cgroup scope is named ``lambkin-<stem>.scope``, where ``<stem>``
-    is the filename of the script without its extension.  All arguments
-    that follow the script path are forwarded to the child process
-    unchanged, so SDK and user-defined CLI options (e.g. ``--dry-run``,
-    ``--clock-rate``) are passed through transparently.
+    Executes ``script`` with the same Python interpreter inside the current
+    user's delegated cgroup v2 scope. This guarantees that the full process
+    tree can be inspected and killed cleanly without leaving orphaned
+    processes behind.
 
     Exit codes:
         0    The benchmark script completed successfully.
-        1    An error occurred (e.g. systemd-run not found).
         130  The benchmark was interrupted via Ctrl-C (SIGINT).
         N    Any other return code is propagated from the benchmark script.
     """
@@ -121,35 +88,18 @@ def main(script: Path, args: tuple) -> None:
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
 
-    cgroup_scope = f"lambkin-{script.stem}.scope"
-
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)
-    if _running_in_container():
-        proc = subprocess.Popen([sys.executable, str(script), *args])
+    proc = subprocess.Popen(
+        [sys.executable, str(script), *args],
+        start_new_session=True,
+    )
+    try:
         proc.wait()
-    else:
-        try:
-            proc = subprocess.Popen(
-                [
-                    "systemd-run",
-                    "--scope",
-                    f"--unit={cgroup_scope}",
-                    "--user",
-                    sys.executable,
-                    str(script),
-                    *args,
-                ],
-            )
-            proc.wait()
-        except KeyboardInterrupt:
-            _stop_scope(cgroup_scope)
-            sys.exit(130)
-        except FileNotFoundError as err:
-            raise exceptions.LambkinSystemdNotFoundError(
-                "'systemd-run' not found. lambkin requires systemd."
-            ) from err
+    except KeyboardInterrupt:
+        kill_cgroup(find_delegated_cgroup())
+        sys.exit(130)
 
     sys.exit(proc.returncode)

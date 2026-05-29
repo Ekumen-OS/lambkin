@@ -54,27 +54,19 @@ def test_absolute_path_is_passed_to_subprocess(dummy_script):
         assert str(dummy_script) in cmd
 
 
-def test_systemd_not_found(dummy_script):
-    """Exits with error if systemd-run is missing."""
-    runner = CliRunner()
-    with patch("subprocess.Popen", side_effect=FileNotFoundError):
-        result = runner.invoke(main, [str(dummy_script)])
-    assert result.exit_code != 0
-    assert "systemd" in str(result.exception)
-
-
-def test_keyboard_interrupt_stops_scope(dummy_script):
-    """Ctrl-C stops the cgroup scope before exiting with code 130."""
+def test_keyboard_interrupt_exits_130(dummy_script):
+    """Ctrl-C kills the cgroup and exits with code 130."""
     runner = CliRunner()
     with patch("subprocess.Popen") as mock_popen:
         mock_proc = MagicMock()
         mock_proc.wait.side_effect = KeyboardInterrupt
         mock_popen.return_value = mock_proc
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0)
-            result = runner.invoke(main, [str(dummy_script)])
+        with patch("lambkin.cli.kill_cgroup") as mock_kill:
+            with patch("lambkin.cli.find_delegated_cgroup") as mock_find:
+                mock_find.return_value = MagicMock()
+                result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 130
-    assert "stop" in mock_run.call_args[0][0]
+    mock_kill.assert_called_once_with(mock_find.return_value)
 
 
 def test_help_output_contains_expected_sections():
