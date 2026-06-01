@@ -14,9 +14,10 @@
 
 """Entry point for the lambkin CLI.
 
-When invoked, it executes the given benchmark script under the current
-user's delegated cgroup v2 scope, ensuring all child processes are
-tracked and cleaned up automatically.
+When invoked, it executes the given benchmark script inside a dedicated
+cgroup v2 scope created under the user's app.slice (or the current
+delegated cgroup as fallback), ensuring all child processes are tracked
+and cleaned up automatically.
 
 Typical usage:
 
@@ -55,7 +56,7 @@ class LambkinCommand(click.Command):
         formatter.write_paragraph()
         formatter.write_text(
             "LAMBKIN is a benchmarking SDK for robotics applications. "
-            "It runs your benchmark script inside a systemd cgroup scope, "
+            "It runs your benchmark script inside a dedicated cgroup v2 scope, "
             "ensuring all child processes are tracked and cleaned up automatically."
         )
         formatter.write_paragraph()
