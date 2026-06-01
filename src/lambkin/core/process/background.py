@@ -50,6 +50,8 @@ class BackgroundProcess:
         cwd: Path | None = None,
         dry_run: bool = False,
         env: dict | None = None,
+        stdout=None,
+        stderr=None,
     ) -> None:
         """Initialize the BackgroundProcess.
 
@@ -74,6 +76,8 @@ class BackgroundProcess:
         self._exiting: threading.Event = threading.Event()
         self._cwd = cwd
         self._env = env
+        self._stdout = stdout
+        self._stderr = stderr
 
     def _enter_cgroup(self) -> None:
         """Write the current PID to cgroup.procs.
@@ -106,6 +110,8 @@ class BackgroundProcess:
             preexec_fn=self._enter_cgroup,
             cwd=self._cwd,
             env=self._env,
+            stdout=self._stdout,
+            stderr=self._stderr,
         )
 
         self._monitor = threading.Thread(
@@ -135,7 +141,10 @@ class BackgroundProcess:
         """
         if self._dry_run:
             return
-
+        if self._stdout:
+            self._stdout.close()
+        if self._stderr:
+            self._stderr.close()
         self._exiting.set()
 
         kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
@@ -176,10 +185,13 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     """
     argv = proxy.build_argv(*args, **kwargs)
     env = proxy.build_env()
+    stdout, stderr = proxy.open_streams()
     return BackgroundProcess(
         argv=argv,
         iteration_cgroup=proxy.get_cgroup(),
         cwd=proxy.get_cwd(),
         dry_run=proxy.get_dry_run(),
         env=env,
+        stdout=stdout,
+        stderr=stderr,
     )

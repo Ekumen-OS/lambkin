@@ -14,7 +14,6 @@
 
 """Unit tests for background process management via cgroups v2."""
 
-import sys
 import time
 
 import pytest
@@ -92,9 +91,11 @@ def test_background_builds_argv_from_proxy(dry_shell, capsys):
 
 def test_background_passes_cwd_from_proxy(fake_cgroup, tmp_path):
     """background() passes the proxy cwd to BackgroundProcess."""
-    shell = ShellProxy(dry_run=True, cwd=tmp_path / "iter_1", cgroup=fake_cgroup)
+    iter_dir = tmp_path / "iter_1"
+    iter_dir.mkdir()
+    shell = ShellProxy(dry_run=True, cwd=iter_dir, cgroup=fake_cgroup)
     bp = background(shell.sleep, "10")
-    assert bp._cwd == tmp_path / "iter_1"
+    assert bp._cwd == iter_dir
 
 
 def test_background_passes_cgroup_from_proxy(fake_cgroup, tmp_path):
@@ -177,6 +178,6 @@ def test_background_process_cwd_is_used(tmp_path):
     payload = (
         "import time, pathlib; pathlib.Path('test_file.txt').touch(); time.sleep(30)"
     )
-    with background(shell.__getattr__(sys.executable), "-c", payload):
+    with background(shell.python3, "-c", payload):
         time.sleep(0.5)
         assert target.exists()

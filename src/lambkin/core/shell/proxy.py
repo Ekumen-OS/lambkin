@@ -183,13 +183,18 @@ class CommandProxy:
             stderr=stderr,
         )
 
-    def _open_streams(self) -> tuple:
+    def open_streams(self) -> tuple:
         """Open log files for stdout and stderr in the iteration directory.
 
         Returns:
             A tuple of (stdout_file, stderr_file) open for writing, or
-            (None, None) if no working directory is set.
+            (None, None) if log output mode is not 'file'.
+
+        Raises:
+            CommandError: If log_output is 'file' but no working directory is set.
         """
+        if self._resolve_log_output(None) != "file":
+            return None, None
         if self._cwd is None:
             raise CommandError(
                 self._parts,
@@ -281,24 +286,21 @@ class CommandProxy:
         Raises:
             CommandError: If the process exits with a non-zero return code.
         """
-        log_output = kwargs.pop("log_output", None)
-        log_output = self._resolve_log_output(log_output)
+        kwargs.pop("log_output", None)
         argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
             logger.debug("[DRY RUN] %s", shlex.join(argv))
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
-            if log_output == "file":
-                stdout, stderr = self._open_streams()
-                try:
-                    proc = self._make_popen(argv, stdout, stderr)
-                    proc.wait()
-                finally:
-                    stdout.close()
-                    stderr.close()
-            else:
-                proc = self._make_popen(argv, None, None)
+            stdout, stderr = self.open_streams()
+            try:
+                proc = self._make_popen(argv, stdout, stderr)
                 proc.wait()
+            finally:
+                if stdout:
+                    stdout.close()
+                if stderr:
+                    stderr.close()
             if proc.returncode != 0:
                 raise subprocess.CalledProcessError(proc.returncode, argv)
             return subprocess.CompletedProcess(argv, returncode=proc.returncode)
