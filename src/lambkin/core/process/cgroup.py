@@ -25,6 +25,10 @@ from pathlib import Path
 
 from lambkin.common import defaults
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def find_delegated_cgroup() -> Path:
     """Return the delegated cgroup for the current process.
@@ -77,10 +81,7 @@ def find_app_slice() -> Path | None:
     )
     if app_slice.exists() and os.access(app_slice, os.W_OK):
         return app_slice
-    print(
-        f"[INFO] app.slice not available at {app_slice}.",
-        file=sys.stderr,
-    )
+    logger.info("app.slice not available at %s", app_slice)
     return None
 
 
@@ -144,11 +145,11 @@ def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
         time.sleep(defaults.CGROUP_POLL_INTERVAL)
     survivors = procs_file.read_text().split()
     if survivors:
-        print(
-            f"[WARNING] {len(survivors)} process(es) survived SIGKILL in "
-            f"{cgroup} — this indicates a serious system problem. "
-            f"PIDs: {', '.join(survivors)}",
-            file=sys.stderr,
+        logger.warning(
+            "%d process(es) survived SIGKILL in %s — this indicates a serious system problem. PIDs: %s",
+            len(survivors),
+            cgroup,
+            ", ".join(survivors),
         )
 
 
@@ -172,10 +173,10 @@ def remove_cgroup(cgroup: Path) -> None:
                 return
             else:
                 raise
-    print(
-        f"[WARNING] Could not remove cgroup {cgroup} — "
-        "it may still contain processes that survived SIGKILL.",
-        file=sys.stderr,
+    logger.warning(
+        "Could not remove cgroup %s — it may still contain processes "
+        "that survived SIGKILL.",
+        cgroup,
     )
 
 

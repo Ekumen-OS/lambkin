@@ -104,7 +104,6 @@ def main(script: Path, args: tuple) -> None:
     # To be addressed in phase 6.
     parent = find_app_slice() or find_delegated_cgroup()
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
-    # TODO(teresa-ortega): promote to log.debug in logging PR
     logger.debug("run_cgroup: %s", run_cgroup)
 
     def _handle_sigint(signum, frame):
