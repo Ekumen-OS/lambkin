@@ -32,6 +32,7 @@ import yaml
 from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
     find_delegated_cgroup,
+    kill_cgroup_tree,
     make_iteration_cgroup,
     remove_cgroup_tree,
 )
@@ -245,12 +246,13 @@ class Context:
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the Context state."""
+        inputs = vars(self.inputs) if self.inputs is not None else None
         return (
             f"Context(\n"
             f"  variant       = {vars(self.variant)},\n"
             f"  iteration     = {self.iteration},\n"
             f"  source        = {self.source},\n"
-            f"  inputs        = {vars(self.inputs)},\n"
+            f"  inputs        = {inputs},\n"
             f"  options       = {vars(self.options)},\n"
             f"  variant_dir   = {self.output.variant_dir},\n"
             f"  iteration_dir = {self.output.iteration_dir}\n"
@@ -262,5 +264,12 @@ class Context:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Exit the context manager and remove the iteration cgroup."""
+        """Exit the context manager, killing and removing the iteration cgroup.
+
+        Args:
+            exc_type: Exception type if an exception is propagating, else None.
+            exc_val: Exception value if an exception is propagating, else None.
+            exc_tb: Exception traceback if an exception is propagating, else None.
+        """
+        kill_cgroup_tree(self._iteration_cgroup)
         remove_cgroup_tree(self._iteration_cgroup)
