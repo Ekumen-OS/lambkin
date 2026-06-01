@@ -78,8 +78,7 @@ def find_app_slice() -> Path | None:
     if app_slice.exists() and os.access(app_slice, os.W_OK):
         return app_slice
     print(
-        f"[INFO] app.slice not available at {app_slice}, "
-        "falling back to delegated cgroup.",
+        f"[INFO] app.slice not available at {app_slice}.",
         file=sys.stderr,
     )
     return None
