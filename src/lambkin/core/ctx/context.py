@@ -202,7 +202,7 @@ class Context:
         """Write a YAML metadata file to the iteration output directory.
 
         Serializes run identity, parameters, source, and output paths
-        to ''metadata.yaml'' inside ''output.iteration_dir''. The file
+        to ``metadata.yaml`` inside ``output.iteration_dir``. The file
         is written once at context creation time and is not updated afterwards.
         """
         metadata = {
