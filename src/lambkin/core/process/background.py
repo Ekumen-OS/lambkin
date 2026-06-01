@@ -172,7 +172,7 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     with background(ctx.shell.ros2.bag.record, "-O", "output.mcap", "-a"):
         ...
     """
-    argv = proxy.build_argv(*args, **kwargs)
+    argv = proxy._build_argv(*args, **kwargs)
     return BackgroundProcess(
         argv=argv,
         iteration_cgroup=proxy.get_cgroup(),

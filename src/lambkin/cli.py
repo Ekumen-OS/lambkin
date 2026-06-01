@@ -24,6 +24,7 @@ Typical usage:
     lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
+import logging
 import os
 import signal
 import subprocess
@@ -42,6 +43,8 @@ from lambkin.core.process.cgroup import (
     remove_cgroup_tree,
 )
 from lambkin.sdk_options import SDK_OPTIONS
+
+logger = logging.getLogger(__name__)
 
 
 class LambkinCommand(click.Command):
@@ -102,7 +105,7 @@ def main(script: Path, args: tuple) -> None:
     parent = find_app_slice() or find_delegated_cgroup()
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
     # TODO(teresa-ortega): promote to log.debug in logging PR
-    print(f"[DEBUG] run_cgroup: {run_cgroup}", file=sys.stderr)
+    logger.debug("run_cgroup: %s", run_cgroup)
 
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
