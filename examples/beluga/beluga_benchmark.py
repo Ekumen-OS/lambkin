@@ -36,7 +36,7 @@ def nominal(ctx):
     with lambkin.process.background(
         ctx.shell.ros2.bag.record,
         "--output",
-        "output.mcap",
+        "output",
         "-a",
     ):
         with lambkin.process.background(
