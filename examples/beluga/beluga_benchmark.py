@@ -22,7 +22,7 @@ import lambkin
     ),
     num_iterations=2,
 )
-@lambkin.option("--clock-rate", default=100.0)
+@lambkin.option("--clock-rate", default=1.0)
 @lambkin.option("--sensor-topic", default="/scan")
 def nominal(ctx):
     """Run a nominal Beluga AMCL benchmark across sensor models and particle counts.
@@ -33,26 +33,41 @@ def nominal(ctx):
     Args:
         ctx: Lambkin context with variant, options, source, and shell access.
     """
-    print(ctx)
-    ctx.shell.ros2.launch(
-        ctx.source.path.parent / "beluga.launch.xml",
-        f"sensor_model:={ctx.variant.sensor_model}",
-        f"num_particles:={ctx.variant.num_particles}",
-    )
-    ctx.shell.ros2.bag.play("--clock", "-r", ctx.options.clock_rate)
-    ctx.shell.evo_ape.bag2("output.mcap", save_results="out.zip")
+    with lambkin.process.background(
+        ctx.shell.ros2.bag.record,
+        "--output",
+        "output",
+        "-a",
+    ):
+        with lambkin.process.background(
+            ctx.shell.ros2.launch,
+            "beluga_ros2",
+            "beluga.launch.py",
+            f"sensor_model:={ctx.variant.sensor_model}",
+            f"num_particles:={ctx.variant.num_particles}",
+            f"map_path:={ctx.inputs.map}",
+        ):
+            ctx.shell.ros2.bag.play(
+                ctx.inputs.dataset, "--clock", "-r", ctx.options.clock_rate
+            )
 
 
 @nominal.input
 def dataset(ctx):
     """Return the path to the MCAP dataset used as input for the benchmark."""
-    return "/mydataset/dataset.mcap"
+    return ctx.source.path.parent / "rosbags" / "my_bag.mcap"
 
 
 @nominal.input
 def map(ctx):
     """Return the path to the map file used for localization."""
-    return "my_map.yaml"
+    return ctx.source.path.parent / "maps" / "map.yaml"
+
+
+@nominal.input
+def groundtruth(ctx):
+    """Return the path to the ground truth file used for trajectory evaluation."""
+    return ctx.source.path.parent / "groundtruth" / "groundtruth.txt"
 
 
 if __name__ == "__main__":

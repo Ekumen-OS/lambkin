@@ -15,6 +15,7 @@
 """LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
 
 from lambkin.common import named_product
+from lambkin.core import process
 from lambkin.core.decorators import benchmark, option
 from lambkin.core.shell.proxy import ShellProxy
 
@@ -23,4 +24,5 @@ __all__ = [
     "named_product",
     "option",
     "ShellProxy",
+    "process",
 ]

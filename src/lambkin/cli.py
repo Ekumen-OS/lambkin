@@ -14,24 +14,33 @@
 
 """Entry point for the lambkin CLI.
 
-When invoked, it re-executes the given benchmark script under a
-transient systemd scope so that all child processes are placed in a
-dedicated cgroup v2 hierarchy automatically.
+When invoked, it executes the given benchmark script inside a dedicated
+cgroup v2 scope created under the user's app.slice (or the current
+delegated cgroup as fallback), ensuring all child processes are tracked
+and cleaned up automatically.
 
 Typical usage:
 
     lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
+import os
 import signal
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 import click
 from click.formatting import HelpFormatter
 
-from lambkin.common import exceptions
+from lambkin.core.process.cgroup import (
+    find_app_slice,
+    find_delegated_cgroup,
+    kill_cgroup_tree,
+    make_cgroup,
+    remove_cgroup_tree,
+)
 from lambkin.sdk_options import SDK_OPTIONS
 
 
@@ -47,7 +56,7 @@ class LambkinCommand(click.Command):
         formatter.write_paragraph()
         formatter.write_text(
             "LAMBKIN is a benchmarking SDK for robotics applications. "
-            "It runs your benchmark script inside a systemd cgroup scope, "
+            "It runs your benchmark script inside a dedicated cgroup v2 scope, "
             "ensuring all child processes are tracked and cleaned up automatically."
         )
         formatter.write_paragraph()
@@ -65,27 +74,6 @@ class LambkinCommand(click.Command):
             formatter.write_text("Run 'lambkin SCRIPT --show-options' to list them.")
 
 
-def _stop_scope(cgroup_scope: str) -> None:
-    """Stop a systemd cgroup scope, waiting up to 30 seconds for it to terminate.
-
-    Parameters
-    ----------
-    cgroup_scope : str
-        The name of the systemd scope to stop.
-    """
-    try:
-        subprocess.run(
-            ["systemctl", "--user", "stop", cgroup_scope],
-            capture_output=True,
-            timeout=30,
-        )
-    except subprocess.TimeoutExpired as err:
-        raise exceptions.LambkinSystemdScopeTimeoutError(
-            f"Timed out waiting for scope '{cgroup_scope}' to stop. "
-            "Some processes may still be running."
-        ) from err
-
-
 @click.command(
     cls=LambkinCommand,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
@@ -93,56 +81,46 @@ def _stop_scope(cgroup_scope: str) -> None:
 @click.argument("script", type=click.Path(exists=True, path_type=Path))
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def main(script: Path, args: tuple) -> None:
-    """Launch a lambkin benchmark script inside a systemd cgroup scope.
+    """Launch a lambkin benchmark script.
 
-    Re-executes ``script`` with the same Python interpreter, wrapped in
-    ``systemd-run --scope`` so that every child process spawned during
-    the benchmark (ROS 2 nodes, bag players, etc.) is placed inside a
-    dedicated transient cgroup v2 scope.  This guarantees that the full
-    process tree can be inspected and killed cleanly without leaving
-    orphaned processes behind.
+    Executes ``script`` with the same Python interpreter inside a dedicated
+    cgroup v2 child scope created under the current user's delegated cgroup.
+    This guarantees that the full process tree can be killed cleanly on
+    interruption without affecting the rest of the user session.
 
-    The cgroup scope is named ``lambkin-<stem>.scope``, where ``<stem>``
-    is the filename of the script without its extension.  All arguments
-    that follow the script path are forwarded to the child process
-    unchanged, so SDK and user-defined CLI options (e.g. ``--dry-run``,
-    ``--clock-rate``) are passed through transparently.
+    On Ctrl-C, all processes in the benchmark cgroup are terminated and the
+    cgroup tree is removed before exiting.
 
     Exit codes:
         0    The benchmark script completed successfully.
-        1    An error occurred (e.g. systemd-run not found).
         130  The benchmark was interrupted via Ctrl-C (SIGINT).
         N    Any other return code is propagated from the benchmark script.
     """
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-
-    cgroup_scope = f"lambkin-{script.stem}.scope"
+    parent = find_app_slice() or find_delegated_cgroup()
+    run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
+    # TODO(teresa-ortega): promote to log.debug in logging PR
+    print(f"[DEBUG] run_cgroup: {run_cgroup}", file=sys.stderr)
 
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)
+    proc = subprocess.Popen(
+        [sys.executable, str(script), *args],
+        start_new_session=True,
+        preexec_fn=lambda: (run_cgroup / "cgroup.procs").write_text(str(os.getpid())),
+    )
     try:
-        proc = subprocess.Popen(
-            [
-                "systemd-run",
-                "--scope",
-                f"--unit={cgroup_scope}",
-                "--user",
-                sys.executable,
-                str(script),
-                *args,
-            ],
-        )
         proc.wait()
     except KeyboardInterrupt:
-        _stop_scope(cgroup_scope)
+        print("\nInterrupted, cleaning up benchmark processes...", file=sys.stderr)
+        kill_cgroup_tree(run_cgroup)
+        remove_cgroup_tree(run_cgroup)
+        if sys.stdin.isatty():
+            os.system("stty sane")
         sys.exit(130)
-    except FileNotFoundError as err:
-        raise exceptions.LambkinSystemdNotFoundError(
-            "'systemd-run' not found. lambkin requires systemd."
-        ) from err
-
+    remove_cgroup_tree(run_cgroup)
     sys.exit(proc.returncode)

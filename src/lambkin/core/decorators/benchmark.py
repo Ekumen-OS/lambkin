@@ -123,20 +123,20 @@ def benchmark(variants, num_iterations):
             # This directory will later be overwritten with the
             # actual data collected for variant 1 / iteration 1 during
             # execution.
-            base_ctx = Context(
+            with Context(
                 variant={},
                 iteration=0,
                 options=options,
                 source=source,
                 variant_index=0,
                 output_dir=output_dir,
-            )
-            # TODO(teresa-ortega): Consider an alternative approach for managing
-            # the base context.
-            resolved_inputs = inputs.resolve(base_ctx)
+            ) as base_ctx:
+                # TODO(teresa-ortega): Consider an alternative approach for managing
+                # the base context.
+                resolved_inputs = inputs.resolve(base_ctx)
             for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
-                    ctx = Context(
+                    with Context(
                         variant=variant,
                         iteration=iteration,
                         options=options,
@@ -144,8 +144,8 @@ def benchmark(variants, num_iterations):
                         inputs=resolved_inputs,
                         variant_index=variant_index,
                         output_dir=output_dir,
-                    )
-                    fn(ctx)
+                    ) as ctx:
+                        fn(ctx)
 
         wrapper.input = inputs.register
         return wrapper
