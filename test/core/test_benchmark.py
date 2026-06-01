@@ -46,6 +46,7 @@ def test_parse_options_returns_empty_dict_when_no_options():
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
         "log_output": None,
+        "log_level": "info",
     }
 
 
@@ -62,6 +63,7 @@ def test_parse_options_returns_defaults_when_no_args():
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
         "log_output": None,
+        "log_level": "info",
         "clock_rate": 100.0,
         "sensor_topic": "/scan",
     }
@@ -80,6 +82,7 @@ def test_parse_options_returns_cli_values_when_provided():
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
         "log_output": None,
+        "log_level": "info",
         "clock_rate": 50.0,
         "sensor_topic": "/scan",
     }

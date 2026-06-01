@@ -65,6 +65,12 @@ class BackgroundProcess:
             If True, print the command instead of executing it.
         cwd : Path, optional
             Working directory for the process. If None, inherits from the parent.
+        env : dict, optional
+            Environment variables for the process. If None, inherits from the parent.
+        stdout : file, optional
+            stdout stream for the process. If None, inherits from the parent.
+        stderr : file, optional
+            stderr stream for the process. If None, inherits from the parent.
         """
         self._argv = argv
         self._iteration_cgroup = iteration_cgroup
@@ -183,9 +189,10 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     with background(ctx.shell.ros2.bag.record, "-O", "output.mcap", "-a"):
         ...
     """
+    per_call_log_output = kwargs.pop("log_output", None)
     argv = proxy.build_argv(*args, **kwargs)
     env = proxy.build_env()
-    stdout, stderr = proxy.open_streams()
+    stdout, stderr = proxy.open_streams(per_call_log_output)
     return BackgroundProcess(
         argv=argv,
         iteration_cgroup=proxy.get_cgroup(),

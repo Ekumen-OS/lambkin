@@ -29,6 +29,7 @@ Raises ValueError if variants is empty.
 
 import functools
 import inspect
+import logging
 import sys
 
 import click
@@ -116,6 +117,11 @@ def benchmark(variants, num_iterations):
             if options.get("show_options"):
                 _show_options(fn)
                 sys.exit(0)
+            log_level = options.get("log_level", "info")
+            logging.basicConfig(
+                level=getattr(logging, log_level.upper()),
+                format="%(message)s",
+            )
             source = Source(path=inspect.getfile(fn))
             # The base context creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this

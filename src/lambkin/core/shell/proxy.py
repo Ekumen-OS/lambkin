@@ -183,7 +183,7 @@ class CommandProxy:
             stderr=stderr,
         )
 
-    def open_streams(self) -> tuple:
+    def open_streams(self, log_output: str | None = None) -> tuple:
         """Open log files for stdout and stderr in the iteration directory.
 
         Returns:
@@ -193,7 +193,7 @@ class CommandProxy:
         Raises:
             CommandError: If log_output is 'file' but no working directory is set.
         """
-        if self._resolve_log_output(None) != "file":
+        if self._resolve_log_output(log_output) != "file":
             return None, None
         if self._cwd is None:
             raise CommandError(
@@ -286,13 +286,13 @@ class CommandProxy:
         Raises:
             CommandError: If the process exits with a non-zero return code.
         """
-        kwargs.pop("log_output", None)
+        per_call_log_output = kwargs.pop("log_output", None)
         argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
             logger.debug("[DRY RUN] %s", shlex.join(argv))
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
-            stdout, stderr = self.open_streams()
+            stdout, stderr = self.open_streams(per_call_log_output)
             try:
                 proc = self._make_popen(argv, stdout, stderr)
                 proc.wait()

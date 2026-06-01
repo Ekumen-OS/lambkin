@@ -83,7 +83,12 @@ class LambkinCommand(click.Command):
 )
 @click.argument("script", type=click.Path(exists=True, path_type=Path))
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def main(script: Path, args: tuple) -> None:
+@click.option(
+    "--log-level",
+    type=click.Choice(["debug", "info", "warning", "error"], case_sensitive=False),
+    default="info",
+)
+def main(script: Path, args: tuple, log_level: str) -> None:
     """Launch a lambkin benchmark script.
 
     Executes ``script`` with the same Python interpreter inside a dedicated
@@ -102,6 +107,10 @@ def main(script: Path, args: tuple) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()),
+        format="%(message)s",
+    )
     parent = find_app_slice() or find_delegated_cgroup()
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
     logger.debug("run_cgroup: %s", run_cgroup)
