@@ -228,6 +228,10 @@ class CommandProxy:
         suffix = f"_{count}" if count > 0 else ""
         return f"{base}{suffix}"
 
+    def build_env(self) -> dict | None:
+        """Return the environment for the child process, or None to inherit."""
+        return None
+
     def build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.
 

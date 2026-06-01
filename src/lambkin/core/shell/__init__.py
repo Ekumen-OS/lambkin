@@ -19,9 +19,12 @@ Each shell implementation exposes the same interface, allowing benchmarks to
 switch between dry-run and real execution without changing any benchmark code.
 """
 
+from lambkin.core.shell.ros.launch import RosLaunchCommand
+
 from .proxy import CommandError, ShellProxy
 
 __all__ = [
     "ShellProxy",
     "CommandError",
+    "RosLaunchCommand",
 ]

@@ -49,6 +49,7 @@ class BackgroundProcess:
         iteration_cgroup: Path,
         cwd: Path | None = None,
         dry_run: bool = False,
+        env: dict | None = None,
     ) -> None:
         """Initialize the BackgroundProcess.
 
@@ -72,6 +73,7 @@ class BackgroundProcess:
         self._died_unexpectedly: bool = False
         self._exiting: threading.Event = threading.Event()
         self._cwd = cwd
+        self._env = env
 
     def _enter_cgroup(self) -> None:
         """Write the current PID to cgroup.procs.
@@ -99,11 +101,11 @@ class BackgroundProcess:
             return self
 
         self._cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)
-
         self._proc = subprocess.Popen(
             self._argv,
             preexec_fn=self._enter_cgroup,
             cwd=self._cwd,
+            env=self._env,
         )
 
         self._monitor = threading.Thread(
@@ -173,9 +175,11 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
         ...
     """
     argv = proxy.build_argv(*args, **kwargs)
+    env = proxy.build_env()
     return BackgroundProcess(
         argv=argv,
         iteration_cgroup=proxy.get_cgroup(),
         cwd=proxy.get_cwd(),
         dry_run=proxy.get_dry_run(),
+        env=env,
     )

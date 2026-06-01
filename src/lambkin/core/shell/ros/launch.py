@@ -68,5 +68,17 @@ class RosLaunchCommand(CommandProxy):
             env=self._make_env(),
         )
 
+    def build_env(self) -> dict:
+        """Build the environment for the child process.
+
+        Returns a copy of the current environment with ROS_LOG_DIR set to
+        the iteration directory, so that ROS node logs land alongside all
+        other benchmark artefacts rather than in the default ~/.ros/log.
+
+        Returns:
+            A copy of the current environment with ROS_LOG_DIR set.
+        """
+        return self._make_env()
+
 
 CommandProxy.register(("ros2", "launch"), RosLaunchCommand)
