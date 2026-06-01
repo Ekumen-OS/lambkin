@@ -220,3 +220,11 @@ def test_file_mode_without_cwd_raises_command_error():
     s = ShellProxy(dry_run=False, cwd=None)
     with pytest.raises(CommandError, match="requires a working directory"):
         s.echo("hello")
+
+
+def test_ros_launch_build_env_sets_ros_log_dir(tmp_path):
+    """RosLaunchCommand.build_env sets ROS_LOG_DIR to the iteration directory."""
+    s = ShellProxy(dry_run=False, cwd=tmp_path)
+    proxy = s.ros2.launch
+    env = proxy.build_env()
+    assert env["ROS_LOG_DIR"] == str(tmp_path)
