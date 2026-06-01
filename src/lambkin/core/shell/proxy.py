@@ -191,7 +191,10 @@ class CommandProxy:
             (None, None) if no working directory is set.
         """
         if self._cwd is None:
-            return None, None
+            raise CommandError(
+                self._parts,
+                "log_output='file' requires a working directory to be set.",
+            )
         base = self._log_base()
         out = open(self._cwd / f"{base}.stdout.log", "w")
         err = open(self._cwd / f"{base}.stderr.log", "w")

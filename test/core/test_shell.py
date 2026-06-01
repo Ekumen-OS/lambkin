@@ -213,3 +213,10 @@ def test_file_mode_creates_log_files(tmp_path):
     s = ShellProxy(dry_run=False, cwd=tmp_path)
     s.echo("hello")
     assert len(list(tmp_path.glob("*.log"))) == 2
+
+
+def test_file_mode_without_cwd_raises_command_error():
+    """Running in file mode without a cwd raises CommandError."""
+    s = ShellProxy(dry_run=False, cwd=None)
+    with pytest.raises(CommandError, match="requires a working directory"):
+        s.echo("hello")
