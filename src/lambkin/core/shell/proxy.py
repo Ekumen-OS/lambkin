@@ -53,7 +53,7 @@ class CommandError(Exception):
         super().__init__(message)
 
 
-class _CommandProxy:
+class CommandProxy:
     """Builds a shell command lazily by chaining attribute access and calls.
 
     Each attribute access appends a new token to the command being constructed
@@ -66,21 +66,26 @@ class _CommandProxy:
     """
 
     def __init__(
-        self, parts: list[str], dry_run: bool = False, cwd: Path | None = None
+        self,
+        parts: list[str],
+        dry_run: bool = False,
+        cwd: Path | None = None,
+        cgroup: Path | None = None,
     ) -> None:
         """Initialize the proxy with the command tokens accumulated so far.
 
         Args:
-            parts: The list of command tokens accumulated so far.
-            dry_run: If True, commands are printed instead of executed.
-            cwd: Working directory for the command when dispatched. Inherited
-            from ShellProxy and propagated through every chained proxy.
+        parts: The list of command tokens accumulated so far.
+        dry_run: If True, commands are printed instead of executed.
+        cwd: Working directory for the command when dispatched.
+        cgroup: Iteration cgroup directory for background processes.
         """
         self._parts = parts
         self._dry_run = dry_run
         self._cwd = cwd
+        self._cgroup = cgroup
 
-    def __getattr__(self, name: str) -> _CommandProxy:
+    def __getattr__(self, name: str) -> CommandProxy:
         """Append a new token to the command and return a new proxy.
 
         This allows chaining attribute access to build multi-word commands.
@@ -92,9 +97,23 @@ class _CommandProxy:
         Returns:
             A new proxy with the token appended.
         """
-        return _CommandProxy(self._parts + [name], self._dry_run, self._cwd)
+        return CommandProxy(
+            self._parts + [name], self._dry_run, self._cwd, self._cgroup
+        )
 
-    def _build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
+    def get_cgroup(self) -> Path | None:
+        """Return the iteration cgroup directory."""
+        return self._cgroup
+
+    def get_cwd(self) -> Path | None:
+        """Return the working directory."""
+        return self._cwd
+
+    def get_dry_run(self) -> bool:
+        """Return the dry run flag."""
+        return self._dry_run
+
+    def build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.
 
         Positional arguments are appended as discrete tokens. Keyword arguments
@@ -102,8 +121,8 @@ class _CommandProxy:
         hyphens. A boolean True value produces a standalone flag. A boolean
         False value is omitted entirely.
 
-        This method is shared by __call__ and will be shared by background()
-        when that is implemented, so that argv construction is never duplicated.
+        This method is shared by __call__ and background() to avoid duplicating
+        argv construction logic.
 
         Args:
             *args: Positional arguments to append as tokens.
@@ -142,7 +161,7 @@ class _CommandProxy:
         Raises:
             CommandError: If the process exits with a non-zero return code.
         """
-        argv = self._build_argv(*args, **kwargs)
+        argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
             print(f"[DRY RUN] {shlex.join(argv)}")
             return subprocess.CompletedProcess(argv, returncode=0)
@@ -196,18 +215,24 @@ class ShellProxy:
     for testing and for recording what a benchmark would do without running it.
     """
 
-    def __init__(self, dry_run: bool = False, cwd: Path | None = None) -> None:
+    def __init__(
+        self,
+        dry_run: bool = False,
+        cwd: Path | None = None,
+        cgroup: Path | None = None,
+    ) -> None:
         """Initialize the ShellProxy.
 
         Args:
             dry_run: If True, commands are printed instead of executed.
             cwd: Working directory for all commands dispatched through this proxy.
-            If None, the current working directory of the process is used.
+            cgroup: Iteration cgroup directory for background processes.
         """
         self._dry_run = dry_run
         self._cwd = cwd
+        self._cgroup = cgroup
 
-    def __getattr__(self, name: str) -> _CommandProxy:
+    def __getattr__(self, name: str) -> CommandProxy:
         """Start building a new command from the given top-level token.
 
         Args:
@@ -216,4 +241,4 @@ class ShellProxy:
         Returns:
             A CommandProxy with the first token set.
         """
-        return _CommandProxy([name], self._dry_run, self._cwd)
+        return CommandProxy([name], self._dry_run, self._cwd, self._cgroup)

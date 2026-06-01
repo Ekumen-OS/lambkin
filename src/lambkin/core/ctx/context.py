@@ -19,6 +19,8 @@ configuration, runtime metadata, and cleanup hooks. Shared across the process
 layer and decorators during a run.
 """
 
+from __future__ import annotations
+
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +30,11 @@ from typing import Any
 import yaml
 
 from lambkin.common import defaults
+from lambkin.core.process.cgroup import (
+    find_delegated_cgroup,
+    make_iteration_cgroup,
+    remove_cgroup_tree,
+)
 from lambkin.core.shell import ShellProxy
 
 from .source import Source
@@ -189,6 +196,11 @@ class Context:
 
         self._setup_directories()
 
+        iteration_cgroup = make_iteration_cgroup(
+            find_delegated_cgroup(),
+            iteration_dir,
+        )
+        object.__setattr__(self, "_iteration_cgroup", iteration_cgroup)
         # ctx.shell
         object.__setattr__(
             self,
@@ -196,6 +208,7 @@ class Context:
             ShellProxy(
                 dry_run=getattr(self.options, "dry_run", defaults.DRY_RUN),
                 cwd=iteration_dir,
+                cgroup=iteration_cgroup,
             ),
         )
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
@@ -243,3 +256,11 @@ class Context:
             f"  iteration_dir = {self.output.iteration_dir}\n"
             f")"
         )
+
+    def __enter__(self) -> Context:
+        """Enter the context manager, returning this instance."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit the context manager and remove the iteration cgroup."""
+        remove_cgroup_tree(self._iteration_cgroup)

@@ -21,5 +21,11 @@ jobs:
       - name: Install project dependencies
         run: uv sync --group dev
 
-      - name: Run pytest
-        run: uv run pytest
+      - name: Run pytest in podman
+        run: |
+          podman run --rm \
+            --systemd=always \
+            -v ${{ github.workspace }}:/workspace:z \
+            -w /workspace \
+            python:3.12 \
+            bash -c "pip install uv && uv sync --group dev && uv run pytest"
