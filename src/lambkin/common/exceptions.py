@@ -35,22 +35,16 @@ class LambkinProcessDiedUnexpectedlyError(LambkinError):
     """Raised when a background process exits before the context manager does.
 
     Attributes:
-    ----------
-    argv : list[str]
-        The command that died.
-    returncode : int
-        The exit code of the process.
+        argv (list[str]): The command that died.
+        returncode (int): The exit code of the process.
     """
 
     def __init__(self, argv: list[str], returncode: int) -> None:
         """Initialize with the command and its exit code.
 
-        Parameters
-        ----------
-        argv : list[str]
-            The command that died.
-        returncode : int
-            The exit code of the process.
+        Args:
+            argv (list[str]): The command that died.
+            returncode (int): The exit code of the process.
         """
         self.argv = argv
         self.returncode = returncode

@@ -108,9 +108,7 @@ class BackgroundProcess:
         In dry-run mode, logs the command at debug level instead of executing it.
 
         Returns:
-        -------
-        BackgroundProcess
-            This instance.
+            BackgroundProcess: This instance.
         """
         if self._dry_run:
             logger.info("[DRY RUN BG] %s", shlex.join(self._argv))
@@ -136,20 +134,14 @@ class BackgroundProcess:
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Stop the background process and clean up its cgroup.
 
-        Parameters
-        ----------
-        exc_type :
-            Exception type if an exception is propagating, else None.
-        exc_val :
-            Exception value if an exception is propagating, else None.
-        exc_tb :
-            Exception traceback if an exception is propagating, else None.
+        Args:
+            exc_type: Exception type if an exception is propagating, else None.
+            exc_val: Exception value if an exception is propagating, else None.
+            exc_tb: Exception traceback if an exception is propagating, else None.
 
         Raises:
-        ------
-        LambkinProcessDiedUnexpectedlyError
-            If the process died before this method was called and no other
-            exception is already propagating.
+            LambkinProcessDiedUnexpectedlyError: If the process died before this
+                method was called and no other exception is already propagating.
         """
         if self._dry_run:
             return
@@ -176,29 +168,16 @@ class BackgroundProcess:
 def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProcess:
     """Create a BackgroundProcess context manager from a command proxy.
 
-    Intercepts the ``log_output`` keyword argument if present and uses it
-    to open stdout and stderr log files via the proxy before the process
-    starts. The resolved output mode follows the same precedence as foreground
-    commands: CLI flag overrides per-call kwarg, which overrides the default.
-
-    Parameters
-    ----------
-    proxy : CommandProxy
-        A command proxy representing the command to run.
-    *args :
-        Positional arguments to append to the command.
-    **kwargs :
-        Keyword arguments to convert to --flag value pairs. ``log_output``
-        is intercepted and never forwarded to the subprocess.
+    Args:
+        proxy (CommandProxy): A command proxy representing the command to run.
+        *args: Positional arguments to append to the command.
+        **kwargs: Keyword arguments to convert to --flag value pairs.
 
     Returns:
-    -------
-    BackgroundProcess
-        A context manager that runs the command in the background.
+        BackgroundProcess: A context manager that runs the command in the background.
 
     Example:
-    -------
-    with background(ctx.shell.ros2.bag.record, "-O", "output.mcap", "-a"):
+        with background(ctx.shell.ros2.bag.record, "-O", "output.mcap", "-a"):
         ...
     """
     per_call_log_output = kwargs.pop("log_output", None)

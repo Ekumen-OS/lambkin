@@ -14,7 +14,7 @@
 
 """Benchmark loop decorator for lambkin.
 
-Provides the @benchmark decorator,which drives the execution loop over all
+Provides the @benchmark decorator, which drives the execution loop over all
 variants and iterations. It collects CLI option definitions registered by
 @option, parses them once before the loop using an internal click parser, and
 injects the resulting values into a Context class on each (variant, iteration)
@@ -90,9 +90,9 @@ def benchmark(variants, num_iterations):
 
     Args:
         variants (list[dict]): Sequence of variant dicts to sweep over. Each dict
-            is exposed as attributes on ''ctx.variant''.
+           is exposed as attributes on ``ctx.variant``.
         num_iterations (int): Number of times to repeat each variant. Controls the
-            ''iter_<N>'' subfolders under each variant directory.
+            ``iter_<N>`` subfolders under each variant directory.
 
     Raises:
         ValueError: If variants is empty

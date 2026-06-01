@@ -58,9 +58,9 @@ class OutputInfo:
         Args:
             base_dir (Path): Base output folder for benchmark.(e.g. results/).
             variant_dir (Path): Root output folder for this variant
-                (e.g.results/var_1/).
+                (e.g. results/var_1/).
             iteration_dir (Path): Output folder for the
-                current iteration (e.g.results/var_1/iter_1/).
+                current iteration (e.g. results/var_1/iter_1/).
         """
         self.variant_dir = Path(variant_dir)
         self.base_dir = Path(base_dir)
@@ -116,28 +116,24 @@ class Context:
         access.
 
         Args:
-            variant (dict): Algorithm parameters for this run, as defined by the
-            user.
-                All key-value pairs are exposed as attributes on
-                ''ctx.variant''.
+            variant (dict): Algorithm parameters for this run, as defined by the user.
+                All key-value pairs are exposed as attributes on ``ctx.variant``.
             iteration (int): Zero-based repetition index within this variant.
-                Controls the ''iter_<N>'' subfolder name under the variant
-                directory, where ''N = iteration + 1''.
+                Controls the ``iter_<N>`` subfolder name under the variant
+                directory, where ``N = iteration + 1``.
             source (Source): Source object describing the benchmark script being
                 executed. Its parent directory is used as the default output
                 directory.
             options (dict): Runtime options, as defined by the user.
-                All key-value pairs are exposed as attributes on
-                ''ctx.options''.
+                All key-value pairs are exposed as attributes on ``ctx.options``.
             inputs (SimpleNamespace | None): Namespaced input information.
                 Defaults to None.
             variant_index (int): Zero-based index of this variant within the
-                benchmark sweep.
-                Controls the ''var_<N>'' subfolder name under the output
-                directory, where ''N = variant_index + 1''. Defaults to 0.
+                benchmark sweep. Controls the ``var_<N>`` subfolder name under
+                the output directory, where ``N = variant_index + 1``.
+                Defaults to 0.
             output_dir (Path | str | None): Root directory for all benchmark
-            results.
-                If not provided, defaults to ''source.path.parent''.
+                results. If not provided, defaults to ``source.path.parent``.
         """
         # ctx.variant
         object.__setattr__(self, "variant", SimpleNamespace(**variant))

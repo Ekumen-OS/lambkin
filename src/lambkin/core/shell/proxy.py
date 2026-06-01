@@ -84,16 +84,16 @@ class CommandProxy:
         """Initialize the proxy with the command tokens accumulated so far.
 
         Args:
-        parts: The list of command tokens accumulated so far.
-        dry_run: If True, commands are logged instead of executed.
-        cwd: Working directory for the command when dispatched.
-        cgroup: Iteration cgroup directory for background processes.
-        benchmark_log_output: Log output mode set via CLI. Overrides any
-        per-call log_output argument. None means no CLI override was
-        provided.
-        call_counts: Shared dictionary tracking how many times each command
-        has been launched in the current iteration, used to append
-        numeric suffixes to log file names to avoid collisions.
+            parts: The list of command tokens accumulated so far.
+            dry_run: If True, commands are logged instead of executed.
+            cwd: Working directory for the command when dispatched.
+            cgroup: Iteration cgroup directory for background processes.
+            benchmark_log_output: Log output mode set via CLI. Overrides any
+            per-call log_output argument. None means no CLI override was
+            provided.
+            call_counts: Shared dictionary tracking how many times each command
+            has been launched in the current iteration, used to append
+            numeric suffixes to log file names to avoid collisions.
         """
         self._parts = parts
         self._dry_run = dry_run
