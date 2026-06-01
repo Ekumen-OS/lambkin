@@ -232,7 +232,7 @@ class CommandProxy:
         suffix = f"_{count}" if count > 0 else ""
         return f"{base}{suffix}"
 
-    def _build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
+    def build_argv(self, *args: Any, **kwargs: Any) -> list[str]:
         """Build the final argv list from positional and keyword arguments.
 
         Positional arguments are appended as discrete tokens. Keyword arguments
@@ -283,7 +283,7 @@ class CommandProxy:
         """
         log_output = kwargs.pop("log_output", None)
         log_output = self._resolve_log_output(log_output)
-        argv = self._build_argv(*args, **kwargs)
+        argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
             logger.debug("[DRY RUN] %s", shlex.join(argv))
             return subprocess.CompletedProcess(argv, returncode=0)
