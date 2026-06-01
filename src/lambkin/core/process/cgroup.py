@@ -16,16 +16,14 @@
 from __future__ import annotations
 
 import errno
+import logging
 import os
 import signal
-import sys
 import time
 import uuid
 from pathlib import Path
 
 from lambkin.common import defaults
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +144,8 @@ def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
     survivors = procs_file.read_text().split()
     if survivors:
         logger.warning(
-            "%d process(es) survived SIGKILL in %s — this indicates a serious system problem. PIDs: %s",
+            "%d process(es) survived SIGKILL in %s — this indicates a "
+            "serious system problem. PIDs: %s",
             len(survivors),
             cgroup,
             ", ".join(survivors),

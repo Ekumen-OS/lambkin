@@ -37,7 +37,6 @@ def nominal(ctx):
     Args:
         ctx: Lambkin context with variant, options, source, and shell access.
     """
-
     with lambkin.process.background(
         ctx.shell.ros2.bag.record,
         "--output",
