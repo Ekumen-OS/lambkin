@@ -186,11 +186,9 @@ class CommandProxy:
     def _open_streams(self) -> tuple:
         """Open log files for stdout and stderr in the iteration directory.
 
-        Args:
-            argv: The command argv, used to derive the log file base name.
-
         Returns:
-            A tuple of (stdout_file, stderr_file) open for writing.
+            A tuple of (stdout_file, stderr_file) open for writing, or
+            (None, None) if no working directory is set.
         """
         if self._cwd is None:
             return None, None
@@ -200,13 +198,11 @@ class CommandProxy:
         return out, err
 
     def _log_name(self) -> str:
-        """Derive a log file base name from the command argv, without any suffix.
+        """Derive a log file base name from the command parts.
 
-        Filters out absolute paths and ROS parameter assignments and joins the
-        remaining tokens with underscores.
-
-        Args:
-            argv: The command argv to derive the base name from.
+        Joins the command tokens accumulated so far with underscores.
+        Arguments passed at call time are not included, only the tokens
+        that form the command itself (e.g. 'ros2_launch').
 
         Returns:
             A base name string, e.g. 'ros2_launch'.
@@ -216,12 +212,9 @@ class CommandProxy:
     def _log_base(self) -> str:
         """Return a unique log file base name, appending a suffix on collision.
 
-        Calls _log_name to derive the base, then increments the counter for
-        that name and appends a numeric suffix if the same command has been
-        launched more than once in this iteration.
-
-        Args:
-            argv: The command argv to derive the base name from.
+        Calls _log_name to derive the base from the command parts, then
+        increments the counter for that name and appends a numeric suffix
+        if the same command has been launched more than once in this iteration.
 
         Returns:
             A unique base name string, e.g. 'ros2_launch' or 'ros2_launch_1'.
