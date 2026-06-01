@@ -100,6 +100,8 @@ def main(script: Path, args: tuple) -> None:
     # To be addressed in phase 6.
     parent = find_app_slice() or find_delegated_cgroup()
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
+    # TODO(teresa-ortega): promote to log.debug in logging PR
+    print(f"[DEBUG] run_cgroup: {run_cgroup}", file=sys.stderr)
 
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
@@ -116,6 +118,5 @@ def main(script: Path, args: tuple) -> None:
         kill_cgroup_tree(run_cgroup)
         remove_cgroup_tree(run_cgroup)
         sys.exit(130)
-    kill_cgroup_tree(run_cgroup)
     remove_cgroup_tree(run_cgroup)
     sys.exit(proc.returncode)
