@@ -116,8 +116,11 @@ def main(script: Path, args: tuple) -> None:
     try:
         proc.wait()
     except KeyboardInterrupt:
+        print("\nInterrupted, cleaning up benchmark processes...", file=sys.stderr)
         kill_cgroup_tree(run_cgroup)
         remove_cgroup_tree(run_cgroup)
+        if sys.stdin.isatty():
+            os.system("stty sane")
         sys.exit(130)
     remove_cgroup_tree(run_cgroup)
     sys.exit(proc.returncode)
