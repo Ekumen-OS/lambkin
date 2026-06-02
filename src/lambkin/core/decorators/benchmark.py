@@ -29,7 +29,6 @@ Raises ValueError if variants is empty.
 
 import functools
 import inspect
-import logging
 import sys
 
 import click
@@ -39,6 +38,7 @@ from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
 from lambkin.sdk_options import SDK_OPTIONS
+from lambkin.utils.logging import configure_logging
 
 
 def _show_options(fn) -> None:
@@ -118,10 +118,7 @@ def benchmark(variants, num_iterations):
                 _show_options(fn)
                 sys.exit(0)
             log_level = options.get("log_level", "info")
-            logging.basicConfig(
-                level=getattr(logging, log_level.upper()),
-                format="%(message)s",
-            )
+            configure_logging(log_level)
             source = Source(path=inspect.getfile(fn))
             # The base context creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this

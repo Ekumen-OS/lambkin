@@ -43,6 +43,7 @@ from lambkin.core.process.cgroup import (
     remove_cgroup_tree,
 )
 from lambkin.sdk_options import SDK_OPTIONS
+from lambkin.utils.logging import configure_logging
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +108,7 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-    logging.basicConfig(
-        level=getattr(logging, log_level.upper()),
-        format="%(message)s",
-    )
+    configure_logging(log_level)
     parent = find_app_slice() or find_delegated_cgroup()
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
     logger.debug("run_cgroup: %s", run_cgroup)

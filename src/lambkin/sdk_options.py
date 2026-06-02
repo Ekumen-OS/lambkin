@@ -64,7 +64,7 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
     click.Option(
         ["--log-level"],
         type=click.Choice(["debug", "info", "warning", "error"], case_sensitive=False),
-        default="info",
+        default=defaults.LOG_LEVEL,
         show_default=True,
         help="Log level for lambkin SDK output.",
     ),
