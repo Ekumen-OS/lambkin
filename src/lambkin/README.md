@@ -48,6 +48,20 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 
 A context manager that wraps a Shell command and manages its full lifecycle — start, monitor, and clean up — ensuring no orphaned processes survive when the benchmark ends or is interrupted. Uses cgroups v2 to guarantee kernel-level cleanup of the entire process tree, including descendants that have detached via setsid or setpgid. Used via lambkin.process.background(...)
 
+**Process Isolation with cgroups v2**
+LAMBKIN uses cgroups v2 to track and clean up every process spawned during a benchmark run. Unlike process groups or sessions, a process cannot escape its cgroup by calling setsid or setpgid — the kernel enforces containment regardless of what the process does. This makes it the only reliable mechanism for cleaning up a full ROS 2 process tree.
+The cgroup hierarchy for a run looks like this:
+```
+app.slice/                               ← user's systemd app slice
+└── lambkin-my_benchmark-a1b2c3d4/       ← one per CLI invocation
+    └── iter-var_1-iter_1-e5f6a7b8/      ← one per (variant, iteration) pair
+        ├── ros2-a9b0c1d2/               ← ros2 launch process
+        └── ros2-e3f4a5b6/               ← ros2 bag record process
+```
+
+Cleanup on exit. When a background() context exits normally, LAMBKIN sends SIGTERM to all processes in the cgroup, waits for a grace period, then sends SIGKILL to any survivors. On Ctrl-C, the CLI writes 1 to cgroup.kill, which the kernel propagates instantly to the entire tree.
+
+
 ## CLI
 
 LAMBKIN exposes a lambkin command that runs your benchmark script inside a transient systemd cgroup scope, ensuring all child processes are tracked and cleaned up automatically.
@@ -79,6 +93,15 @@ LAMBKIN uses Python's standard logging module for its own informational messages
 |------|-----------|
 | `"console"` | Routes subprocess stdout/stderr to the terminal |
 | `"file"` | Writes subprocess output to a per-process log file under the iteration output directory |
+
+Log files are named after the command and written to the iteration directory:
+```
+results/var_1/iter_1/
+├── ros2_launch.stdout.log
+├── ros2_launch.stderr.log
+├── ros2_bag_record.stdout.log
+└── ros2_bag_record.stderr.log
+```
 
 **Precedence** (highest to lowest)
 
