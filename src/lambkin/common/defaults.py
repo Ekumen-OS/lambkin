@@ -19,4 +19,4 @@ SIGTERM_GRACE_PERIOD: float = 3.0
 SIGKILL_GRACE_PERIOD: float = 5.0
 CGROUP_POLL_INTERVAL: float = 0.05
 LOG_OUTPUT: str = "file"
-LOG_LEVEL: int = "info"
+LOG_LEVEL: str = "info"
