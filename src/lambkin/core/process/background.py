@@ -66,7 +66,7 @@ class BackgroundProcess:
         iteration_cgroup : Path
             The cgroup directory for this iteration.
         dry_run : bool
-            If True, print the command instead of executing it.
+            If True, log the command instead of executing it.
         cwd : Path, optional
             Working directory for the process. If None, inherits from the parent.
         env : dict, optional
@@ -113,7 +113,7 @@ class BackgroundProcess:
             This instance.
         """
         if self._dry_run:
-            logger.debug("[DRY RUN BG] %s", shlex.join(self._argv))
+            logger.info("[DRY RUN BG] %s", shlex.join(self._argv))
             return self
 
         self._cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)

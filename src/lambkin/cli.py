@@ -99,6 +99,7 @@ def main(script: Path, args: tuple, log_level: str) -> None:
 
     On Ctrl-C, all processes in the benchmark cgroup are terminated and the
     cgroup tree is removed before exiting.
+    logger.debug("app.slice not available at %s", app_slice)
 
     Exit codes:
         0    The benchmark script completed successfully.
@@ -108,8 +109,12 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
+    parent = find_app_slice()
     configure_logging(log_level)
-    parent = find_app_slice() or find_delegated_cgroup()
+    if parent is None:
+        logger.debug("app.slice not available, falling back to delegated cgroup")
+        parent = find_delegated_cgroup()
+
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
     logger.debug("run_cgroup: %s", run_cgroup)
 
@@ -125,7 +130,7 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     try:
         proc.wait()
     except KeyboardInterrupt:
-        print("\nInterrupted, cleaning up benchmark processes...", file=sys.stderr)
+        logger.warning("\nInterrupted, cleaning up benchmark processes...")
         kill_cgroup_tree(run_cgroup)
         remove_cgroup_tree(run_cgroup)
         if sys.stdin.isatty():

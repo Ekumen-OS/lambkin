@@ -63,7 +63,7 @@ class CommandProxy:
 
     Each attribute access appends a new token to the command being constructed
     and returns a new proxy. Calling the proxy finalises the command and
-    dispatches it to the operating system via subprocess, or prints it in
+    dispatches it to the operating system via subprocess, or logs it in
     dry-run mode.
 
     This class is not meant to be instantiated directly. Use ShellProxy to
@@ -85,7 +85,7 @@ class CommandProxy:
 
         Args:
         parts: The list of command tokens accumulated so far.
-        dry_run: If True, commands are printed instead of executed.
+        dry_run: If True, commands are logged instead of executed.
         cwd: Working directory for the command when dispatched.
         cgroup: Iteration cgroup directory for background processes.
         benchmark_log_output: Log output mode set via CLI. Overrides any
@@ -276,7 +276,7 @@ class CommandProxy:
     def __call__(self, *args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
         """Finalise the command and dispatch it to the operating system.
 
-        In dry-run mode, prints the command and returns None. In real mode,
+        In dry-run mode, logs the command and returns None. In real mode,
         runs the command as a foreground process, blocking until it completes.
         The process inherits stdout and stderr from the parent, so its output
         goes directly to the terminal.
@@ -295,7 +295,7 @@ class CommandProxy:
         per_call_log_output = kwargs.pop("log_output", None)
         argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
-            logger.debug("[DRY RUN] %s", shlex.join(argv))
+            logger.info("[DRY RUN] %s", shlex.join(argv))
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
             stdout, stderr = self.open_streams(per_call_log_output)
@@ -349,7 +349,7 @@ class ShellProxy:
         shell.echo("hello", "world")     # runs: echo hello world
         shell.my_tool(verbose=True)      # runs: my_tool --verbose
 
-    In dry-run mode, commands are printed instead of executed, which is useful
+    In dry-run mode, commands are logged instead of executed, which is useful
     for testing and for recording what a benchmark would do without running it.
     """
 
@@ -363,7 +363,7 @@ class ShellProxy:
         """Initialize the ShellProxy.
 
         Args:
-            dry_run: If True, commands are printed instead of executed.
+            dry_run: If True, commands are logged instead of executed.
             cwd: Working directory for all commands dispatched through this proxy.
             cgroup: Iteration cgroup directory for background processes.
             log_output: Log output mode set via CLI. Overrides any per-call
