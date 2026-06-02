@@ -21,7 +21,9 @@ services or ROS nodes that must run alongside the benchmark.
 
 from __future__ import annotations
 
+import logging
 import os
+import shlex
 import subprocess
 import threading
 from pathlib import Path
@@ -30,6 +32,8 @@ from typing import Any
 from lambkin.common import defaults, exceptions
 from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
 from lambkin.core.shell.proxy import CommandProxy
+
+logger = logging.getLogger(__name__)
 
 
 class BackgroundProcess:
@@ -107,7 +111,7 @@ class BackgroundProcess:
             This instance.
         """
         if self._dry_run:
-            print(f"[DRY RUN BG] {' '.join(self._argv)}")
+            logger.debug("[DRY RUN BG] %s", shlex.join(self._argv))
             return self
 
         self._cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)

@@ -250,3 +250,23 @@ def test_show_options_displays_registered_options(capsys):
     captured = capsys.readouterr()
     assert "--clock-rate" in captured.out
     assert "100.0" in captured.out
+
+
+def test_parse_options_respects_log_level():
+    """_parse_options returns the correct log_level when provided."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--log-level", "debug"])
+    assert result["log_level"] == "debug"
+
+
+def test_parse_options_log_level_defaults_to_info():
+    """_parse_options returns 'info' as default log_level when not provided."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert result["log_level"] == "info"

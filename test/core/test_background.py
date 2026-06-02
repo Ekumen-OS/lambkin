@@ -14,6 +14,7 @@
 
 """Unit tests for background process management via cgroups v2."""
 
+import logging
 import time
 
 import pytest
@@ -39,13 +40,14 @@ def dry_shell(tmp_path, fake_cgroup):
     return ShellProxy(dry_run=True, cwd=tmp_path, cgroup=fake_cgroup)
 
 
-def test_background_dry_run_prints_command(dry_shell, capsys):
+def test_background_dry_run_prints_command(dry_shell, caplog):
     """In dry-run mode, background prints the command instead of executing it."""
-    with background(dry_shell.sleep, "10"):
-        pass
-    out = capsys.readouterr().out
-    assert "[DRY RUN BG]" in out
-    assert "sleep" in out
+    logging.getLogger("lambkin.core.process.background").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        with background(dry_shell.sleep, "10"):
+            pass
+    assert "[DRY RUN BG]" in caplog.text
+    assert "sleep" in caplog.text
 
 
 def test_background_dry_run_does_not_launch_process(dry_shell):
@@ -77,16 +79,17 @@ def test_process_died_unexpectedly_error_is_exception():
     assert issubclass(LambkinProcessDiedUnexpectedlyError, Exception)
 
 
-def test_background_builds_argv_from_proxy(dry_shell, capsys):
+def test_background_builds_argv_from_proxy(dry_shell, caplog):
     """background() builds the argv correctly from the proxy and args."""
-    with background(dry_shell.ros2.bag.record, "--output", "output.mcap", "-a"):
-        pass
-    out = capsys.readouterr().out
-    assert "ros2" in out
-    assert "bag" in out
-    assert "record" in out
-    assert "--output" in out
-    assert "output.mcap" in out
+    logging.getLogger("lambkin.core.process.background").propagate = True
+    with caplog.at_level(logging.DEBUG):
+        with background(dry_shell.ros2.bag.record, "--output", "output.mcap", "-a"):
+            pass
+    assert "ros2" in caplog.text
+    assert "bag" in caplog.text
+    assert "record" in caplog.text
+    assert "--output" in caplog.text
+    assert "output.mcap" in caplog.text
 
 
 def test_background_passes_cwd_from_proxy(fake_cgroup, tmp_path):
@@ -181,3 +184,28 @@ def test_background_process_cwd_is_used(tmp_path):
     with background(shell.python3, "-c", payload):
         time.sleep(0.5)
         assert target.exists()
+
+
+def test_background_file_mode_creates_log_files(tmp_path):
+    """background() in file mode creates stdout and stderr log files."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    with background(shell.sleep, "30"):
+        pass
+    assert (iteration_dir / "sleep.stdout.log").exists()
+    assert (iteration_dir / "sleep.stderr.log").exists()
+
+
+def test_background_console_mode_creates_no_log_files(tmp_path):
+    """background() with log_output='console' does not create log files."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    with background(shell.sleep, "30", log_output="console"):
+        pass
+    assert not list(iteration_dir.glob("*.log"))

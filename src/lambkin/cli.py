@@ -120,7 +120,7 @@ def main(script: Path, args: tuple, log_level: str) -> None:
 
     signal.signal(signal.SIGINT, _handle_sigint)
     proc = subprocess.Popen(
-        [sys.executable, str(script), *args],
+        [sys.executable, str(script), "--log-level", log_level, *args],
         start_new_session=True,
         preexec_fn=lambda: (run_cgroup / "cgroup.procs").write_text(str(os.getpid())),
     )
