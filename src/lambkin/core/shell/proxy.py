@@ -186,12 +186,18 @@ class CommandProxy:
     def open_streams(self, log_output: str | None = None) -> tuple:
         """Open log files for stdout and stderr in the iteration directory.
 
+        Args:
+            log_output: Per-call output mode override. If provided, takes
+                precedence over the default but not over the CLI flag.
+                Accepted values are 'file' and 'console'.
+
         Returns:
             A tuple of (stdout_file, stderr_file) open for writing, or
-            (None, None) if log output mode is not 'file'.
+            (None, None) if the resolved log output mode is not 'file'.
 
         Raises:
-            CommandError: If log_output is 'file' but no working directory is set.
+            CommandError: If the resolved log output mode is 'file' but no
+                working directory is set.
         """
         if self._resolve_log_output(log_output) != "file":
             return None, None

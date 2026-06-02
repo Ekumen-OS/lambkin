@@ -105,6 +105,8 @@ class BackgroundProcess:
     def __enter__(self) -> BackgroundProcess:
         """Start the background process inside its own cgroup.
 
+        In dry-run mode, logs the command at debug level instead of executing it.
+
         Returns:
         -------
         BackgroundProcess
@@ -174,6 +176,11 @@ class BackgroundProcess:
 def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProcess:
     """Create a BackgroundProcess context manager from a command proxy.
 
+    Intercepts the ``log_output`` keyword argument if present and uses it
+    to open stdout and stderr log files via the proxy before the process
+    starts. The resolved output mode follows the same precedence as foreground
+    commands: CLI flag overrides per-call kwarg, which overrides the default.
+
     Parameters
     ----------
     proxy : CommandProxy
@@ -181,7 +188,8 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     *args :
         Positional arguments to append to the command.
     **kwargs :
-        Keyword arguments to convert to --flag value pairs.
+        Keyword arguments to convert to --flag value pairs. ``log_output``
+        is intercepted and never forwarded to the subprocess.
 
     Returns:
     -------
