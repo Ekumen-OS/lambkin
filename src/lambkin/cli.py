@@ -108,8 +108,8 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-    parent = find_app_slice()
     configure_logging(log_level)
+    parent = find_app_slice()
     if parent is None:
         logger.debug("app.slice not available, falling back to delegated cgroup")
         parent = find_delegated_cgroup()
@@ -129,7 +129,7 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     try:
         proc.wait()
     except KeyboardInterrupt:
-        logger.warning("\nInterrupted, cleaning up benchmark processes...")
+        logger.warning("Interrupted, cleaning up benchmark processes...")
         kill_cgroup_tree(run_cgroup)
         remove_cgroup_tree(run_cgroup)
         if sys.stdin.isatty():
