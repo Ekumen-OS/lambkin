@@ -58,7 +58,7 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
         # TODO(teresa-ortega): add 'both' mode support
         type=click.Choice(["file", "console"]),
         show_default=True,
-        default=None,
+        default=defaults.LOG_OUTPUT,
         help="Where to route process output: file or console.",
     ),
     click.Option(
