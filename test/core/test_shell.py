@@ -14,7 +14,6 @@
 
 """Unit tests for the shell class in lambkin.core.shell."""
 
-import logging
 import subprocess
 
 import pytest
@@ -53,52 +52,52 @@ def test_multiple_positional_args(dry_shell):
     assert result.args == ["ros2", "bag", "play", "my_bag", "--clock", "-r", "1.0"]
 
 
-def test_kwarg_becomes_flag(dry_shell, caplog):
+def test_kwarg_becomes_flag(dry_shell):
     """Keyword arguments are converted to --flag value pairs."""
-    logging.getLogger("lambkin.core.shell.proxy").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        dry_shell.evo_ape.bag2("output.mcap", save_results="out.zip")
-    assert "evo_ape bag2 output.mcap --save-results out.zip" in caplog.text
+    result = dry_shell.evo_ape.bag2("output.mcap", save_results="out.zip")
+    assert result.args == [
+        "evo_ape",
+        "bag2",
+        "output.mcap",
+        "--save-results",
+        "out.zip",
+    ]
 
 
-def test_kwarg_true_is_standalone_flag(dry_shell, caplog):
+def test_kwarg_true_is_standalone_flag(dry_shell):
     """A boolean True kwarg produces a standalone flag."""
-    logging.getLogger("lambkin.core.shell.proxy").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        dry_shell.ros2.bag.play("my_bag", clock=True)
-    assert "ros2 bag play my_bag --clock" in caplog.text
+    result = dry_shell.ros2.bag.play("my_bag", clock=True)
+    assert result.args == ["ros2", "bag", "play", "my_bag", "--clock"]
 
 
-def test_kwarg_false_is_omitted(dry_shell, caplog):
+def test_kwarg_false_is_omitted(dry_shell):
     """A boolean False kwarg is omitted entirely."""
-    logging.getLogger("lambkin.core.shell.proxy").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        dry_shell.ros2.bag.play("my_bag", clock=False)
-    assert "ros2 bag play my_bag" in caplog.text
+    result = dry_shell.ros2.bag.play("my_bag", clock=False)
+    assert result.args == ["ros2", "bag", "play", "my_bag"]
 
 
-def test_kwarg_multiple_underscores_converted(dry_shell, caplog):
+def test_kwarg_multiple_underscores_converted(dry_shell):
     """Multiple underscores in kwarg names are all converted to dashes."""
-    logging.getLogger("lambkin.core.shell.proxy").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        dry_shell.evo_ape.bag2("output.mcap", save_all_results="out.zip")
-    assert "evo_ape bag2 output.mcap --save-all-results out.zip" in caplog.text
+    result = dry_shell.evo_ape.bag2("output.mcap", save_all_results="out.zip")
+    assert result.args == [
+        "evo_ape",
+        "bag2",
+        "output.mcap",
+        "--save-all-results",
+        "out.zip",
+    ]
 
 
-def test_path_with_spaces(dry_shell, caplog):
-    """Positional args with spaces are quoted correctly."""
-    logging.getLogger("lambkin.core.shell.proxy").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        dry_shell.ros2.bag.play("/my path/to/bag.mcap")
-    assert "/my path/to/bag.mcap" in caplog.text
+def test_path_with_spaces(dry_shell):
+    """Positional args with spaces are passed as a single token."""
+    result = dry_shell.ros2.bag.play("/my path/to/bag.mcap")
+    assert result.args == ["ros2", "bag", "play", "/my path/to/bag.mcap"]
 
 
-def test_arbitrary_tool(dry_shell, caplog):
+def test_arbitrary_tool(dry_shell):
     """Any top-level tool name works without hardcoding."""
-    logging.getLogger("lambkin.core.shell.proxy").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        dry_shell.evo.traj("output.mcap")
-    assert "evo traj output.mcap" in caplog.text
+    result = dry_shell.evo.traj("output.mcap")
+    assert result.args == ["evo", "traj", "output.mcap"]
 
 
 def test_successful_command(shell):
@@ -149,15 +148,13 @@ def test_dry_run_returns_completed_process(dry_shell):
     assert result.args == ["echo", "hello"]
 
 
-def test_chained_proxy_independence(dry_shell, caplog):
+def test_chained_proxy_independence(dry_shell):
     """Each chained proxy is independent — reusing a base proxy works correctly."""
-    logging.getLogger("lambkin.core.shell.proxy").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        base = dry_shell.ros2.bag
-        base.play("bag1")
-        base.record("bag2")
-    assert "ros2 bag play bag1" in caplog.text
-    assert "ros2 bag record bag2" in caplog.text
+    base = dry_shell.ros2.bag
+    result1 = base.play("bag1")
+    result2 = base.record("bag2")
+    assert result1.args == ["ros2", "bag", "play", "bag1"]
+    assert result2.args == ["ros2", "bag", "record", "bag2"]
 
 
 def test_path_with_spaces_no_shell_injection(shell, tmp_path):

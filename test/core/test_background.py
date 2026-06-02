@@ -14,7 +14,6 @@
 
 """Unit tests for background process management via cgroups v2."""
 
-import logging
 import time
 
 import pytest
@@ -40,14 +39,11 @@ def dry_shell(tmp_path, fake_cgroup):
     return ShellProxy(dry_run=True, cwd=tmp_path, cgroup=fake_cgroup)
 
 
-def test_background_dry_run_prints_command(dry_shell, caplog):
-    """In dry-run mode, background prints the command instead of executing it."""
-    logging.getLogger("lambkin.core.process.background").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        with background(dry_shell.sleep, "10"):
-            pass
-    assert "[DRY RUN BG]" in caplog.text
-    assert "sleep" in caplog.text
+def test_background_dry_run_prints_command(dry_shell):
+    """In dry-run mode, background does not launch a real process."""
+    bp = background(dry_shell.sleep, "10")
+    assert bp._argv == ["sleep", "10"]
+    assert bp._dry_run is True
 
 
 def test_background_dry_run_does_not_launch_process(dry_shell):
@@ -79,17 +75,10 @@ def test_process_died_unexpectedly_error_is_exception():
     assert issubclass(LambkinProcessDiedUnexpectedlyError, Exception)
 
 
-def test_background_builds_argv_from_proxy(dry_shell, caplog):
+def test_background_builds_argv_from_proxy(dry_shell):
     """background() builds the argv correctly from the proxy and args."""
-    logging.getLogger("lambkin.core.process.background").propagate = True
-    with caplog.at_level(logging.DEBUG):
-        with background(dry_shell.ros2.bag.record, "--output", "output.mcap", "-a"):
-            pass
-    assert "ros2" in caplog.text
-    assert "bag" in caplog.text
-    assert "record" in caplog.text
-    assert "--output" in caplog.text
-    assert "output.mcap" in caplog.text
+    bp = background(dry_shell.ros2.bag.record, "--output", "output.mcap", "-a")
+    assert bp._argv == ["ros2", "bag", "record", "--output", "output.mcap", "-a"]
 
 
 def test_background_passes_cwd_from_proxy(fake_cgroup, tmp_path):
