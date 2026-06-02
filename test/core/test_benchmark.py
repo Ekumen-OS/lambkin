@@ -45,8 +45,8 @@ def test_parse_options_returns_empty_dict_when_no_options():
     assert result == {
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
-        "log_output": "file",
-        "log_level": "info",
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
     }
 
 
@@ -62,8 +62,8 @@ def test_parse_options_returns_defaults_when_no_args():
     assert result == {
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
-        "log_output": "file",
-        "log_level": "info",
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
         "clock_rate": 100.0,
         "sensor_topic": "/scan",
     }
@@ -81,8 +81,8 @@ def test_parse_options_returns_cli_values_when_provided():
     assert result == {
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
-        "log_output": "file",
-        "log_level": "info",
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
         "clock_rate": 50.0,
         "sensor_topic": "/scan",
     }
@@ -269,4 +269,4 @@ def test_parse_options_log_level_defaults_to_info():
         pass
 
     result = _parse_options(fn, [])
-    assert result["log_level"] == "info"
+    assert result["log_level"] == defaults.LOG_LEVEL
