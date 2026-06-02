@@ -34,6 +34,7 @@ import sys
 import click
 from click.formatting import HelpFormatter
 
+from lambkin.common import defaults
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
@@ -117,7 +118,7 @@ def benchmark(variants, num_iterations):
             if options.get("show_options"):
                 _show_options(fn)
                 sys.exit(0)
-            log_level = options.get("log_level", "info")
+            log_level = options.get("log_level", defaults.LOG_LEVEL)
             configure_logging(log_level)
             source = Source(path=inspect.getfile(fn))
             # The base context creates a directory for variant 1 / iteration 1
