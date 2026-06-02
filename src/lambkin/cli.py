@@ -99,7 +99,6 @@ def main(script: Path, args: tuple, log_level: str) -> None:
 
     On Ctrl-C, all processes in the benchmark cgroup are terminated and the
     cgroup tree is removed before exiting.
-    logger.debug("app.slice not available at %s", app_slice)
 
     Exit codes:
         0    The benchmark script completed successfully.
