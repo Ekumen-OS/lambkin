@@ -27,6 +27,8 @@ before parsing, so they are always available on ``ctx.options``.
     Reserved options:
         - ``--dry-run``
         - ``--show-options``
+        - ``--log-output``
+        - ``--log-level``
 
 Note:
     ``--show-options`` behaves like ``--help``: it prints registered
@@ -50,5 +52,20 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
         is_flag=True,
         default=False,
         help="List all options registered via @lambkin.option.",
+    ),
+    click.Option(
+        ["--log-output"],
+        # TODO(teresa-ortega): add 'both' mode support
+        type=click.Choice(["file", "console"]),
+        show_default=True,
+        default=defaults.LOG_OUTPUT,
+        help="Where to route process output: file or console.",
+    ),
+    click.Option(
+        ["--log-level"],
+        type=click.Choice(["debug", "info", "warning", "error"], case_sensitive=False),
+        default=defaults.LOG_LEVEL,
+        show_default=True,
+        help="Log level for lambkin SDK output.",
     ),
 )

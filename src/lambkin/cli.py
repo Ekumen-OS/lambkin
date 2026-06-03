@@ -21,9 +21,10 @@ and cleaned up automatically.
 
 Typical usage:
 
-    lambkin my_benchmark.py --clock-rate 50 --dry-run
+lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
+import logging
 import os
 import signal
 import subprocess
@@ -41,7 +42,10 @@ from lambkin.core.process.cgroup import (
     make_cgroup,
     remove_cgroup_tree,
 )
+from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
+
+logger = logging.getLogger(__name__)
 
 
 class LambkinCommand(click.Command):
@@ -80,7 +84,12 @@ class LambkinCommand(click.Command):
 )
 @click.argument("script", type=click.Path(exists=True, path_type=Path))
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def main(script: Path, args: tuple) -> None:
+@click.option(
+    "--log-level",
+    type=click.Choice(["debug", "info", "warning", "error"], case_sensitive=False),
+    default="info",
+)
+def main(script: Path, args: tuple, log_level: str) -> None:
     """Launch a lambkin benchmark script.
 
     Executes ``script`` with the same Python interpreter inside a dedicated
@@ -99,24 +108,28 @@ def main(script: Path, args: tuple) -> None:
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
-    parent = find_app_slice() or find_delegated_cgroup()
+    configure_logging(log_level)
+    parent = find_app_slice()
+    if parent is None:
+        logger.debug("app.slice not available, falling back to delegated cgroup")
+        parent = find_delegated_cgroup()
+
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
-    # TODO(teresa-ortega): promote to log.debug in logging PR
-    print(f"[DEBUG] run_cgroup: {run_cgroup}", file=sys.stderr)
+    logger.debug("run_cgroup: %s", run_cgroup)
 
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)
     proc = subprocess.Popen(
-        [sys.executable, str(script), *args],
+        [sys.executable, str(script), "--log-level", log_level, *args],
         start_new_session=True,
         preexec_fn=lambda: (run_cgroup / "cgroup.procs").write_text(str(os.getpid())),
     )
     try:
         proc.wait()
     except KeyboardInterrupt:
-        print("\nInterrupted, cleaning up benchmark processes...", file=sys.stderr)
+        logger.warning("Interrupted, cleaning up benchmark processes...")
         kill_cgroup_tree(run_cgroup)
         remove_cgroup_tree(run_cgroup)
         if sys.stdin.isatty():

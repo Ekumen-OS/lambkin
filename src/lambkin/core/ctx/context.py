@@ -210,6 +210,7 @@ class Context:
                 dry_run=getattr(self.options, "dry_run", defaults.DRY_RUN),
                 cwd=iteration_dir,
                 cgroup=iteration_cgroup,
+                log_output=getattr(self.options, "log_output", defaults.LOG_OUTPUT),
             ),
         )
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
