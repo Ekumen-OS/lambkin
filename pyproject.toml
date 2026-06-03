@@ -44,12 +44,16 @@ python_version = "3.10"
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+preview = true
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "D", "N", "UP", "B"]
+select = ["E", "W", "F", "I", "D", "DOC", "N", "UP", "B"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
 
 [tool.pytest.ini_options]
 testpaths = ["test"]

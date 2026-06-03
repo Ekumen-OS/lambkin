@@ -40,6 +40,9 @@ def main():
 
     Verifies that when the foreground raises an exception, both background
     processes are terminated cleanly and the original exception is propagated.
+
+    Raises:
+        RuntimeError: Intentionally raised to simulate a foreground failure.
     """
     iteration_dir = Path(tempfile.mkdtemp())
     try:

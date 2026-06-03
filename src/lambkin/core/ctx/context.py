@@ -47,29 +47,20 @@ class OutputInfo:
     Folders are created lazily — only when the path is first accessed.
 
     Attributes:
-    ----------
-    base_dir :
-        Base output folder for benchmark.(e.g. results/).
-    variant_dir:
-        Root folder for this variant (e.g.
-        results/var_1/).
-    iteration_dir:
-        Folder for the current iteration (e.g. results/var_1/iter_1/).
+        base_dir: Base output folder for the benchmark (e.g. results/).
+        variant_dir: Root folder for this variant (e.g. results/var_1/).
+        iteration_dir: Folder for the current iteration (e.g. results/var_1/iter_1/).
     """
 
     def __init__(self, base_dir: Path, variant_dir: Path, iteration_dir: Path) -> None:
         """Initialize the output paths for one (variant, iteration) pair.
 
-        Parameters
-        ----------
-        base_dir : Path
-            Base output folder for benchmark.(e.g. results/).
-        variant_dir : Path
-            Root output folder for this variant
-            (e.g. results/var_1/).
-        iteration_dir : Path
-            Output folder for the current iteration (e.g.
-            results/var_1/iter_1/).
+        Args:
+            base_dir (Path): Base output folder for benchmark.(e.g. results/).
+            variant_dir (Path): Root output folder for this variant
+                (e.g. results/var_1/).
+            iteration_dir (Path): Output folder for the
+                current iteration (e.g. results/var_1/iter_1/).
         """
         self.variant_dir = Path(variant_dir)
         self.base_dir = Path(base_dir)
@@ -95,21 +86,14 @@ class Context:
     folders on disk.
 
     Attributes:
-    ----------
-    BENCHMARKS_DIRNAME : str
-        Name for the benchmarks directory.
-    variation:
-        Namespaced algorithm parameters for this run.
-        All key-value pairs from the variant dict are exposed as attributes.
-    source:
-        Source object describing the benchmark script being executed.
-    inputs:
-        Namespaced input information.
-    options:
-        Namespaced runtime options.
-        All key-value pairs from the options dict are exposed as attributes.
-    output:
-        Namespaced output paths.
+        BENCHMARKS_DIRNAME (str): Name for the benchmarks directory.
+        variation: Namespaced algorithm parameters for this run.
+            All key-value pairs from the variant dict are exposed as attributes.
+        source: Source object describing the benchmark script being executed.
+        inputs: Namespaced input information.
+        options: Namespaced runtime options.
+            All key-value pairs from the options dict are exposed as attributes.
+        output: Namespaced output paths.
     """
 
     BENCHMARKS_DIRNAME = "results"
@@ -128,30 +112,28 @@ class Context:
 
         Only the parameters needed to build the namespaced sub-objects are
         stored at construction time. Output subfolders for variant and iteration
-        are created immediately, while any other subfolder is created on first access.
+        are created immediately, while any other subfolder is created on first
+        access.
 
-        Parameters
-        ----------
-        variant : dict
-            Algorithm parameters for this run, as defined by the user.
-            All key-value pairs are exposed as attributes on "ctx.variant".
-        iteration : int
-            Zero-based repetition index within this variant.
-            Controls the "iter_<N>" subfolder name under the variant directory.
-            where "N = iteration + 1".
-        source : Source
-            Source object describing the benchmark script being executed.
-            Its parent directory is used as the default output directory.
-        options : dict
-            Runtime options, as defined by the user.
-            All key-value pairs are exposed as attributes on "ctx.options".
-        variant_index : int, optional
-            Zero-based index of this variant within the benchmark sweep.
-            Controls the "var_<N>" subfolder name under the output directory,
-            where "N = variant_index + 1". Defaults to 0.
-        output_dir : Path or str, optional
-            Root directory for all benchmark results. If not provided,
-            defaults to "source.path.parent".
+        Args:
+            variant (dict): Algorithm parameters for this run, as defined by the user.
+                All key-value pairs are exposed as attributes on ``ctx.variant``.
+            iteration (int): Zero-based repetition index within this variant.
+                Controls the ``iter_<N>`` subfolder name under the variant
+                directory, where ``N = iteration + 1``.
+            source (Source): Source object describing the benchmark script being
+                executed. Its parent directory is used as the default output
+                directory.
+            options (dict): Runtime options, as defined by the user.
+                All key-value pairs are exposed as attributes on ``ctx.options``.
+            inputs (SimpleNamespace | None): Namespaced input information.
+                Defaults to None.
+            variant_index (int): Zero-based index of this variant within the
+                benchmark sweep. Controls the ``var_<N>`` subfolder name under
+                the output directory, where ``N = variant_index + 1``.
+                Defaults to 0.
+            output_dir (Path | str | None): Root directory for all benchmark
+                results. If not provided, defaults to ``source.path.parent``.
         """
         # ctx.variant
         object.__setattr__(self, "variant", SimpleNamespace(**variant))
@@ -220,7 +202,7 @@ class Context:
         """Write a YAML metadata file to the iteration output directory.
 
         Serializes run identity, parameters, source, and output paths
-        to 'metadata.yaml inside 'output.iteration_dir'. The file
+        to ``metadata.yaml`` inside ``output.iteration_dir``. The file
         is written once at context creation time and is not updated afterwards.
         """
         metadata = {
