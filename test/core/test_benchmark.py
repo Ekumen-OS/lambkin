@@ -45,6 +45,8 @@ def test_parse_options_returns_empty_dict_when_no_options():
     assert result == {
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
     }
 
 
@@ -60,6 +62,8 @@ def test_parse_options_returns_defaults_when_no_args():
     assert result == {
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
         "clock_rate": 100.0,
         "sensor_topic": "/scan",
     }
@@ -77,6 +81,8 @@ def test_parse_options_returns_cli_values_when_provided():
     assert result == {
         "dry_run": defaults.DRY_RUN,
         "show_options": False,
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
         "clock_rate": 50.0,
         "sensor_topic": "/scan",
     }
@@ -244,3 +250,24 @@ def test_show_options_displays_registered_options(capsys):
     captured = capsys.readouterr()
     assert "--clock-rate" in captured.out
     assert "100.0" in captured.out
+
+
+def test_parse_options_respects_log_level():
+    """_parse_options returns the correct log_level when provided."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--log-level", "debug"])
+    assert result["log_level"] == "debug"
+
+
+def test_parse_options_log_level_has_a_default():
+    """_parse_options returns a default log_level when not provided."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert "log_level" in result
+    assert result["log_level"] == defaults.LOG_LEVEL
