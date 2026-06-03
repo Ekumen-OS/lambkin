@@ -142,7 +142,10 @@ def remove_cgroup(cgroup: Path) -> None:
     """Remove a cgroup directory once it is empty.
 
     Args:
-       cgroup (Path): The cgroup directory to remove.
+        cgroup (Path): The cgroup directory to remove.
+
+    Raises:
+        OSError: If an unexpected OS error occurs while removing the directory.
     """
     deadline = time.monotonic() + defaults.SIGKILL_GRACE_PERIOD
     while time.monotonic() < deadline:

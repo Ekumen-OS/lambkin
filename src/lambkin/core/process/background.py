@@ -59,22 +59,16 @@ class BackgroundProcess:
     ) -> None:
         """Initialize the BackgroundProcess.
 
-        Parameters
-        ----------
-        argv : list[str]
-            The command to run as a list of tokens.
-        iteration_cgroup : Path
-            The cgroup directory for this iteration.
-        dry_run : bool
-            If True, log the command instead of executing it.
-        cwd : Path, optional
-            Working directory for the process. If None, inherits from the parent.
-        env : dict, optional
-            Environment variables for the process. If None, inherits from the parent.
-        stdout : file, optional
-            stdout stream for the process. If None, inherits from the parent.
-        stderr : file, optional
-            stderr stream for the process. If None, inherits from the parent.
+        Args:
+            argv (list[str]): The command to run as a list of tokens.
+            iteration_cgroup (Path): The cgroup directory for this iteration.
+            cwd (Path | None): Working directory for the process. If None,
+                inherits from the parent.
+            dry_run (bool): If True, log the command instead of executing it.
+            env (dict | None): Environment variables for the process. If None,
+                inherits from the parent.
+            stdout: stdout stream for the process. If None, inherits from the parent.
+            stderr: stderr stream for the process. If None, inherits from the parent.
         """
         self._argv = argv
         self._iteration_cgroup = iteration_cgroup

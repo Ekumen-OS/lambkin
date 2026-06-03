@@ -52,20 +52,16 @@ def _show_options(fn) -> None:
         if not user_options:
             formatter.write_text("No options registered in this script.")
         else:
-            formatter.write_dl(
-                [
-                    (
-                        opt.opts[0],
-                        (opt.help or "")
-                        + (
-                            f"  [default: {opt.default}]"
-                            if opt.default is not None
-                            else ""
-                        ),
-                    )
-                    for opt in user_options
-                ]
-            )
+            formatter.write_dl([
+                (
+                    opt.opts[0],
+                    (opt.help or "")
+                    + (
+                        f"  [default: {opt.default}]" if opt.default is not None else ""
+                    ),
+                )
+                for opt in user_options
+            ])
     click.echo(formatter.getvalue(), nl=False)
 
 
@@ -93,6 +89,9 @@ def benchmark(variants, num_iterations):
            is exposed as attributes on ``ctx.variant``.
         num_iterations (int): Number of times to repeat each variant. Controls the
             ``iter_<N>`` subfolders under each variant directory.
+
+    Returns:
+        A decorator that wraps the benchmark function with the execution loop.
 
     Raises:
         ValueError: If variants is empty

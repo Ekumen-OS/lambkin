@@ -65,6 +65,16 @@ class InputRegistry:
             Do not access ``ctx.variant`` or ``ctx.iteration`` inside the hook;
             they will contain dummy values at resolve time, leading to silent
             bugs that are hard to trace.
+
+        Args:
+            hook_fn: The function to register as an input provider.
+
+        Returns:
+            The hook function, unchanged.
+
+        Raises:
+            ValueError: If the hook signature is invalid or its name is already
+                registered.
         """
         _validate_hook_signature(hook_fn)
         existing_names = [h.__name__ for h in self._hooks]
@@ -81,6 +91,10 @@ class InputRegistry:
         Collects all hook results into a local dict first so ctx is never
         mutated during resolution. The returned snapshot is passed to the
         Context constructor by the benchmark runner.
+
+        Returns:
+            SimpleNamespace: A snapshot mapping each hook's function name to
+                its return value.
         """
         resolved = {}
         for hook in self._hooks:
