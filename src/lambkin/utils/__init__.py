@@ -17,7 +17,3 @@
 Provides standalone conversion and helper tools used across the SDK layers, with
 no dependencies on core or layers internals.
 """
-
-from lambkin.utils.logging import configure_logging
-
-__all__ = ["configure_logging"]

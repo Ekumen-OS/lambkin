@@ -21,7 +21,7 @@ and cleaned up automatically.
 
 Typical usage:
 
-    lambkin my_benchmark.py --clock-rate 50 --dry-run
+lambkin my_benchmark.py --clock-rate 50 --dry-run
 """
 
 import logging
@@ -42,8 +42,8 @@ from lambkin.core.process.cgroup import (
     make_cgroup,
     remove_cgroup_tree,
 )
+from lambkin.log import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
-from lambkin.utils.logging import configure_logging
 
 logger = logging.getLogger(__name__)
 
