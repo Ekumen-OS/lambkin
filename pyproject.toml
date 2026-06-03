@@ -47,8 +47,7 @@ target-version = "py310"
 preview = true
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "D", "DOC"]
-extend-select = ["D101", "D102", "D103", "D107", "D417"]
+select = ["E", "W", "F", "I", "D", "DOC", "N", "UP", "B"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
