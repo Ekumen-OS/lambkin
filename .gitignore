@@ -16,8 +16,7 @@ wheels/
 log/
 install/
 build/
-# Exceptions
-!src/lambkin/log/
+
 
 # Mypy cache
 .mypy_cache

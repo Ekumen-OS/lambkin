@@ -38,7 +38,7 @@ from lambkin.common import defaults
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
-from lambkin.log import configure_logging
+from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
 
 

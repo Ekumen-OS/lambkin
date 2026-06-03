@@ -42,7 +42,7 @@ from lambkin.core.process.cgroup import (
     make_cgroup,
     remove_cgroup_tree,
 )
-from lambkin.log import configure_logging
+from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
 
 logger = logging.getLogger(__name__)

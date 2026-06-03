@@ -16,7 +16,7 @@
 
 import logging
 
-from lambkin.log.config import configure_logging
+from lambkin.logger.config import configure_logging
 
 logger = logging.getLogger("lambkin")
 
