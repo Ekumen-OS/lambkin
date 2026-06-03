@@ -28,6 +28,12 @@ from click import Option
 def option(*param_decls, **attrs):
     """Registers a CLI option on the benchmark function.
 
+    Returns:
+        A decorator that attaches the option to the benchmark function.
+
+    Raises:
+        ValueError: If any flag name does not start with '-' or '--'.
+
     Example:
         @lambkin.option("--clock-rate", default=100.0)
         @lambkin.option("--sensor-topic", default="/scan")

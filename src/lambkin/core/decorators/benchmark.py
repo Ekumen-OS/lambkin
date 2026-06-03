@@ -14,7 +14,7 @@
 
 """Benchmark loop decorator for lambkin.
 
-Provides the @benchmark decorator, which drives the execution loopover all
+Provides the @benchmark decorator, which drives the execution loop over all
 variants and iterations. It collects CLI option definitions registered by
 @option, parses them once before the loop using an internal click parser, and
 injects the resulting values into a Context class on each (variant, iteration)
@@ -52,20 +52,16 @@ def _show_options(fn) -> None:
         if not user_options:
             formatter.write_text("No options registered in this script.")
         else:
-            formatter.write_dl(
-                [
-                    (
-                        opt.opts[0],
-                        (opt.help or "")
-                        + (
-                            f"  [default: {opt.default}]"
-                            if opt.default is not None
-                            else ""
-                        ),
-                    )
-                    for opt in user_options
-                ]
-            )
+            formatter.write_dl([
+                (
+                    opt.opts[0],
+                    (opt.help or "")
+                    + (
+                        f"  [default: {opt.default}]" if opt.default is not None else ""
+                    ),
+                )
+                for opt in user_options
+            ])
     click.echo(formatter.getvalue(), nl=False)
 
 
@@ -88,19 +84,17 @@ def benchmark(variants, num_iterations):
     function with it. Input hooks registered via @nominal.input are resolved
     before each call, injecting their return values into ctx.inputs.
 
-    Parameters
-    ----------
-    variants : iterable of dict
-        Sequence of variant dicts to sweep over. Each dict is exposed as
-        attributes on ctx.variant.
-    num_iterations : int
-        Number of times to repeat each variant. Controls the iter_<N> subfolders
-        under each variant directory.
+    Args:
+        variants (list[dict]): Sequence of variant dicts to sweep over. Each dict
+           is exposed as attributes on ``ctx.variant``.
+        num_iterations (int): Number of times to repeat each variant. Controls the
+            ``iter_<N>`` subfolders under each variant directory.
+
+    Returns:
+        A decorator that wraps the benchmark function with the execution loop.
 
     Raises:
-    ------
-    ValueError
-        If variants is empty
+        ValueError: If variants is empty
     """
     if not variants:
         raise ValueError(

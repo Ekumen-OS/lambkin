@@ -86,14 +86,12 @@ def generate_launch_description():
         parameters=[{"autostart": True, "node_names": ["map_server", "beluga_amcl"]}],
     )
 
-    return LaunchDescription(
-        [
-            config_file_arg,
-            map_path_arg,
-            laser_model_arg,
-            max_particles_arg,
-            beluga_node,
-            map_server_node,
-            lifecycle_manager_node,
-        ]
-    )
+    return LaunchDescription([
+        config_file_arg,
+        map_path_arg,
+        laser_model_arg,
+        max_particles_arg,
+        beluga_node,
+        map_server_node,
+        lifecycle_manager_node,
+    ])

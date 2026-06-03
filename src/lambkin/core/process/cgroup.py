@@ -32,14 +32,10 @@ def find_delegated_cgroup() -> Path:
     """Return the delegated cgroup for the current process.
 
     Returns:
-    -------
-    Path
-        The cgroup directory for the current process.
+        Path: The cgroup directory for the current process.
 
     Raises:
-    ------
-    RuntimeError
-        If no cgroup v2 directory is found.
+        RuntimeError: If no cgroup v2 directory is found.
     """
     cgroup_file = Path("/proc/self/cgroup")
     for line in cgroup_file.read_text().splitlines():
@@ -69,9 +65,8 @@ def find_app_slice() -> Path | None:
     """Return the user app.slice cgroup if writable, else None.
 
     Returns:
-    -------
-    Path or None
-        The app.slice cgroup path if it exists and is writable, else None.
+        Path | None: The app.slice cgroup path if it exists and is writable,
+            else None.
     """
     uid = os.getuid()
     app_slice = Path(
@@ -85,17 +80,12 @@ def find_app_slice() -> Path | None:
 def make_cgroup(parent: Path, name: str) -> Path:
     """Create a child cgroup under parent and return its path.
 
-    Parameters
-    ----------
-    parent : Path
-        The parent cgroup directory.
-    name : str
-        Name for the new child cgroup.
+    Args:
+        parent (Path): The parent cgroup directory.
+        name (str): Name for the new child cgroup.
 
     Returns:
-    -------
-    Path
-        The path to the newly created cgroup directory.
+        Path: The path to the newly created cgroup directory.
     """
     child = parent / name
     child.mkdir(exist_ok=True)
@@ -108,12 +98,9 @@ def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
     Sends SIGTERM to all members first, waits for the grace period, then
     sends SIGKILL to any survivors.
 
-    Parameters
-    ----------
-    cgroup : Path
-        The cgroup directory to kill.
-    grace_period : float
-        Seconds to wait after SIGTERM before sending SIGKILL.
+    Args:
+        cgroup (Path): The cgroup directory to kill.
+        grace_period (float): Seconds to wait after SIGTERM before sending SIGKILL.
     """
     procs_file = cgroup / "cgroup.procs"
 
@@ -154,10 +141,11 @@ def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
 def remove_cgroup(cgroup: Path) -> None:
     """Remove a cgroup directory once it is empty.
 
-    Parameters
-    ----------
-    cgroup : Path
-        The cgroup directory to remove.
+    Args:
+        cgroup (Path): The cgroup directory to remove.
+
+    Raises:
+        OSError: If an unexpected OS error occurs while removing the directory.
     """
     deadline = time.monotonic() + defaults.SIGKILL_GRACE_PERIOD
     while time.monotonic() < deadline:
@@ -186,10 +174,8 @@ def kill_cgroup_tree(cgroup: Path, grace_period: float = 3.0) -> None:
     waits for all threads to exit.
 
     Args:
-        cgroup : Path
-            The root cgroup directory to kill.
-        grace_period : float
-            Seconds to wait for all processes to die after SIGKILL.
+        cgroup (Path): The root cgroup directory to kill.
+        grace_period (float): Seconds to wait for all processes to die after SIGKILL.
     """
     (cgroup / "cgroup.kill").write_text("1")
     deadline = time.monotonic() + grace_period
@@ -206,8 +192,7 @@ def remove_cgroup_tree(cgroup: Path) -> None:
     Does not kill processes — call ``kill_cgroup_tree`` first if needed.
 
     Args:
-        cgroup : Path
-            The root cgroup directory to remove.
+        cgroup (Path): The root cgroup directory to remove.
     """
     for child in sorted(cgroup.iterdir(), reverse=True):
         if child.is_dir():
@@ -218,17 +203,13 @@ def remove_cgroup_tree(cgroup: Path) -> None:
 def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
     """Create a cgroup for one benchmark iteration.
 
-    Parameters
-    ----------
-    delegated : Path
-        The delegated cgroup for this process.
-    iteration_dir : Path
-        The iteration output directory, used to derive a unique cgroup name.
+    Args:
+        delegated (Path): The delegated cgroup for this process.
+        iteration_dir (Path): The iteration output directory, used to derive
+            a unique cgroup name.
 
     Returns:
-    -------
-    Path
-        The path to the newly created iteration cgroup directory.
+        Path: The path to the newly created iteration cgroup directory.
     """
     name = (
         f"iter-{iteration_dir.parent.name}-{iteration_dir.name}-{uuid.uuid4().hex[:8]}"
@@ -239,17 +220,13 @@ def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
 def make_process_cgroup(parent: Path, argv: list[str]) -> Path:
     """Create a cgroup for a background process.
 
-    Parameters
-    ----------
-    parent : Path
-        The parent cgroup directory (typically the iteration cgroup).
-    argv : list[str]
-        The command argv, used to derive a human-readable cgroup name.
+    Args:
+        parent (Path): The parent cgroup directory (typically the iteration cgroup).
+        argv (list[str]): The command argv, used to derive a human-readable
+            cgroup name.
 
     Returns:
-    -------
-    Path
-        The path to the newly created cgroup directory.
+        Path: The path to the newly created cgroup directory.
     """
     name = f"{argv[0].split('/')[-1]}-{uuid.uuid4().hex[:8]}"
     return make_cgroup(parent, name)

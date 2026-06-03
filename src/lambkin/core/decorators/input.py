@@ -48,10 +48,10 @@ class InputRegistry:
     """Manages the registration and resolution of input hooks for a benchmark.
 
     Warning:
-       Hooks are resolved with a base context containing dummy variant and
-       iteration values. Accessing ctx.variant or ctx.iteration inside a hook
-       will silently return empty/wrong values. Hooks should only depend on
-       ctx.options or other stable context fields.
+        Hooks are resolved with a base context containing dummy variant and
+        iteration values. Accessing Accessing ``ctx.variant`` or
+        ``ctx.iteration`` inside a hook will silently return empty/wrong values.
+        Hooks should only depend on ``ctx.options`` or other stable context fields.
     """
 
     def __init__(self):
@@ -61,9 +61,20 @@ class InputRegistry:
     def register(self, hook_fn):
         """Decorator used to register a function as an input provider.
 
-        Warning: Do not access ctx.variant or ctx.iteration inside the hook,
-        they will contain dummy values at resolve time, leading to silent bugs
-        that are hard to trace.
+        Warning:
+            Do not access ``ctx.variant`` or ``ctx.iteration`` inside the hook;
+            they will contain dummy values at resolve time, leading to silent
+            bugs that are hard to trace.
+
+        Args:
+            hook_fn: The function to register as an input provider.
+
+        Returns:
+            The hook function, unchanged.
+
+        Raises:
+            ValueError: If the hook signature is invalid or its name is already
+                registered.
         """
         _validate_hook_signature(hook_fn)
         existing_names = [h.__name__ for h in self._hooks]
@@ -80,6 +91,10 @@ class InputRegistry:
         Collects all hook results into a local dict first so ctx is never
         mutated during resolution. The returned snapshot is passed to the
         Context constructor by the benchmark runner.
+
+        Returns:
+            SimpleNamespace: A snapshot mapping each hook's function name to
+                its return value.
         """
         resolved = {}
         for hook in self._hooks:
