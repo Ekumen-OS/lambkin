@@ -262,11 +262,12 @@ def test_parse_options_respects_log_level():
     assert result["log_level"] == "debug"
 
 
-def test_parse_options_log_level_defaults_to_info():
-    """_parse_options returns 'info' as default log_level when not provided."""
+def test_parse_options_log_level_has_a_default():
+    """_parse_options returns a default log_level when not provided."""
 
     def fn(ctx):
         pass
 
     result = _parse_options(fn, [])
+    assert "log_level" in result
     assert result["log_level"] == defaults.LOG_LEVEL

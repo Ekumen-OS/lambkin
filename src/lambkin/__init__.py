@@ -18,6 +18,7 @@ from lambkin.common import named_product
 from lambkin.core import process
 from lambkin.core.decorators import benchmark, option
 from lambkin.core.shell.proxy import ShellProxy
+from lambkin.log import logger
 
 __all__ = [
     "benchmark",
@@ -25,4 +26,5 @@ __all__ = [
     "option",
     "ShellProxy",
     "process",
+    "logger",
 ]
