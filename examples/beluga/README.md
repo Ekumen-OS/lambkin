@@ -17,8 +17,10 @@ The launch file accepts the map path, sensor model type, and particle count as p
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) and
-  [Docker Compose](https://docs.docker.com/compose/)
+- - [Docker](https://docs.docker.com/get-docker/) and
+  [Docker Compose](https://docs.docker.com/compose/), or
+  [Podman](https://podman.io/getting-started/installation) and
+  `podman-compose` (see note below)
 - The following reference files available on the host:
 
 | Artifact | Description |
@@ -28,7 +30,7 @@ The launch file accepts the map path, sensor model type, and particle count as p
 | Groundtruth | Reference trajectory in `.tum` format to evaluate against |
 
 > [!NOTE]
-> `podman-compose` installed via `apt` may be version 1.0.6, which does not support `--podman-run-args`. Install a recent version via `pipx`:
+> `podman-compose` installed via `apt` may be version 1.0.6, which does not support `--profile`. Install a recent version via `pipx`:
 > ```bash
 > sudo apt install pipx
 > pipx ensurepath
