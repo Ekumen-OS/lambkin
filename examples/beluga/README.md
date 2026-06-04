@@ -17,7 +17,7 @@ The launch file accepts the map path, sensor model type, and particle count as p
 
 ## Prerequisites
 
-- - [Docker](https://docs.docker.com/get-docker/) and
+- [Docker](https://docs.docker.com/get-docker/) and
   [Docker Compose](https://docs.docker.com/compose/), or
   [Podman](https://podman.io/getting-started/installation) and
   `podman-compose` (see note below)
