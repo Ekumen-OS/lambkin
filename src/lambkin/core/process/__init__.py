@@ -22,19 +22,23 @@ from .background import BackgroundProcess, background
 from .cgroup import (
     find_delegated_cgroup,
     kill_cgroup,
+    kill_cgroup_tree,
     make_cgroup,
     make_iteration_cgroup,
     make_process_cgroup,
     remove_cgroup,
+    remove_cgroup_tree,
 )
 
 __all__ = [
     "BackgroundProcess",
     "background",
     "find_delegated_cgroup",
-    "make_cgroup",
     "kill_cgroup",
-    "remove_cgroup",
+    "kill_cgroup_tree",
+    "make_cgroup",
     "make_iteration_cgroup",
     "make_process_cgroup",
+    "remove_cgroup",
+    "remove_cgroup_tree",
 ]
