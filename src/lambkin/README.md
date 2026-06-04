@@ -162,7 +162,7 @@ import lambkin
 )
 @lambkin.option("--clock-rate", default=1.0)
 def my_benchmark(ctx):
-    with lambkin.process.background(ctx.shell.my_recorder, "-", "output.mcap"):
+    with lambkin.process.background(ctx.shell.my_recorder, "-o", "output.mcap"):
         with lambkin.process.background(
             ctx.shell.my_algorithm,
             f"param_a:={ctx.variant.param_a}",
