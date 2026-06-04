@@ -18,7 +18,9 @@ The launch file accepts the map path, sensor model type, and particle count as p
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and
-  [Docker Compose](https://docs.docker.com/compose/)
+  [Docker Compose](https://docs.docker.com/compose/), or
+  [Podman](https://podman.io/getting-started/installation) and
+  `podman-compose` (see note below)
 - The following reference files available on the host:
 
 | Artifact | Description |
@@ -26,6 +28,15 @@ The launch file accepts the map path, sensor model type, and particle count as p
 | Rosbag | Reference sensor data to replay during the benchmark |
 | Map | Static map file in `.yaml` and `.pgm` format |
 | Groundtruth | Reference trajectory in `.tum` format to evaluate against |
+
+> [!NOTE]
+> `podman-compose` installed via `apt` may be version 1.0.6, which does not support `--profile`. Install a recent version via `pipx`:
+> ```bash
+> sudo apt install pipx
+> pipx ensurepath
+> pipx install podman-compose
+> ```
+> Verify the installed version with `podman-compose --version` before proceeding.
 
 ## Setup
 
@@ -44,32 +55,42 @@ volumes:
 
 ### **2. Build the image**
 
-
-####  Development
+#### Development
 
 ```bash
 cd examples/beluga/docker
-docker compose --profile development build
+docker compose --profile development build   # Docker
+podman-compose --profile development build   # Podman
 ```
 
-####  Production
+#### Production
 
 ```bash
 cd examples/beluga/docker
-docker compose --profile production build
+docker compose --profile production build    # Docker
+podman-compose --profile production build    # Podman
 ```
 
 ### **3. Start the container**
 
-Two Docker profiles are available depending on your use case.
+Two profiles are available depending on your use case.
 
 #### Development
 
 Mounts the repository as a volume so code changes are reflected immediately without rebuilding.
 
+**Docker**
+
 ```bash
 docker compose --profile development up -d
 docker compose --profile development exec lambkin_dev bash
+```
+
+**Podman**
+
+```bash
+podman-compose --profile development up -d
+podman-compose --profile development run --podman-run-args="--systemd=always" --rm lambkin_dev bash
 ```
 
 Inside the container:
@@ -87,19 +108,28 @@ source install/setup.bash
 
 Builds a fully self-contained image with all dependencies pre-installed. No manual steps needed inside the container.
 
+**Docker**
+
 ```bash
 docker compose --profile production up -d
-docker compose --profile production exec lambkin_prod bash
+docker compose --profile production run --rm lambkin_prod bash
 ```
+
+**Podman**
+
+```bash
+podman-compose --profile production run --podman-run-args="--systemd=always" --rm lambkin_prod bash
+```
+
+> [!WARNING]
+> Both runtimes require elevated privileges to support background process management. Docker runs with --privileged, granting the container broad access to host devices and kernel interfaces. Podman uses --systemd=always, which allows the container to interact with the host's cgroup v2 hierarchy.
 
 ## Usage
 
 Inside the Docker container/enviroment, run the following command:
 
 ```bash
-uv run examples/beluga/beluga_benchmark.py
+uv run lambkin examples/beluga/beluga_benchmark.py
 ```
 
 Once complete, results are written to results/ organized by configuration (`var_<number>/iter_<number>`). Each iteration contains the recorded bag, TUM trajectory, and APE metrics.
-
-> Note: Full execution is not yet implemented. At this stage the benchmark runs in dry-run mode only, printing all commands that would be executed without running them.
