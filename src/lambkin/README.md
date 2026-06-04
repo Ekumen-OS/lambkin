@@ -46,10 +46,11 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 
 **Background Process**
 
-A context manager that wraps a Shell command and manages its full lifecycle — start, monitor, and clean up — ensuring no orphaned processes survive when the benchmark ends or is interrupted. Uses cgroups v2 to guarantee kernel-level cleanup of the entire process tree, including descendants that have detached via setsid or setpgid. Used via `lambkin.process.background(...)`
+Runs a process in the background while the benchmark continues executing. Takes a shell command (without calling it) and manages its full lifecycle — start, monitor, and clean up — as a context manager. When the context exits, it terminates the process and all its descendants; any process spawned outside a `background()` block is not covered.
 
 > [!WARNING]
-> ctx.shell builds commands lazily through attribute chaining — each attribute access appends a word to the command. Pass the proxy without calling it to lambkin.process.background(). Calling it with () executes it immediately as a foreground process before background() can manage it.
+> ctx.shell builds commands lazily through attribute chaining — each attribute access appends a word to the command. Pass the proxy without calling it to `lambkin.process.background()`. Calling it with () executes it immediately as a foreground process before `background()` can manage it.
+
 ```python
 # Correct — proxy passed without calling it
 with lambkin.process.background(
@@ -64,21 +65,23 @@ with lambkin.process.background(
     ...
 ```
 
-
-> Note:
-The cgroup design provides process lifetime containment, not communication isolation. If iterations were to run in parallel, processes from different iterations could still communicate with each other.
-
 **Process Isolation with cgroups v2**
-LAMBKIN uses cgroups v2 to track and clean up every process spawned during a benchmark run. Unlike process groups or sessions, a process cannot escape its cgroup by calling setsid or setpgid — the kernel enforces containment regardless of what the process does. This makes it the only reliable mechanism for cleaning up an entire process tree.
+LAMBKIN places each iteration in its own cgroup, so every process spawned during that iteration — whether inside a `background()` block or not — is tracked and contained. This serves two purposes:
+
+* Isolation — processes from one iteration cannot bleed into another. If iteration N is still cleaning up when iteration N+1 starts, there is no interference.
+* Full-run cleanup guarantee — the iteration cgroup covers all processes spawned during the run, including foreground calls. Even a benchmark that never uses `background()` gets this guarantee for free.
+
+Unlike process groups or sessions, a process cannot escape its cgroup by calling `setsid` or `setpgid` — the kernel enforces containment regardless.
+
 The cgroup hierarchy for a run looks like this:
 ```
 app.slice/                               ← user's systemd app slice
 └── lambkin-my_benchmark-a1b2c3d4/       ← one per CLI invocation
     └── iter-var_1-iter_1-e5f6a7b8/      ← one per (variant, iteration) pair
-        ├── ros2-a9b0c1d2/               ← ros2 launch process
-        └── ros2-e3f4a5b6/               ← ros2 bag record process
+        ├── my_algorithm-a9b0c1d2/       ← ros2 launch process
+        └── my_recorder-e3f4a5b6/        ← ros2 bag record process
 ```
-When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with --systemd=always:
+When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with `--systemd=always`:
 ```
 user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
 └── lambkin-my_benchmark-a1b2c3d4/
@@ -87,7 +90,11 @@ user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
         └── my_recorder-e3f4a5b6/
 ```
 
-Cleanup on exit. When a background() context exits normally, LAMBKIN sends SIGTERM to all processes in the cgroup, waits for a grace period, then sends SIGKILL to any survivors. On Ctrl-C, the CLI writes 1 to cgroup.kill, which the kernel propagates instantly to the entire tree.
+Cleanup on exit. When a background() context exits normally, LAMBKIN sends `SIGTERM` to all processes in the cgroup, waits for a grace period, then sends `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire tree.
+
+
+> [!NOTE]
+> The cgroup design provides process lifetime containment, not communication isolation. If iterations were to run in parallel, processes from different iterations could still communicate with each other.
 
 
 ## CLI
