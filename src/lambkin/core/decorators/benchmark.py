@@ -29,9 +29,11 @@ Raises ValueError if variants is empty.
 
 import functools
 import inspect
+import logging
 import sys
 
 import click
+import yaml
 from click.formatting import HelpFormatter
 
 from lambkin.common import defaults
@@ -40,6 +42,8 @@ from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
+
+logger = logging.getLogger(__name__)
 
 
 def _show_options(fn) -> None:
@@ -114,6 +118,9 @@ def benchmark(variants, num_iterations):
                 sys.exit(0)
             log_level = options.get("log_level", defaults.LOG_LEVEL)
             configure_logging(log_level)
+            # Calculate total runs for logging purposes.
+            total_runs = len(variants) * num_iterations
+            logger.info("Starting benchmark: %d run(s) total.", total_runs)
             source = Source(path=inspect.getfile(fn))
             # The base context creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this
@@ -132,8 +139,19 @@ def benchmark(variants, num_iterations):
                 # TODO(teresa-ortega): Consider an alternative approach for managing
                 # the base context.
                 resolved_inputs = inputs.resolve(base_ctx)
+                variants_map = {
+                    f"var_{i + 1}": variant for i, variant in enumerate(variants)
+                }
+                variants_map_path = base_ctx.output.base_dir / "variants.yaml"
+                with open(variants_map_path, "w") as f:
+                    yaml.dump(
+                        variants_map, f, default_flow_style=False, sort_keys=False
+                    )
             for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
+                    # Log the current run number and total runs to track progress.
+                    current_run = variant_index * num_iterations + iteration + 1
+                    logger.info("Benchmark run %d/%d", current_run, total_runs)
                     with Context(
                         variant=variant,
                         iteration=iteration,
