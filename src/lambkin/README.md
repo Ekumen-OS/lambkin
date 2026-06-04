@@ -82,7 +82,7 @@ When a background() context exits normally, LAMBKIN sends `SIGTERM` to all proce
 
 
 > [!WARNING]
-> The cgroup design provides process lifetime containment, not communication isolation. If iterations were to run in parallel, processes from different iterations could still communicate with each other.
+> The cgroup design provides process lifetime containment, not network isolation. If iterations were to run in parallel, processes from different iterations could still communicate with each other.
 
 
 ## CLI
