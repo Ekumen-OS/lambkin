@@ -180,7 +180,7 @@ def dataset(ctx):
 if __name__ == "__main__":
     my_benchmark()
 ```
-**Run it with the CLI:**
+Run it with the CLI:
 
 ```bash
 lambkin my_benchmark.py --clock-rate 50.0
