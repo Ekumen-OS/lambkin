@@ -27,6 +27,15 @@ The launch file accepts the map path, sensor model type, and particle count as p
 | Map | Static map file in `.yaml` and `.pgm` format |
 | Groundtruth | Reference trajectory in `.tum` format to evaluate against |
 
+> [!NOTE]
+> `podman-compose` installed via `apt` may be version 1.0.6, which does not support `--podman-run-args`. Install a recent version via `pipx`:
+> ```bash
+> sudo apt install pipx
+> pipx ensurepath
+> pipx install podman-compose
+> ```
+> Verify the installed version with `podman-compose --version` before proceeding.
+
 ## Setup
 
 If you are running the benchmark as-is, use the Production profile. If you are modifying the benchmark script or the ROS 2 package, use the Development profile.
