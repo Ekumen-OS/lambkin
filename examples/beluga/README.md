@@ -78,12 +78,8 @@ docker compose --profile development exec lambkin_dev bash
 **Podman**
 
 ```bash
-podman run --rm \
-  --name=lambkin_production \
-  --systemd=always \
-  --network=host \
-  -v "$(pwd)/../results:/ws/examples/beluga/results" \
-  -it lambkin_ros:jazzy bash
+podman-compose --profile development up -d
+podman-compose --profile development run --podman-run-args="--systemd=always" --rm lambkin_dev bash
 ```
 
 Inside the container:
@@ -111,12 +107,7 @@ docker compose --profile production run --rm lambkin_prod bash
 **Podman**
 
 ```bash
-podman run --rm \
-  --name=lambkin_production \
-  --systemd=always \
-  --network=host \
-  -v "$(pwd)/../results:/ws/examples/beluga/results" \
-  -it lambkin_ros:jazzy bash
+podman-compose --profile production run --podman-run-args="--systemd=always" --rm lambkin_prod bash
 ```
 
 > [!WARNING]
