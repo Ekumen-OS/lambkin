@@ -91,14 +91,20 @@ LAMBKIN exposes a lambkin command that runs your benchmark script inside a trans
 ```bash
 Usage: lambkin [OPTIONS] SCRIPT [SDK_OPTIONS] [CUSTOM_OPTIONS]
 
+LAMBKIN is a benchmarking SDK for robotics applications. It runs your
+benchmark script inside a dedicated cgroup v2 scope, ensuring all child
+processes are tracked and cleaned up automatically.
+
+
 Options:
-  --help          Show this message and exit.
+  --help  Show this message and exit.
 
 SDK Options (always available):
   --dry-run       Run the benchmark in dry-run mode: commands are logged but
                   not executed.
-  --show-options  List all SDK and custom options available for this benchmark
-                  script and exit.
+  --show-options  List all options registered via @lambkin.option.
+  --log-output    Where to route process output: file or console.
+  --log-level     Log level for lambkin SDK output.
 
 Custom Options (script-defined):
   Options registered in your benchmark script via @lambkin.option.
@@ -126,6 +132,9 @@ The LAMBKIN logger is fully isolated from the root logger — user scripts can c
 **Process Logging**
 
 Controls where subprocess stdout and stderr are routed. Each process can be configured independently via log_output.
+```bash
+lambkin my_benchmark.py --log-output console
+```
 
 | Mode | Behavior |
 |------|-----------|
@@ -141,7 +150,7 @@ results/var_1/iter_1/
 └── my_recorder.stderr.log
 ```
 
-**Precedence** (highest to lowest)
+#### Precedence (highest to lowest)
 
 1. **CLI option** — `--log-output` flag passed to the `lambkin` command
 2. **Per-call** — `log_output` keyword at the call site
