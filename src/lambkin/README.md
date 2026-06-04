@@ -51,7 +51,7 @@ Runs a process in the background while the benchmark continues executing. Takes 
 > [!WARNING]
 > Pass the command proxy to background() without calling it — ctx.shell.my_tool, not ctx.shell.my_tool(). Calling it with () runs the process immediately as a foreground blocking call and background() will raise an error.
 
-## Process Isolation with cgroups v2
+## Process Management with cgroups v2
 
 LAMBKIN places each iteration in its own cgroup, so every process spawned during that iteration — whether inside a `background()` block or not — is tracked and contained. This serves two purposes:
 
