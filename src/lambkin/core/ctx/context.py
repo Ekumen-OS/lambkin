@@ -218,7 +218,7 @@ class Context:
                 "iteration_dir": str(self.output.iteration_dir),
             },
         }
-        meta_path = self.output.iteration_dir / "metadata.yaml"
+        meta_path = self.output.iteration_dir / "lambkin_metadata.yaml"
         with open(meta_path, "w") as f:
             yaml.dump(metadata, f, default_flow_style=False, sort_keys=False)
 
