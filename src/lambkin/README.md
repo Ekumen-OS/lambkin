@@ -142,7 +142,7 @@ results/var_1/iter_1/
 └── my_recorder.stderr.log
 ```
 
-Precedence (highest to lowest)
+Precedence (highest to lowest):
 
 1. **CLI option** — `--log-output` flag passed to the `lambkin` command
 2. **Per-call** — `log_output` keyword at the call site
