@@ -49,11 +49,11 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 Runs a process in the background while the benchmark continues executing. Takes a shell command (without calling it) and manages its full lifecycle — start, monitor, and clean up — as a context manager. When the context exits, it terminates the process and all its descendants; any process spawned outside a `background()` block is not covered.
 
 > [!WARNING]
-> Pass the command proxy to background() without calling it — ctx.shell.my_tool, not ctx.shell.my_tool(). Calling it with () runs the process immediately as a foreground blocking call and background() will raise an error.
+> Pass the command proxy to background() without calling it — `ctx.shell.my_tool`, not `ctx.shell.my_tool()`. Calling it with () runs the process immediately as a foreground blocking call and background() will raise an error.
 
 ## Process Management with cgroups v2
 
-LAMBKIN places each iteration in its own cgroup, so every process spawned during that run — whether inside a background() block or not — is tracked and torn down unconditionally when the iteration ends. This means no leftover processes survive into the next iteration, and no process can escape by calling setsid or setpgid — the kernel enforces containment regardless.
+LAMBKIN places each iteration in its own cgroup, so every process spawned during that run — whether inside a background() block or not — is tracked and torn down unconditionally when the iteration ends. This means no leftover processes survive into the next iteration, and no process can escape by calling `setsid` or `setpgid` — the kernel enforces containment regardless.
 
 The cgroup hierarchy for a run looks like this:
 ```
@@ -77,7 +77,7 @@ user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
 
 ## Process Cleanup
 
-When a background() context exits normally, LAMBKIN sends `SIGTERM` to all processes in the cgroup, waits for a grace period, then sends `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire tree.
+When an iteration completes, LAMBKIN tears down the iteration cgroup by sending `SIGTERM` to all remaining processes, waiting for a grace period, then sending `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire iteration cgroup.
 
 
 ## CLI
