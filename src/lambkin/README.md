@@ -71,13 +71,13 @@ user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
         ├── my_algorithm-a9b0c1d2/
         └── my_recorder-e3f4a5b6/
 ```
-## Process Cleanup
-
-When a background() context exits normally, LAMBKIN sends `SIGTERM` to all processes in the cgroup, waits for a grace period, then sends `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire tree.
-
 
 > [!WARNING]
 > The cgroup design provides process lifetime containment, not network isolation. If iterations were to run in parallel, processes from different iterations could still communicate with each other.
+
+## Process Cleanup
+
+When a background() context exits normally, LAMBKIN sends `SIGTERM` to all processes in the cgroup, waits for a grace period, then sends `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire tree.
 
 
 ## CLI
