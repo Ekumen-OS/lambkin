@@ -46,7 +46,7 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 
 **Background Process**
 
-A context manager that wraps a Shell command and manages its full lifecycle — start, monitor, and clean up — ensuring no orphaned processes survive when the benchmark ends or is interrupted. Uses cgroups v2 to guarantee kernel-level cleanup of the entire process tree, including descendants that have detached via setsid or setpgid. Used via lambkin.process.background(...)
+A context manager that wraps a Shell command and manages its full lifecycle — start, monitor, and clean up — ensuring no orphaned processes survive when the benchmark ends or is interrupted. Uses cgroups v2 to guarantee kernel-level cleanup of the entire process tree, including descendants that have detached via setsid or setpgid. Used via `lambkin.process.background(...)`
 
 > [!WARNING]
 > ctx.shell builds commands lazily through attribute chaining — each attribute access appends a word to the command. Pass the proxy without calling it to lambkin.process.background(). Calling it with () executes it immediately as a foreground process before background() can manage it.
@@ -166,9 +166,9 @@ import lambkin
     ),
     num_iterations=5,
 )
-@lambkin.option("--clock-rate", default=100.0)
+@lambkin.option("--clock-rate", default=1.0)
 def my_benchmark(ctx):
-    with lambkin.process.background(ctx.shell.my_recorder, "-O", "output.mcap"):
+    with lambkin.process.background(ctx.shell.my_recorder, "-", "output.mcap"):
         with lambkin.process.background(
             ctx.shell.my_algorithm,
             f"param_a:={ctx.variant.param_a}",
