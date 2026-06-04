@@ -75,7 +75,7 @@ user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
 > [!WARNING]
 > The cgroup design provides process lifetime containment, not network isolation. If iterations were to run in parallel, processes from different iterations could still communicate with each other.
 
-## Process Cleanup
+### Process Cleanup
 
 When an iteration completes, LAMBKIN tears down the iteration cgroup by sending `SIGTERM` to all remaining processes, waiting for a grace period, then sending `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire iteration cgroup.
 
