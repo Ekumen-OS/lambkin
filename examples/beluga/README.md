@@ -44,26 +44,25 @@ volumes:
 
 ### **2. Build the image**
 
-
-####  Development
+#### Development
 
 ```bash
 cd examples/beluga/docker
-docker compose --profile development build  # Docker
-podman compose --profile development build  # Podman
+docker compose --profile development build   # Docker
+podman-compose --profile development build   # Podman
 ```
 
-####  Production
+#### Production
 
 ```bash
 cd examples/beluga/docker
-docker compose --profile production build  # Docker
-podman compose --profile production build  # Podman
+docker compose --profile production build    # Docker
+podman-compose --profile production build    # Podman
 ```
 
 ### **3. Start the container**
 
-Two Docker profiles are available depending on your use case.
+Two profiles are available depending on your use case.
 
 #### Development
 
@@ -79,8 +78,8 @@ docker compose --profile development exec lambkin_dev bash
 **Podman**
 
 ```bash
-podman compose --profile development up -d
-podman compose --profile development exec lambkin_dev bash
+podman-compose --profile development up -d
+podman-compose --profile development run --podman-run-args="--systemd=always" --rm lambkin_dev bash
 ```
 
 Inside the container:
@@ -101,19 +100,14 @@ Builds a fully self-contained image with all dependencies pre-installed. No manu
 **Docker**
 
 ```bash
-docker compose -f docker-compose.yml --profile production run --rm lambkin_prod bash
+docker compose --profile production run --rm lambkin_prod bash
 ```
+
 **Podman**
 
 ```bash
-podman run --rm \
-  --name=lambkin_production \
-  --systemd=always \
-  --network=host \
-  -v "$(pwd)/../results:/ws/examples/beluga/results" \
-  -it lambkin_ros:jazzy bash
+podman-compose --profile production run --podman-run-args="--systemd=always" --rm lambkin_prod bash
 ```
-
 
 > [!WARNING]
 
