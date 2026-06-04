@@ -211,7 +211,11 @@ LAMBKIN writes all artifacts under a consistent directory tree:
 results/
 └── <variant_n>/
     └── iter_<n>/
+        ├── lambkin_metadata.yaml
         ├── output.mcap
         ├── out.zip
-        └── ...
+        ├── my_algorithm.stdout.log
+        ├── my_algorithm.stderr.log
+        ├── my_recorder.stdout.log
+        └── my_recorder.stderr.log
 ```
