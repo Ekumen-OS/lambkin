@@ -117,16 +117,11 @@ Custom Options (script-defined):
 LAMBKIN has two independent logging systems: one for its own internal messages and one for subprocess output.
 
 **SDK Logging**
-Controls the verbosity of LAMBKIN's own internal messages. Set via the --log-level SDK option:
+Controls the verbosity of LAMBKIN's own internal messages via the --log-level SDK option. Accepts any level supported by [Python's logging](https://docs.python.org/3/library/logging.html#logging-levels) module, case-insensitive:
 ```bash
 lambkin my_benchmark.py --log-level debug
+lambkin my_benchmark.py --log-level DEBUG  # equivalent
 ```
-
-| Level | Behavior |
-|------|-----------|
-| `"debug"` | All internal messages visible, including cgroup paths and command dispatch details |
-| `"info"` | Standard operational messages visible (default) |
-| `"info"` | LAMBKIN output suppressed; only warnings and errors shown |
 
 The LAMBKIN logger is fully isolated from the root logger — user scripts can configure their own logging without any interference.
 
