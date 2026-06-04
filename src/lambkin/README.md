@@ -64,6 +64,10 @@ with lambkin.process.background(
     ...
 ```
 
+
+> Note:
+The cgroup design provides process lifetime containment, not communication isolation. If iterations were to run in parallel, processes from different iterations could still communicate with each other.
+
 **Process Isolation with cgroups v2**
 LAMBKIN uses cgroups v2 to track and clean up every process spawned during a benchmark run. Unlike process groups or sessions, a process cannot escape its cgroup by calling setsid or setpgid — the kernel enforces containment regardless of what the process does. This makes it the only reliable mechanism for cleaning up an entire process tree.
 The cgroup hierarchy for a run looks like this:
