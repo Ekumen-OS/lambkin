@@ -48,6 +48,22 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 
 A context manager that wraps a Shell command and manages its full lifecycle — start, monitor, and clean up — ensuring no orphaned processes survive when the benchmark ends or is interrupted. Uses cgroups v2 to guarantee kernel-level cleanup of the entire process tree, including descendants that have detached via setsid or setpgid. Used via lambkin.process.background(...)
 
+> [!WARNING]
+> ctx.shell builds commands lazily through attribute chaining — each attribute access appends a word to the command. Pass the proxy without calling it to lambkin.process.background(). Calling it with () executes it immediately as a foreground process before background() can manage it.
+```python
+# Correct — proxy passed without calling it
+with lambkin.process.background(
+    ctx.shell.ros2.launch, "beluga_ros2", "beluga.launch.py"
+):
+    ...
+
+# Wrong — calling it with () executes it immediately as a foreground process
+with lambkin.process.background(
+    ctx.shell.ros2.launch(), "beluga_ros2", "beluga.launch.py"
+):
+    ...
+```
+
 **Process Isolation with cgroups v2**
 LAMBKIN uses cgroups v2 to track and clean up every process spawned during a benchmark run. Unlike process groups or sessions, a process cannot escape its cgroup by calling setsid or setpgid — the kernel enforces containment regardless of what the process does. This makes it the only reliable mechanism for cleaning up an entire process tree.
 The cgroup hierarchy for a run looks like this:
