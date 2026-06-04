@@ -49,7 +49,7 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 A context manager that wraps a Shell command and manages its full lifecycle — start, monitor, and clean up — ensuring no orphaned processes survive when the benchmark ends or is interrupted. Uses cgroups v2 to guarantee kernel-level cleanup of the entire process tree, including descendants that have detached via setsid or setpgid. Used via lambkin.process.background(...)
 
 **Process Isolation with cgroups v2**
-LAMBKIN uses cgroups v2 to track and clean up every process spawned during a benchmark run. Unlike process groups or sessions, a process cannot escape its cgroup by calling setsid or setpgid — the kernel enforces containment regardless of what the process does. This makes it the only reliable mechanism for cleaning up a full ROS 2 process tree.
+LAMBKIN uses cgroups v2 to track and clean up every process spawned during a benchmark run. Unlike process groups or sessions, a process cannot escape its cgroup by calling setsid or setpgid — the kernel enforces containment regardless of what the process does. This makes it the only reliable mechanism for cleaning up an entire process tree.
 The cgroup hierarchy for a run looks like this:
 ```
 app.slice/                               ← user's systemd app slice
@@ -57,6 +57,14 @@ app.slice/                               ← user's systemd app slice
     └── iter-var_1-iter_1-e5f6a7b8/      ← one per (variant, iteration) pair
         ├── ros2-a9b0c1d2/               ← ros2 launch process
         └── ros2-e3f4a5b6/               ← ros2 bag record process
+```
+When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with --systemd=always:
+```
+user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
+└── lambkin-my_benchmark-a1b2c3d4/
+    └── iter-var_1-iter_1-e5f6a7b8/
+        ├── my_algorithm-a9b0c1d2/
+        └── my_recorder-e3f4a5b6/
 ```
 
 Cleanup on exit. When a background() context exits normally, LAMBKIN sends SIGTERM to all processes in the cgroup, waits for a grace period, then sends SIGKILL to any survivors. On Ctrl-C, the CLI writes 1 to cgroup.kill, which the kernel propagates instantly to the entire tree.
@@ -105,8 +113,8 @@ results/var_1/iter_1/
 
 **Precedence** (highest to lowest)
 
-1. **Per-call** — `_log_output` keyword at the call site
-2. **Benchmark option** — `@lambkin.option("--log-output", default="file")`
+1. **CLI option** — `--log-output` flag passed to the `lambkin` command
+2. **Per-call** — `log_output` keyword at the call site
 3. **ShellProxy default** — `ShellProxy(log_output="file")`
 
 ## Requirements
@@ -130,6 +138,7 @@ A minimal example composing the SDK primitives described above into a working be
 ```python
 import lambkin
 
+
 @lambkin.benchmark(
     variants=lambkin.common.named_product(
         param_a=["x", "y"],
@@ -148,13 +157,14 @@ def my_benchmark(ctx):
         ):
             ctx.shell.my_player(ctx.inputs.dataset, "-r", ctx.options.clock_rate)
 
+
 @my_benchmark.input
 def dataset(ctx):
     return ctx.source.path.parent / "datasets" / "my_dataset.mcap"
 
+
 if __name__ == "__main__":
     my_benchmark()
-
 ```
 **Run it with the CLI:**
 
