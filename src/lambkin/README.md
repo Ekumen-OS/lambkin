@@ -53,12 +53,7 @@ Runs a process in the background while the benchmark continues executing. Takes 
 
 ## Process Management with cgroups v2
 
-LAMBKIN places each iteration in its own cgroup, so every process spawned during that iteration — whether inside a `background()` block or not — is tracked and contained. This serves two purposes:
-
-* Isolation — each iteration runs in a dedicated cgroup, so processes from different iterations cannot interfere with each other.
-* Full-run cleanup guarantee — the iteration cgroup covers all processes spawned during that run, including foreground calls. Even a benchmark that never uses background() gets this guarantee for free.
-
-Unlike process groups or sessions, a process cannot escape its cgroup by calling `setsid` or `setpgid` — the kernel enforces containment regardless.
+LAMBKIN places each iteration in its own cgroup, so every process spawned during that run — whether inside a background() block or not — is tracked and torn down unconditionally when the iteration ends. This means no leftover processes survive into the next iteration, and no process can escape by calling setsid or setpgid — the kernel enforces containment regardless.
 
 The cgroup hierarchy for a run looks like this:
 ```
