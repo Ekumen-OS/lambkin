@@ -49,23 +49,10 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 Runs a process in the background while the benchmark continues executing. Takes a shell command (without calling it) and manages its full lifecycle — start, monitor, and clean up — as a context manager. When the context exits, it terminates the process and all its descendants; any process spawned outside a `background()` block is not covered.
 
 > [!WARNING]
-> ctx.shell builds commands lazily through attribute chaining — each attribute access appends a word to the command. Pass the proxy without calling it to `lambkin.process.background()`. Calling it with () executes it immediately as a foreground process before `background()` can manage it.
-
-```python
-# Correct — proxy passed without calling it
-with lambkin.process.background(
-    ctx.shell.ros2.launch, "beluga_ros2", "beluga.launch.py"
-):
-    ...
-
-# Wrong — calling it with () executes it immediately as a foreground process
-with lambkin.process.background(
-    ctx.shell.ros2.launch(), "beluga_ros2", "beluga.launch.py"
-):
-    ...
-```
+> Pass the command proxy to background() without calling it — ctx.shell.my_tool, not ctx.shell.my_tool(). Calling it with () runs the process immediately as a foreground blocking call and background() will raise an error.
 
 **Process Isolation with cgroups v2**
+
 LAMBKIN places each iteration in its own cgroup, so every process spawned during that iteration — whether inside a `background()` block or not — is tracked and contained. This serves two purposes:
 
 * Isolation — processes from one iteration cannot bleed into another. If iteration N is still cleaning up when iteration N+1 starts, there is no interference.
