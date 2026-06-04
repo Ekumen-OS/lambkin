@@ -118,7 +118,7 @@ LAMBKIN has two independent logging systems: one for its own internal messages a
 
 ### SDK Logging
 
-Controls the verbosity of LAMBKIN's own internal messages via the --log-level SDK option. Accepts any level supported by [Python's logging](https://docs.python.org/3/library/logging.html#logging-levels) module, case-insensitive:
+Controls the verbosity of LAMBKIN's own internal messages via the `--log-level` SDK option. Accepts any level supported by [Python's logging](https://docs.python.org/3/library/logging.html#logging-levels) module, case-insensitive:
 ```bash
 lambkin my_benchmark.py --log-level debug
 lambkin my_benchmark.py --log-level DEBUG  # equivalent
