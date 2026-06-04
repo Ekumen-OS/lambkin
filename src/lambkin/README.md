@@ -107,9 +107,25 @@ Custom Options (script-defined):
 
 ## Logging
 
-LAMBKIN uses Python's standard logging module for its own informational messages. Subprocess output is handled separately through output redirection — each process can be configured independently with `log_output`.
+LAMBKIN has two independent logging systems: one for its own internal messages and one for subprocess output.
 
-**Output modes**
+**SDK Logging**
+Controls the verbosity of LAMBKIN's own internal messages. Set via the --log-level SDK option:
+```bash
+lambkin my_benchmark.py --log-level debug
+```
+
+| Level | Behavior |
+|------|-----------|
+| `"debug"` | All internal messages visible, including cgroup paths and command dispatch details |
+| `"info"` | Standard operational messages visible (default) |
+| `"info"` | LAMBKIN output suppressed; only warnings and errors shown |
+
+The LAMBKIN logger is fully isolated from the root logger — user scripts can configure their own logging without any interference.
+
+**Process Logging**
+
+Controls where subprocess stdout and stderr are routed. Each process can be configured independently via log_output.
 
 | Mode | Behavior |
 |------|-----------|
@@ -119,10 +135,10 @@ LAMBKIN uses Python's standard logging module for its own informational messages
 Log files are named after the command and written to the iteration directory:
 ```
 results/var_1/iter_1/
-├── ros2_launch.stdout.log
-├── ros2_launch.stderr.log
-├── ros2_bag_record.stdout.log
-└── ros2_bag_record.stderr.log
+├── my_algorithm.stdout.log
+├── my_algorithm.stderr.log
+├── my_recorder.stdout.log
+└── my_recorder.stderr.log
 ```
 
 **Precedence** (highest to lowest)
