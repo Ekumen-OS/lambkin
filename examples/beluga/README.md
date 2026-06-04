@@ -78,8 +78,12 @@ docker compose --profile development exec lambkin_dev bash
 **Podman**
 
 ```bash
-podman-compose --profile development up -d
-podman-compose --profile development run --podman-run-args="--systemd=always" --rm lambkin_dev bash
+podman run --rm \
+  --name=lambkin_production \
+  --systemd=always \
+  --network=host \
+  -v "$(pwd)/../results:/ws/examples/beluga/results" \
+  -it lambkin_ros:jazzy bash
 ```
 
 Inside the container:
@@ -100,17 +104,22 @@ Builds a fully self-contained image with all dependencies pre-installed. No manu
 **Docker**
 
 ```bash
+docker compose --profile production up -d
 docker compose --profile production run --rm lambkin_prod bash
 ```
 
 **Podman**
 
 ```bash
-podman-compose --profile production run --podman-run-args="--systemd=always" --rm lambkin_prod bash
+podman run --rm \
+  --name=lambkin_production \
+  --systemd=always \
+  --network=host \
+  -v "$(pwd)/../results:/ws/examples/beluga/results" \
+  -it lambkin_ros:jazzy bash
 ```
 
 > [!WARNING]
-
 > Both runtimes require elevated privileges to support background process management. Docker runs with --privileged, granting the container broad access to host devices and kernel interfaces. Podman uses --systemd=always, which allows the container to interact with the host's cgroup v2 hierarchy.
 
 > LAMBKIN requires these to create transient cgroup scopes that guarantee cleanup of all descendant processes when a benchmark step ends. Only use this in trusted, controlled environments where you own the container invocation; not suitable for shared CI runners or managed cloud environments.
