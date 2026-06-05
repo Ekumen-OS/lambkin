@@ -14,9 +14,25 @@
 
 """Default values shared across the lambkin SDK."""
 
-DRY_RUN: bool = False
-SIGTERM_GRACE_PERIOD: float = 3.0
-SIGKILL_GRACE_PERIOD: float = 5.0
-CGROUP_POLL_INTERVAL: float = 0.05
-LOG_OUTPUT: str = "file"
-LOG_LEVEL: str = "info"
+from typing import Final
+
+# Default name for the benchmarks output directory.
+BENCHMARKS_DIRNAME: Final[str] = "results"
+
+# If True, commands are logged but not executed.
+DRY_RUN: Final[bool] = False
+
+# Seconds to wait after SIGTERM before sending SIGKILL.
+SIGTERM_GRACE_PERIOD: Final[float] = 3.0
+
+# Seconds to wait after SIGKILL before giving up.
+SIGKILL_GRACE_PERIOD: Final[float] = 5.0
+
+# Polling interval in seconds when waiting for cgroup processes to exit.
+CGROUP_POLL_INTERVAL: Final[float] = 0.05
+
+# Where to route process output. Either 'file' or 'console'.
+LOG_OUTPUT: Final[str] = "file"
+
+# Default log level for lambkin SDK output.
+LOG_LEVEL: Final[str] = "info"
