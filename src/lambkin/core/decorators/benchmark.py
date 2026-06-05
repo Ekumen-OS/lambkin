@@ -144,7 +144,7 @@ def benchmark(variants, num_iterations):
         inputs = InputRegistry()
 
         @functools.wraps(fn)
-        def wrapper(args=None, output_dir=None):
+        def wrapper(args=None, base_dir=None):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             if options.get("show_options"):
@@ -159,8 +159,8 @@ def benchmark(variants, num_iterations):
 
             # Determine base_dir for all benchmark outputs.
             base_dir = (
-                output_dir
-                if output_dir
+                base_dir
+                if base_dir
                 else source.path.parent / defaults.BENCHMARKS_DIRNAME
             )
 

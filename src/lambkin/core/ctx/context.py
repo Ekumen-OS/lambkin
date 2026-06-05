@@ -46,19 +46,21 @@ from .source import Source
 class Context:
     """Carries all namespaced information for one benchmark variant.
 
-    Builds all namespaced sub-objects (variant, inputs, options, output)
+    Builds all namespaced sub-objects (variant, inputs, options, paths)
     from the given parameters and automatically creates the required output
     folders on disk.
 
     Attributes:
-        variation: Namespaced algorithm parameters for this run.
+        variant: Namespaced algorithm parameters for this run.
             All key-value pairs from the variant dict are exposed as attributes.
-        source: Source object describing the benchmark script being executed.
-        inputs: Namespaced input information.
         options: Namespaced runtime options.
             All key-value pairs from the options dict are exposed as attributes.
-        output: Namespaced output paths.
+        source: Source object describing the benchmark script being executed.
+        inputs: Namespaced input information.
+        iteration: Zero-based repetition index within this variant.
         paths: Output paths for this (variant, iteration) run.
+        shell: ShellProxy instance configured for this run, with working directory
+            set to the iteration output folder and cgroup set to the iteration cgroup.
     """
 
     def __init__(
@@ -89,7 +91,7 @@ class Context:
             source (Source): Source object describing the benchmark script being
                 executed. Its parent directory is used as the default output
                 directory.
-            base_dir: Root directory for all benchmark results.
+            base_dir (Path | str): Root directory for all benchmark results.
             inputs (SimpleNamespace | None): Namespaced input information.
                 Defaults to None.
             variant_index (int): Zero-based index of this variant within the
@@ -122,13 +124,13 @@ class Context:
             RunPaths.from_indices(base_dir, variant_index, iteration),
         )
 
-        self._setup_directories()
-
+        # Find cgroup for the current iteration
         iteration_cgroup = make_iteration_cgroup(
             find_delegated_cgroup(),
             self.paths.iteration_dir,
         )
         object.__setattr__(self, "_iteration_cgroup", iteration_cgroup)
+
         # ctx.shell
         object.__setattr__(
             self,
@@ -140,7 +142,14 @@ class Context:
                 log_output=getattr(self.options, "log_output", defaults.LOG_OUTPUT),
             ),
         )
+
+        # Save the start time for this run, to be written to metadata
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
+
+        # Setup directories
+        self._setup_directories()
+
+        # Write metadata after all attributes are set up
         self._write_metadata()
 
     def _write_metadata(self) -> None:
