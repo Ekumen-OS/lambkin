@@ -33,7 +33,10 @@ def nominal(ctx):
     Args:
         ctx: Lambkin context with variant, options, source, and shell access.
     """
-    lambkin.logger.info("Running benchmark with variant: %s", ctx.variant)
+    lambkin.logger.info(
+        "Running benchmark with variant: %s, iteration: %d", ctx.variant, ctx.iteration
+    )
+
     with lambkin.process.background(
         ctx.shell.ros2.bag.record,
         "--output",

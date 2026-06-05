@@ -56,6 +56,7 @@ Runs a process in the background while the benchmark continues executing. Takes 
 LAMBKIN places each iteration in its own cgroup, so every process spawned during that run — whether inside a background() block or not — is tracked and torn down unconditionally when the iteration ends. This means no leftover processes survive into the next iteration, and no process can escape by calling `setsid` or `setpgid` — the kernel enforces containment regardless.
 
 The cgroup hierarchy for a run looks like this:
+
 ```
 app.slice/                               ← user's systemd app slice
 └── lambkin-my_benchmark-a1b2c3d4/       ← one per CLI invocation
@@ -63,6 +64,7 @@ app.slice/                               ← user's systemd app slice
         ├── my_algorithm-a9b0c1d2/       ← ros2 launch process
         └── my_recorder-e3f4a5b6/        ← ros2 bag record process
 ```
+
 When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with `--systemd=always`:
 ```
 user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
@@ -78,7 +80,6 @@ user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
 ### Process Cleanup
 
 When an iteration completes, LAMBKIN tears down the iteration cgroup by sending `SIGTERM` to all remaining processes, waiting for a grace period, then sending `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire iteration cgroup.
-
 
 ## CLI
 
@@ -114,6 +115,7 @@ LAMBKIN has two independent logging systems: one for its own internal messages a
 ### SDK Logging
 
 Controls the verbosity of LAMBKIN's own internal messages via the `--log-level` SDK option. Accepts any level supported by [Python's logging](https://docs.python.org/3/library/logging.html#logging-levels) module, case-insensitive:
+
 ```bash
 lambkin my_benchmark.py --log-level debug
 lambkin my_benchmark.py --log-level DEBUG  # equivalent
@@ -124,6 +126,7 @@ The LAMBKIN logger is fully isolated from the root logger — user scripts can c
 ### Process Logging
 
 Controls where subprocess stdout and stderr are routed. Each process can be configured independently via log_output.
+
 ```bash
 lambkin my_benchmark.py --log-output console
 ```
@@ -134,7 +137,8 @@ lambkin my_benchmark.py --log-output console
 | `"file"` | Writes subprocess output to a per-process log file under the iteration output directory |
 
 Log files are named after the command and written to the iteration directory:
-```
+
+```bash
 results/var_1/iter_1/
 ├── my_algorithm.stdout.log
 ├── my_algorithm.stderr.log
@@ -160,7 +164,6 @@ Precedence (highest to lowest):
 git clone -b next-gen git@github.com:Ekumen-OS/lambkin.git
 uv sync
 ```
-
 
 ## Usage
 
@@ -197,6 +200,7 @@ def dataset(ctx):
 if __name__ == "__main__":
     my_benchmark()
 ```
+
 Run it with the CLI:
 
 ```bash
@@ -204,22 +208,26 @@ lambkin my_benchmark.py --clock-rate 50.0
 ```
 
 Inspect all available options without running:
+
 ```bash
 lambkin my_benchmark.py --show-options
 ```
 
 Validate the benchmark pipeline without executing any process:
+
 ```bash
 lambkin my_benchmark.py --dry-run
 ```
-For a complete, working example using the Beluga algorithm, see [`Beluga Example`](examples/beluga/beluga_benchmark.py).
 
+For a complete, working example using the Beluga algorithm, see [`Beluga Example`](examples/beluga/beluga_benchmark.py).
 
 ## Expected Output
 
 LAMBKIN writes all artifacts under a consistent directory tree:
-```
+
+```bash
 results/
+├── variants.yaml
 └── <variant_n>/
     └── iter_<n>/
         ├── lambkin_metadata.yaml
