@@ -21,7 +21,6 @@ import pytest
 import yaml
 
 from lambkin.common import defaults
-from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.benchmark import _format_elapsed, _parse_options, benchmark
 from lambkin.core.decorators.option import option
@@ -201,7 +200,7 @@ def test_benchmark_default_output_dir_uses_source_path(variants, tmp_path):
     with patch("lambkin.core.decorators.benchmark.Source", return_value=fake_source):
         fn()
 
-    assert contexts[0].output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
+    assert contexts[0].paths.base_dir == tmp_path / defaults.BENCHMARKS_DIRNAME
     assert contexts[0].source.path == fake_script
 
 
