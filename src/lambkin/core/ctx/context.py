@@ -89,14 +89,14 @@ class Context:
             options (dict): Runtime options, as defined by the user.
                 All key-value pairs are exposed as attributes on ``ctx.options``.
             source (Source): Source object describing the benchmark script being
-                executed. Its parent directory is used as the default output
+                executed. Its parent directory is used as the default output base
                 directory.
             base_dir (Path | str): Root directory for all benchmark results.
             inputs (SimpleNamespace | None): Namespaced input information.
                 Defaults to None.
             variant_index (int): Zero-based index of this variant within the
                 benchmark sweep. Controls the ``var_<N>`` subfolder name under
-                the output directory, where ``N = variant_index + 1``.
+                the output base directory, where ``N = variant_index + 1``.
                 Defaults to 0.
         """
         # ctx.variant
@@ -156,7 +156,7 @@ class Context:
         """Write a YAML metadata file to the iteration output directory.
 
         Serializes run identity, parameters, source, and output paths
-        to ``metadata.yaml`` inside ``output.iteration_dir``. The file
+        to ``metadata.yaml`` inside ``paths.iteration_dir``. The file
         is written once at context creation time and is not updated afterwards.
         """
         metadata = {
@@ -166,7 +166,7 @@ class Context:
             "variant": vars(self.variant),
             "options": vars(self.options),
             "source": str(self.source.path),
-            "output": {
+            "paths": {
                 "base_dir": str(self.paths.base_dir),
                 "variant_dir": str(self.paths.variant_dir),
                 "iteration_dir": str(self.paths.iteration_dir),

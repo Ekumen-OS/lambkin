@@ -184,7 +184,7 @@ def benchmark(variants, num_iterations):
                 variants_map = {
                     f"var_{i + 1}": variant for i, variant in enumerate(variants)
                 }
-                variants_map_path = base_ctx.output.base_dir / "variants.yaml"
+                variants_map_path = base_ctx.paths.base_dir / "variants.yaml"
                 with open(variants_map_path, "w") as f:
                     yaml.dump(
                         variants_map, f, default_flow_style=False, sort_keys=False

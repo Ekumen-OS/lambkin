@@ -299,7 +299,7 @@ def test_benchmark_writes_variants_yaml(variants, tmp_path):
     def fn(ctx):
         pass
 
-    fn(output_dir=tmp_path)
+    fn(base_dir=tmp_path)
 
     variants_file = tmp_path / "variants.yaml"
     assert variants_file.exists()
