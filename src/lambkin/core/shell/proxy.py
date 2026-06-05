@@ -302,19 +302,14 @@ class CommandProxy:
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
             stdout, stderr = self.open_streams(per_call_log_output)
+            proc = None
             try:
                 proc = self._make_popen(argv, stdout, stderr)
-                try:
-                    proc.wait()
-                finally:
-                    if proc.poll() is None:
-                        proc.kill()
-                        proc.wait()
-                    if stdout:
-                        stdout.close()
-                    if stderr:
-                        stderr.close()
+                proc.wait()
             finally:
+                if proc is not None and proc.poll() is None:
+                    proc.kill()
+                    proc.wait()
                 if stdout:
                     stdout.close()
                 if stderr:
