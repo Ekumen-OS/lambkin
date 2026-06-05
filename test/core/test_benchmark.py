@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from lambkin.common import defaults
 from lambkin.core.ctx.context import Context
@@ -290,3 +291,20 @@ def test_parse_options_log_level_has_a_default():
     result = _parse_options(fn, [])
     assert "log_level" in result
     assert result["log_level"] == defaults.LOG_LEVEL
+
+
+def test_benchmark_writes_variants_yaml(variants, tmp_path):
+    """Benchmark writes a variants.yaml file mapping var_N to variant dicts."""
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        pass
+
+    fn(output_dir=tmp_path)
+
+    variants_file = tmp_path / "variants.yaml"
+    assert variants_file.exists()
+
+    content = yaml.safe_load(variants_file.read_text())
+    expected = {f"var_{i + 1}": variant for i, variant in enumerate(variants)}
+    assert content == expected
