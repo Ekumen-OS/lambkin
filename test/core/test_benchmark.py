@@ -21,7 +21,6 @@ import pytest
 import yaml
 
 from lambkin.common import defaults
-from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.benchmark import _format_elapsed, _parse_options, benchmark
 from lambkin.core.decorators.option import option
@@ -128,7 +127,7 @@ def test_benchmark_loops_over_variants_and_iterations(variants, tmp_path):
     def fn(ctx):
         calls.append(ctx)
 
-    fn(output_dir=tmp_path)
+    fn(base_dir=tmp_path)
     assert len(calls) == 6
 
 
@@ -140,7 +139,7 @@ def test_benchmark_variant_attributes_are_correct(variants, tmp_path):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn(output_dir=tmp_path)
+    fn(base_dir=tmp_path)
     assert contexts[0].variant.sensor_model == "beam"
     assert contexts[0].variant.num_particles == 10
     assert contexts[1].variant.sensor_model == "likelihood"
@@ -157,7 +156,7 @@ def test_benchmark_options_defaults_injected(variants, tmp_path):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn(output_dir=tmp_path)
+    fn(base_dir=tmp_path)
     assert contexts[0].options.clock_rate == 100.0
     assert contexts[0].options.sensor_topic == "/scan"
 
@@ -171,7 +170,7 @@ def test_benchmark_options_injected_via_args(variants, tmp_path):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn(args=["--clock-rate", "50.0"], output_dir=tmp_path)
+    fn(args=["--clock-rate", "50.0"], base_dir=tmp_path)
     assert contexts[0].options.clock_rate == 50.0
 
 
@@ -183,12 +182,12 @@ def test_benchmark_source_path_points_to_benchmark_script(variants, tmp_path):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn(output_dir=tmp_path)
+    fn(base_dir=tmp_path)
     assert contexts[0].source.path == Path(__file__)
 
 
-def test_benchmark_default_output_dir_uses_source_path(variants, tmp_path):
-    """When output_dir=None, output is resolved relative to the source path."""
+def test_benchmark_default_base_dir_uses_source_path(variants, tmp_path):
+    """When base_dir=None, output is resolved relative to the source path."""
     contexts = []
     fake_script = tmp_path / "my_benchmark.py"
     fake_script.touch()
@@ -201,7 +200,7 @@ def test_benchmark_default_output_dir_uses_source_path(variants, tmp_path):
     with patch("lambkin.core.decorators.benchmark.Source", return_value=fake_source):
         fn()
 
-    assert contexts[0].output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
+    assert contexts[0].paths.base_dir == tmp_path / defaults.BENCHMARKS_DIRNAME
     assert contexts[0].source.path == fake_script
 
 
@@ -300,7 +299,7 @@ def test_benchmark_writes_variants_yaml(variants, tmp_path):
     def fn(ctx):
         pass
 
-    fn(output_dir=tmp_path)
+    fn(base_dir=tmp_path)
 
     variants_file = tmp_path / "variants.yaml"
     assert variants_file.exists()

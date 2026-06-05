@@ -47,9 +47,9 @@ def ctx(tmp_path, base_variant, base_options, base_source):
     return Context(
         variant=base_variant,
         iteration=0,
-        output_dir=tmp_path,
         options=base_options,
         source=base_source,
+        base_dir=tmp_path,
     )
 
 
@@ -81,18 +81,19 @@ def test_output_dirs_are_created_on_instantiation(
     ctx = Context(
         variant=variant,
         iteration=iteration,
-        output_dir=tmp_path,
         options=base_options,
         source=base_source,
+        base_dir=tmp_path,
         variant_index=variant_index,
     )
     expected_variant_dir = tmp_path / f"var_{variant_index + 1}"
     expected_iteration_dir = expected_variant_dir / f"iter_{iteration + 1}"
 
-    assert ctx.output.variant_dir == expected_variant_dir
-    assert ctx.output.iteration_dir == expected_iteration_dir
-    assert ctx.output.variant_dir.exists()
-    assert ctx.output.iteration_dir.exists()
+    assert ctx.paths.base_dir == tmp_path
+    assert ctx.paths.variant_dir == expected_variant_dir
+    assert ctx.paths.iteration_dir == expected_iteration_dir
+    assert ctx.paths.variant_dir.exists()
+    assert ctx.paths.iteration_dir.exists()
     assert ctx.variant.sensor_model == expected_sensor
     assert ctx.variant.num_particles == expected_particles
 
@@ -125,9 +126,9 @@ def test_variation_attributes(
     ctx = Context(
         variant=variant,
         iteration=0,
-        output_dir=tmp_path,
         options=base_options,
         source=base_source,
+        base_dir=tmp_path,
     )
     for key, value in expected_attrs.items():
         assert getattr(ctx.variant, key) == value
@@ -163,9 +164,9 @@ def test_options_attributes(
     ctx = Context(
         variant=base_variant,
         iteration=0,
-        output_dir=tmp_path,
         options=options,
         source=base_source,
+        base_dir=tmp_path,
     )
     assert ctx.options.clock == expected_clock
     assert ctx.options.qos_option_path == expected_qos
@@ -188,30 +189,11 @@ def test_iteration_stored(tmp_path, base_variant, base_options, base_source, ite
     ctx = Context(
         variant=base_variant,
         iteration=iteration,
-        output_dir=tmp_path,
         options=base_options,
         source=base_source,
+        base_dir=tmp_path,
     )
     assert ctx.iteration == iteration
-
-
-def test_context_default_output_dir(tmp_path):
-    """Default output_dir resolves relative to the benchmark script.
-
-    When output_dir is not provided, it defaults to source.path.parent /
-    Context.BENCHMARKS_DIRNAME.
-    """
-    script = tmp_path / "my_benchmark.py"
-    script.touch()
-
-    source = Source(path=script)
-    ctx = Context(
-        variant={"sensor_model": "beam", "num_particles": 10},
-        iteration=0,
-        options={},
-        source=source,
-    )
-    assert ctx.output.base_dir == tmp_path / Context.BENCHMARKS_DIRNAME
 
 
 def test_context_is_immutable(tmp_path):
@@ -222,8 +204,8 @@ def test_context_is_immutable(tmp_path):
         iteration=0,
         options={"dry_run": True},
         source=source,
+        base_dir=tmp_path,
         variant_index=0,
-        output_dir=tmp_path,
     )
 
     with pytest.raises(AttributeError):

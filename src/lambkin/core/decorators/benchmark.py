@@ -144,7 +144,7 @@ def benchmark(variants, num_iterations):
         inputs = InputRegistry()
 
         @functools.wraps(fn)
-        def wrapper(args=None, output_dir=None):
+        def wrapper(args=None, base_dir=None):
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
             if options.get("show_options"):
@@ -157,6 +157,13 @@ def benchmark(variants, num_iterations):
             logger.info("Starting benchmark: %d run(s) total.", total_runs)
             source = Source(path=inspect.getfile(fn))
 
+            # Determine base_dir for all benchmark outputs.
+            base_dir = (
+                base_dir
+                if base_dir
+                else source.path.parent / defaults.BENCHMARKS_DIRNAME
+            )
+
             # The base context is used to resolve inputs and write variants.yaml.
             # A side effect is that creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this
@@ -168,8 +175,8 @@ def benchmark(variants, num_iterations):
                 iteration=0,
                 options=options,
                 source=source,
+                base_dir=base_dir,
                 variant_index=0,
-                output_dir=output_dir,
             ) as base_ctx:
                 # TODO(teresa-ortega): Consider an alternative approach for managing
                 # the base context.
@@ -177,7 +184,7 @@ def benchmark(variants, num_iterations):
                 variants_map = {
                     f"var_{i + 1}": variant for i, variant in enumerate(variants)
                 }
-                variants_map_path = base_ctx.output.base_dir / "variants.yaml"
+                variants_map_path = base_ctx.paths.base_dir / "variants.yaml"
                 with open(variants_map_path, "w") as f:
                     yaml.dump(
                         variants_map, f, default_flow_style=False, sort_keys=False
@@ -196,9 +203,9 @@ def benchmark(variants, num_iterations):
                         iteration=iteration,
                         options=options,
                         source=source,
+                        base_dir=base_dir,
                         inputs=resolved_inputs,
                         variant_index=variant_index,
-                        output_dir=output_dir,
                     ) as ctx:
                         fn(ctx)
             # Calculate total elapsed time

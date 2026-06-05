@@ -138,7 +138,7 @@ def test_ctx_inputs_populated_before_fn_runs(variant):
     def dataset(ctx):
         return "path/to/dataset.mcap"
 
-    nominal(output_dir="/tmp")
+    nominal(base_dir="/tmp")
     assert seen == ["path/to/dataset.mcap"]
 
 
@@ -158,7 +158,7 @@ def test_multiple_inputs_all_injected(variant):
     def map(ctx):
         return "path/to/map.yaml"
 
-    nominal(output_dir="/tmp")
+    nominal(base_dir="/tmp")
     assert seen == [("path/to/dataset.mcap", "path/to/map.yaml")]
 
 
@@ -182,6 +182,6 @@ def test_input_hook_called_once_regardless_of_variants_and_iterations():
         call_count += 1
         return "path/to/dataset.mcap"
 
-    nominal(output_dir="/tmp")
+    nominal(base_dir="/tmp")
 
     assert call_count == 1
