@@ -304,7 +304,16 @@ class CommandProxy:
             stdout, stderr = self.open_streams(per_call_log_output)
             try:
                 proc = self._make_popen(argv, stdout, stderr)
-                proc.wait()
+                try:
+                    proc.wait()
+                finally:
+                    if proc.poll() is None:
+                        proc.kill()
+                        proc.wait()
+                    if stdout:
+                        stdout.close()
+                    if stderr:
+                        stderr.close()
             finally:
                 if stdout:
                     stdout.close()
