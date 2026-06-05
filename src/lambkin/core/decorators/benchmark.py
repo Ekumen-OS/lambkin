@@ -157,6 +157,13 @@ def benchmark(variants, num_iterations):
             logger.info("Starting benchmark: %d run(s) total.", total_runs)
             source = Source(path=inspect.getfile(fn))
 
+            # Determine base_dir for all benchmark outputs.
+            base_dir = (
+                output_dir
+                if output_dir
+                else source.path.parent / defaults.BENCHMARKS_DIRNAME
+            )
+
             # The base context is used to resolve inputs and write variants.yaml.
             # A side effect is that creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this
@@ -168,8 +175,8 @@ def benchmark(variants, num_iterations):
                 iteration=0,
                 options=options,
                 source=source,
+                base_dir=base_dir,
                 variant_index=0,
-                output_dir=output_dir,
             ) as base_ctx:
                 # TODO(teresa-ortega): Consider an alternative approach for managing
                 # the base context.
@@ -196,9 +203,9 @@ def benchmark(variants, num_iterations):
                         iteration=iteration,
                         options=options,
                         source=source,
+                        base_dir=base_dir,
                         inputs=resolved_inputs,
                         variant_index=variant_index,
-                        output_dir=output_dir,
                     ) as ctx:
                         fn(ctx)
             # Calculate total elapsed time

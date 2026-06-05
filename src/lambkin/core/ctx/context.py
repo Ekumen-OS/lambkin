@@ -38,43 +38,8 @@ from lambkin.core.process.cgroup import (
 )
 from lambkin.core.shell import ShellProxy
 
+from .paths import RunPaths
 from .source import Source
-
-
-class OutputInfo:
-    """Output paths for this variant + iteration.
-
-    Folders are created lazily — only when the path is first accessed.
-
-    Attributes:
-        base_dir: Base output folder for the benchmark (e.g. results/).
-        variant_dir: Root folder for this variant (e.g. results/var_1/).
-        iteration_dir: Folder for the current iteration (e.g. results/var_1/iter_1/).
-    """
-
-    def __init__(self, base_dir: Path, variant_dir: Path, iteration_dir: Path) -> None:
-        """Initialize the output paths for one (variant, iteration) pair.
-
-        Args:
-            base_dir (Path): Base output folder for benchmark.(e.g. results/).
-            variant_dir (Path): Root output folder for this variant
-                (e.g. results/var_1/).
-            iteration_dir (Path): Output folder for the
-                current iteration (e.g. results/var_1/iter_1/).
-        """
-        self.variant_dir = Path(variant_dir)
-        self.base_dir = Path(base_dir)
-        self.iteration_dir = Path(iteration_dir)
-
-
-def _variant_folder_name(index: int) -> str:
-    """Build the variant folder name from its index."""
-    return f"var_{index + 1}"
-
-
-def _iteration_folder_name(iteration: int) -> str:
-    """Build the per-iteration folder name."""
-    return f"iter_{iteration + 1}"
 
 
 @dataclass(frozen=True)
@@ -86,7 +51,6 @@ class Context:
     folders on disk.
 
     Attributes:
-        BENCHMARKS_DIRNAME (str): Name for the benchmarks directory.
         variation: Namespaced algorithm parameters for this run.
             All key-value pairs from the variant dict are exposed as attributes.
         source: Source object describing the benchmark script being executed.
@@ -94,9 +58,8 @@ class Context:
         options: Namespaced runtime options.
             All key-value pairs from the options dict are exposed as attributes.
         output: Namespaced output paths.
+        paths: Output paths for this (variant, iteration) run.
     """
-
-    BENCHMARKS_DIRNAME = "results"
 
     def __init__(
         self,
@@ -104,9 +67,9 @@ class Context:
         iteration: int,
         options: dict[str, Any],
         source: Source,
+        base_dir: Path | str,
         inputs: SimpleNamespace | None = None,
         variant_index: int = 0,
-        output_dir: Path | str | None = None,
     ) -> None:
         """Initialize a Context for one (variant, iteration) benchmark run.
 
@@ -121,19 +84,18 @@ class Context:
             iteration (int): Zero-based repetition index within this variant.
                 Controls the ``iter_<N>`` subfolder name under the variant
                 directory, where ``N = iteration + 1``.
+            options (dict): Runtime options, as defined by the user.
+                All key-value pairs are exposed as attributes on ``ctx.options``.
             source (Source): Source object describing the benchmark script being
                 executed. Its parent directory is used as the default output
                 directory.
-            options (dict): Runtime options, as defined by the user.
-                All key-value pairs are exposed as attributes on ``ctx.options``.
+            base_dir: Root directory for all benchmark results.
             inputs (SimpleNamespace | None): Namespaced input information.
                 Defaults to None.
             variant_index (int): Zero-based index of this variant within the
                 benchmark sweep. Controls the ``var_<N>`` subfolder name under
                 the output directory, where ``N = variant_index + 1``.
                 Defaults to 0.
-            output_dir (Path | str | None): Root directory for all benchmark
-                results. If not provided, defaults to ``source.path.parent``.
         """
         # ctx.variant
         object.__setattr__(self, "variant", SimpleNamespace(**variant))
@@ -153,35 +115,18 @@ class Context:
         # ctx._variant_index
         object.__setattr__(self, "_variant_index", variant_index)
 
-        # TODO(teresa-ortega): Consider moving path construction logic into
-        # OutputInfo itself, giving it a constructor that takes base_dir,
-        # variation_index, and iteration and derives variation_dir and
-        # iteration_dir internally. This would make OutputInfo a cohesive object
-        # that owns everything path-related
-
-        # ctx.output
-        base = (
-            Path(output_dir)
-            if output_dir
-            else source.path.parent / Context.BENCHMARKS_DIRNAME
-        )
-        variant_dir = base / _variant_folder_name(variant_index)
-        iteration_dir = variant_dir / _iteration_folder_name(iteration)
+        # ctx.paths — derived internally from base_dir and indices
         object.__setattr__(
             self,
-            "output",
-            OutputInfo(
-                base_dir=base,
-                variant_dir=variant_dir,
-                iteration_dir=iteration_dir,
-            ),
+            "paths",
+            RunPaths.from_indices(base_dir, variant_index, iteration),
         )
 
         self._setup_directories()
 
         iteration_cgroup = make_iteration_cgroup(
             find_delegated_cgroup(),
-            iteration_dir,
+            self.paths.iteration_dir,
         )
         object.__setattr__(self, "_iteration_cgroup", iteration_cgroup)
         # ctx.shell
@@ -190,7 +135,7 @@ class Context:
             "shell",
             ShellProxy(
                 dry_run=getattr(self.options, "dry_run", defaults.DRY_RUN),
-                cwd=iteration_dir,
+                cwd=self.paths.iteration_dir,
                 cgroup=iteration_cgroup,
                 log_output=getattr(self.options, "log_output", defaults.LOG_OUTPUT),
             ),
@@ -213,19 +158,19 @@ class Context:
             "options": vars(self.options),
             "source": str(self.source.path),
             "output": {
-                "base_dir": str(self.output.base_dir),
-                "variant_dir": str(self.output.variant_dir),
-                "iteration_dir": str(self.output.iteration_dir),
+                "base_dir": str(self.paths.base_dir),
+                "variant_dir": str(self.paths.variant_dir),
+                "iteration_dir": str(self.paths.iteration_dir),
             },
         }
-        meta_path = self.output.iteration_dir / "lambkin_metadata.yaml"
+        meta_path = self.paths.iteration_dir / "lambkin_metadata.yaml"
         with open(meta_path, "w") as f:
             yaml.dump(metadata, f, default_flow_style=False, sort_keys=False)
 
     def _setup_directories(self) -> None:
         """Create variant and iteration directories."""
-        self.output.variant_dir.mkdir(parents=True, exist_ok=True)
-        self.output.iteration_dir.mkdir(parents=True, exist_ok=True)
+        self.paths.variant_dir.mkdir(parents=True, exist_ok=True)
+        self.paths.iteration_dir.mkdir(parents=True, exist_ok=True)
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the Context state."""
@@ -237,8 +182,8 @@ class Context:
             f"  source        = {self.source},\n"
             f"  inputs        = {inputs},\n"
             f"  options       = {vars(self.options)},\n"
-            f"  variant_dir   = {self.output.variant_dir},\n"
-            f"  iteration_dir = {self.output.iteration_dir}\n"
+            f"  variant_dir   = {self.paths.variant_dir},\n"
+            f"  iteration_dir = {self.paths.iteration_dir}\n"
             f")"
         )
 

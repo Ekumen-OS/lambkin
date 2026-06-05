@@ -19,9 +19,11 @@ for a single (variation, iteration) run.
 """
 
 from .context import Context
+from .paths import RunPaths
 from .source import Source
 
 __all__ = [
     "Context",
+    "RunPaths",
     "Source",
 ]
