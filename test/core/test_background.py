@@ -14,6 +14,7 @@
 
 """Unit tests for background process management via cgroups v2."""
 
+import signal
 import time
 
 import pytest
@@ -135,6 +136,11 @@ def test_background_process_raises_if_dies_unexpectedly(tmp_path):
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    signal.signal(
+        signal.SIGUSR1,
+        lambda s, f: (_ for _ in ()).throw(LambkinProcessDiedUnexpectedlyError([], 1)),
+    )
 
     shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
     with pytest.raises(LambkinProcessDiedUnexpectedlyError):
