@@ -103,6 +103,67 @@ def _show_options(fn) -> None:
     click.echo(formatter.getvalue(), nl=False)
 
 
+def _list_variants(variants) -> None:
+    """Print all variants with their var_N number to stdout."""
+    width = len(str(len(variants)))
+    click.echo("Available variants:")
+    for i, variant in enumerate(variants):
+        prefix = f"  [{i + 1:{width}}]  "
+        indent = " " * len(prefix)
+        pairs = list(variant.items())
+        click.echo(f"{prefix}{pairs[0][0]}={pairs[0][1]}")
+        for k, v in pairs[1:]:
+            click.echo(f"{indent}{k}={v}")
+        click.echo()
+
+
+def _parse_index_list(raw: str, label: str) -> set[int]:
+    """Parse a comma-separated string of var_N folder numbers into a set.
+
+    Tokens can be plain numbers or ranges in start:end format (inclusive on
+    both ends), e.g. "3:5,42" expands to {3, 4, 5, 42}.
+
+    Args:
+        raw: Comma-separated numbers or ranges matching folder names, e.g.
+            "3:5,42" to select var_3/, var_4/, var_5/, var_42/.
+        label: Human-readable name used in error messages (e.g. "variant").
+
+    Returns:
+        The parsed numbers.
+
+    Raises:
+        click.BadParameter: If any token is not a positive integer or a valid
+            start:end range.
+    """
+    result = set()
+    for token in raw.split(","):
+        token = token.strip()
+        if ":" in token:
+            parts = token.split(":")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise click.BadParameter(
+                    f"Invalid {label} range {token!r}: must be start:end "
+                    f"with positive integers (e.g. 3:5).",
+                    param_hint=f"--{label}s",
+                )
+            start, end = int(parts[0]), int(parts[1])
+            if start < 1 or end < start:
+                raise click.BadParameter(
+                    f"Invalid {label} range {token!r}: start must be >= 1 "
+                    f"and end must be >= start.",
+                    param_hint=f"--{label}s",
+                )
+            result.update(range(start, end + 1))
+        else:
+            if not token.isdigit() or int(token) < 1:
+                raise click.BadParameter(
+                    f"Invalid {label} index {token!r}: must be a positive integer.",
+                    param_hint=f"--{label}s",
+                )
+            result.add(int(token))
+    return result
+
+
 def _parse_options(fn, cli_args):
     """Parse CLI options from fn.__lambkin_options__ and return a dict."""
     user_options = getattr(fn, "__lambkin_options__", [])
@@ -150,11 +211,39 @@ def benchmark(variants, num_iterations):
             if options.get("show_options"):
                 _show_options(fn)
                 sys.exit(0)
+            if options.get("list_variants"):
+                _list_variants(variants)
+                sys.exit(0)
             log_level = options.get("log_level", defaults.LOG_LEVEL)
+            cli_variants = options.get("variants")
+
+            # Configure the logging level for the SDK.
             configure_logging(log_level)
-            # Calculate total runs for logging purposes.
-            total_runs = len(variants) * num_iterations
-            logger.info("Starting benchmark: %d run(s) total.", total_runs)
+
+            # Resolve variant and iteration filters from CLI options.
+            # Numbers match the var_N / iter_N folder names on disk.
+            selected_variants = (
+                _parse_index_list(cli_variants, "variant") if cli_variants else None
+            )
+
+            logger.info(
+                "Starting benchmark: %d variant(s), %d iteration(s) each.",
+                len(variants), num_iterations,
+            )
+            if selected_variants:
+                selected_count = len(selected_variants)
+                logger.info(
+                    "Selected variants: %s (%d/%d).",
+                    ", ".join(f"var_{i}" for i in sorted(selected_variants)),
+                    selected_count,
+                    len(variants),
+                )
+            else:
+                selected_count = len(variants)
+            total_runs = selected_count * num_iterations
+            current_run = 0
+
+            # Create Source object
             source = Source(path=inspect.getfile(fn))
 
             # Determine base_dir for all benchmark outputs.
@@ -192,11 +281,17 @@ def benchmark(variants, num_iterations):
 
             # Calculate start time
             start_time = time.monotonic()
+
             # Loop over variants and iterations, creating a new Context for each run.
+            # variant_index is always the original 0-based position in the full
+            # variants list so that output folder numbers (var_N) are stable
+            # regardless of which subset is selected at the CLI.
             for variant_index, variant in enumerate(variants):
+                if selected_variants and (variant_index + 1) not in selected_variants:
+                    continue
                 for iteration in range(num_iterations):
                     # Log the current run number and total runs to track progress.
-                    current_run = variant_index * num_iterations + iteration + 1
+                    current_run += 1
                     logger.info("Benchmark run %d/%d", current_run, total_runs)
                     with Context(
                         variant=variant,
@@ -208,6 +303,7 @@ def benchmark(variants, num_iterations):
                         variant_index=variant_index,
                     ) as ctx:
                         fn(ctx)
+
             # Calculate total elapsed time
             logger.info(
                 "Benchmark finished in %s.",
