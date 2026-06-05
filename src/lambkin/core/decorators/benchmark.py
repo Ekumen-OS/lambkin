@@ -62,7 +62,7 @@ def _format_elapsed(seconds: float) -> str:
     durations are truncated to whole seconds.
 
     Args:
-        seconds: Elapsed time in seconds, as returned by ``time.monotonic()``.
+        seconds (float): Elapsed time in seconds, as returned by ``time.monotonic()``.
 
     Returns:
         A human-readable elapsed time string.
