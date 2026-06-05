@@ -156,11 +156,12 @@ def benchmark(variants, num_iterations):
             total_runs = len(variants) * num_iterations
             logger.info("Starting benchmark: %d run(s) total.", total_runs)
             source = Source(path=inspect.getfile(fn))
-            # The base context creates a directory for variant 1 / iteration 1
+
+            # The base context is used to resolve inputs and write variants.yaml.
+            # A side effect is that creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this
-            # point in time.
-            # This directory will later be overwritten with the
-            # actual data collected for variant 1 / iteration 1 during
+            # point in time. However, this directory will later be overwritten
+            # with the actual data collected for variant 1 / iteration 1 during
             # execution.
             with Context(
                 variant={},
@@ -181,6 +182,7 @@ def benchmark(variants, num_iterations):
                     yaml.dump(
                         variants_map, f, default_flow_style=False, sort_keys=False
                     )
+
             # Calculate start time
             start_time = time.monotonic()
             # Loop over variants and iterations, creating a new Context for each run.
