@@ -18,12 +18,32 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from lambkin.common import defaults
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
-from lambkin.core.decorators.benchmark import _parse_options, benchmark
+from lambkin.core.decorators.benchmark import _format_elapsed, _parse_options, benchmark
 from lambkin.core.decorators.option import option
+
+
+@pytest.mark.parametrize(
+    "seconds,expected",
+    [
+        (0.0, "0.0000s"),
+        (0.0023, "0.0023s"),
+        (59.9999, "59.9999s"),
+        (60.0, "1m 00s"),
+        (103.0, "1m 43s"),
+        (3600.0, "1h 00m 00s"),
+        (3661.0, "1h 01m 01s"),
+        (86400.0, "1d 00h 00m 00s"),
+        (2 * 86400 + 3 * 3600 + 15 * 60 + 7, "2d 03h 15m 07s"),
+    ],
+)
+def test_format_elapsed(seconds, expected):
+    """_format_elapsed formats durations correctly across all time scales."""
+    assert _format_elapsed(seconds) == expected
 
 
 @pytest.fixture
@@ -271,3 +291,20 @@ def test_parse_options_log_level_has_a_default():
     result = _parse_options(fn, [])
     assert "log_level" in result
     assert result["log_level"] == defaults.LOG_LEVEL
+
+
+def test_benchmark_writes_variants_yaml(variants, tmp_path):
+    """Benchmark writes a variants.yaml file mapping var_N to variant dicts."""
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        pass
+
+    fn(output_dir=tmp_path)
+
+    variants_file = tmp_path / "variants.yaml"
+    assert variants_file.exists()
+
+    content = yaml.safe_load(variants_file.read_text())
+    expected = {f"var_{i + 1}": variant for i, variant in enumerate(variants)}
+    assert content == expected

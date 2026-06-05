@@ -29,9 +29,12 @@ Raises ValueError if variants is empty.
 
 import functools
 import inspect
+import logging
 import sys
+import time
 
 import click
+import yaml
 from click.formatting import HelpFormatter
 
 from lambkin.common import defaults
@@ -40,6 +43,41 @@ from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
+
+logger = logging.getLogger(__name__)
+
+
+def _format_elapsed(seconds: float) -> str:
+    """Format an elapsed time into a human-readable string.
+
+    Scales the output unit to the duration so the result is always easy to
+    read at a glance, from sub-second runs to multi-day sweeps:
+
+    - Under 60 s:  ``'0.0023s'``
+    - Under 1 h:   ``'45m 03s'``
+    - Under 1 day: ``'2h 15m 07s'``
+    - 1 day or more: ``'2d 03h 15m 07s'``
+
+    Sub-second precision is kept only for runs under 60 seconds; longer
+    durations are truncated to whole seconds.
+
+    Args:
+        seconds (float): Elapsed time in seconds, as returned by ``time.monotonic()``.
+
+    Returns:
+        A human-readable elapsed time string.
+    """
+    if seconds < 60:
+        return f"{seconds:.4f}s"
+    total = int(seconds)
+    d, remainder = divmod(total, 86400)
+    h, remainder = divmod(remainder, 3600)
+    m, s = divmod(remainder, 60)
+    if d > 0:
+        return f"{d}d {h:02d}h {m:02d}m {s:02d}s"
+    if h > 0:
+        return f"{h}h {m:02d}m {s:02d}s"
+    return f"{m}m {s:02d}s"
 
 
 def _show_options(fn) -> None:
@@ -114,12 +152,16 @@ def benchmark(variants, num_iterations):
                 sys.exit(0)
             log_level = options.get("log_level", defaults.LOG_LEVEL)
             configure_logging(log_level)
+            # Calculate total runs for logging purposes.
+            total_runs = len(variants) * num_iterations
+            logger.info("Starting benchmark: %d run(s) total.", total_runs)
             source = Source(path=inspect.getfile(fn))
-            # The base context creates a directory for variant 1 / iteration 1
+
+            # The base context is used to resolve inputs and write variants.yaml.
+            # A side effect is that creates a directory for variant 1 / iteration 1
             # containing a metadata file with the information available at this
-            # point in time.
-            # This directory will later be overwritten with the
-            # actual data collected for variant 1 / iteration 1 during
+            # point in time. However, this directory will later be overwritten
+            # with the actual data collected for variant 1 / iteration 1 during
             # execution.
             with Context(
                 variant={},
@@ -132,8 +174,23 @@ def benchmark(variants, num_iterations):
                 # TODO(teresa-ortega): Consider an alternative approach for managing
                 # the base context.
                 resolved_inputs = inputs.resolve(base_ctx)
+                variants_map = {
+                    f"var_{i + 1}": variant for i, variant in enumerate(variants)
+                }
+                variants_map_path = base_ctx.output.base_dir / "variants.yaml"
+                with open(variants_map_path, "w") as f:
+                    yaml.dump(
+                        variants_map, f, default_flow_style=False, sort_keys=False
+                    )
+
+            # Calculate start time
+            start_time = time.monotonic()
+            # Loop over variants and iterations, creating a new Context for each run.
             for variant_index, variant in enumerate(variants):
                 for iteration in range(num_iterations):
+                    # Log the current run number and total runs to track progress.
+                    current_run = variant_index * num_iterations + iteration + 1
+                    logger.info("Benchmark run %d/%d", current_run, total_runs)
                     with Context(
                         variant=variant,
                         iteration=iteration,
@@ -144,6 +201,11 @@ def benchmark(variants, num_iterations):
                         output_dir=output_dir,
                     ) as ctx:
                         fn(ctx)
+            # Calculate total elapsed time
+            logger.info(
+                "Benchmark finished in %s.",
+                _format_elapsed(time.monotonic() - start_time),
+            )
 
         wrapper.input = inputs.register
         return wrapper
