@@ -22,27 +22,8 @@ import yaml
 
 from lambkin.common import defaults
 from lambkin.core.ctx.source import Source
-from lambkin.core.decorators.benchmark import _format_elapsed, _parse_options, benchmark
+from lambkin.core.decorators.benchmark import _parse_options, benchmark
 from lambkin.core.decorators.option import option
-
-
-@pytest.mark.parametrize(
-    "seconds,expected",
-    [
-        (0.0, "0.0000s"),
-        (0.0023, "0.0023s"),
-        (59.9999, "59.9999s"),
-        (60.0, "1m 00s"),
-        (103.0, "1m 43s"),
-        (3600.0, "1h 00m 00s"),
-        (3661.0, "1h 01m 01s"),
-        (86400.0, "1d 00h 00m 00s"),
-        (2 * 86400 + 3 * 3600 + 15 * 60 + 7, "2d 03h 15m 07s"),
-    ],
-)
-def test_format_elapsed(seconds, expected):
-    """_format_elapsed formats durations correctly across all time scales."""
-    assert _format_elapsed(seconds) == expected
 
 
 @pytest.fixture
@@ -66,6 +47,8 @@ def test_parse_options_returns_empty_dict_when_no_options():
         "show_options": False,
         "log_output": defaults.LOG_OUTPUT,
         "log_level": defaults.LOG_LEVEL,
+        "show_variants": False,
+        "variants": None,
     }
 
 
@@ -83,6 +66,8 @@ def test_parse_options_returns_defaults_when_no_args():
         "show_options": False,
         "log_output": defaults.LOG_OUTPUT,
         "log_level": defaults.LOG_LEVEL,
+        "show_variants": False,
+        "variants": None,
         "clock_rate": 100.0,
         "sensor_topic": "/scan",
     }
@@ -102,6 +87,8 @@ def test_parse_options_returns_cli_values_when_provided():
         "show_options": False,
         "log_output": defaults.LOG_OUTPUT,
         "log_level": defaults.LOG_LEVEL,
+        "show_variants": False,
+        "variants": None,
         "clock_rate": 50.0,
         "sensor_topic": "/scan",
     }

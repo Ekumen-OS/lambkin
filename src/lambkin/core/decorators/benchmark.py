@@ -43,45 +43,22 @@ from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
+from lambkin.utils import format_elapsed_time
 
 logger = logging.getLogger(__name__)
 
 
-def _format_elapsed(seconds: float) -> str:
-    """Format an elapsed time into a human-readable string.
+def _show_options(fn) -> None:
+    """Print SDK and user-defined options to stdout.
 
-    Scales the output unit to the duration so the result is always easy to
-    read at a glance, from sub-second runs to multi-day sweeps:
-
-    - Under 60 s:  ``'0.0023s'``
-    - Under 1 h:   ``'45m 03s'``
-    - Under 1 day: ``'2h 15m 07s'``
-    - 1 day or more: ``'2d 03h 15m 07s'``
-
-    Sub-second precision is kept only for runs under 60 seconds; longer
-    durations are truncated to whole seconds.
+    Displays two sections: SDK options (always available) and custom options
+    registered via ``@lambkin.option``. Each option is shown with its flag
+    name, help text, and default value if one is set.
 
     Args:
-        seconds (float): Elapsed time in seconds, as returned by ``time.monotonic()``.
-
-    Returns:
-        A human-readable elapsed time string.
+        fn: The decorated benchmark function, which may carry a
+            ``__lambkin_options__`` attribute populated by ``@lambkin.option``.
     """
-    if seconds < 60:
-        return f"{seconds:.4f}s"
-    total = int(seconds)
-    d, remainder = divmod(total, 86400)
-    h, remainder = divmod(remainder, 3600)
-    m, s = divmod(remainder, 60)
-    if d > 0:
-        return f"{d}d {h:02d}h {m:02d}m {s:02d}s"
-    if h > 0:
-        return f"{h}h {m:02d}m {s:02d}s"
-    return f"{m}m {s:02d}s"
-
-
-def _show_options(fn) -> None:
-    """Print all options registered via @lambkin.option on fn."""
     user_options = getattr(fn, "__lambkin_options__", [])
     formatter = HelpFormatter()
     with formatter.section("SDK Options"):
@@ -103,12 +80,21 @@ def _show_options(fn) -> None:
     click.echo(formatter.getvalue(), nl=False)
 
 
-def _list_variants(variants) -> None:
-    """Print all variants with their var_N number to stdout."""
+def _show_variants(variants) -> None:
+    """Print all variants with their var_N number to stdout.
+
+    Each variant is printed as a block with its number and key=value pairs,
+    one parameter per line. The number column is padded so that all parameter
+    keys align regardless of how many digits the variant count has.
+
+    Args:
+        variants: List of variant dicts to print.
+    """
     width = len(str(len(variants)))
     click.echo("Available variants:")
     for i, variant in enumerate(variants):
-        prefix = f"  [{i + 1:{width}}]  "
+        number = f"[{i + 1}]"
+        prefix = f"  {number:<{width + 2}}  "
         indent = " " * len(prefix)
         pairs = list(variant.items())
         click.echo(f"{prefix}{pairs[0][0]}={pairs[0][1]}")
@@ -117,7 +103,7 @@ def _list_variants(variants) -> None:
         click.echo()
 
 
-def _parse_index_list(raw: str, label: str) -> set[int]:
+def _parse_index_list(raw: str, label: str, max_value: int | None = None) -> set[int]:
     """Parse a comma-separated string of var_N folder numbers into a set.
 
     Tokens can be plain numbers or ranges in start:end format (inclusive on
@@ -127,17 +113,21 @@ def _parse_index_list(raw: str, label: str) -> set[int]:
         raw: Comma-separated numbers or ranges matching folder names, e.g.
             "3:5,42" to select var_3/, var_4/, var_5/, var_42/.
         label: Human-readable name used in error messages (e.g. "variant").
+        max_value: Upper bound for all indices (inclusive). If provided, any
+            index exceeding this value raises a BadParameter error.
 
     Returns:
         The parsed numbers.
 
     Raises:
         click.BadParameter: If any token is not a positive integer or a valid
-            start:end range.
+            start:end range, or within the allowed range.
     """
     result = set()
     for token in raw.split(","):
         token = token.strip()
+        # Check if the token is a range (contains ":") or a single number, and parse
+        # accordingly.
         if ":" in token:
             parts = token.split(":")
             if len(parts) != 2 or not all(p.isdigit() for p in parts):
@@ -161,11 +151,33 @@ def _parse_index_list(raw: str, label: str) -> set[int]:
                     param_hint=f"--{label}s",
                 )
             result.add(int(token))
+    # Check that any provided indices do not exceed the maximum allowed value.
+    if max_value is not None:
+        out_of_bounds = {i for i in result if i > max_value}
+        if out_of_bounds:
+            raise click.BadParameter(
+                f"Index {', '.join(str(i) for i in sorted(out_of_bounds))} out of "
+                f"range (1-{max_value}).",
+                param_hint=f"--{label}s",
+            )
     return result
 
 
 def _parse_options(fn, cli_args):
-    """Parse CLI options from fn.__lambkin_options__ and return a dict."""
+    """Parse CLI options for a benchmark run.
+
+    Collects SDK options and any user-defined options registered on ``fn``
+    via ``@lambkin.option``, builds an internal Click command, and parses
+    the given argument list against it.
+
+    Args:
+        fn: The decorated benchmark function, which may carry a
+            ``__lambkin_options__`` attribute populated by ``@lambkin.option``.
+        cli_args: The argument list to parse, typically ``sys.argv[1:]``.
+
+    Returns:
+        A dict mapping normalized option names to their parsed values.
+    """
     user_options = getattr(fn, "__lambkin_options__", [])
     all_options = list(SDK_OPTIONS) + user_options
     if not all_options:
@@ -206,14 +218,19 @@ def benchmark(variants, num_iterations):
 
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
+            # Parse CLI arguments, falling back to sys.argv if no args are provided.
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
+
+            # Handle early-exit flags before any benchmark setup.
             if options.get("show_options"):
                 _show_options(fn)
                 sys.exit(0)
-            if options.get("list_variants"):
-                _list_variants(variants)
+            if options.get("show_variants"):
+                _show_variants(variants)
                 sys.exit(0)
+
+            # Extract SDK options for use during the benchmark run.
             log_level = options.get("log_level", defaults.LOG_LEVEL)
             cli_variants = options.get("variants")
 
@@ -223,12 +240,17 @@ def benchmark(variants, num_iterations):
             # Resolve variant and iteration filters from CLI options.
             # Numbers match the var_N / iter_N folder names on disk.
             selected_variants = (
-                _parse_index_list(cli_variants, "variant") if cli_variants else None
+                _parse_index_list(cli_variants, "variant", max_value=len(variants))
+                if cli_variants
+                else None
             )
 
+            # Log benchmark scope and compute total runs against the effective
+            # selection — all variants, or only those requested via --variants.
             logger.info(
                 "Starting benchmark: %d variant(s), %d iteration(s) each.",
-                len(variants), num_iterations,
+                len(variants),
+                num_iterations,
             )
             if selected_variants:
                 selected_count = len(selected_variants)
@@ -243,7 +265,9 @@ def benchmark(variants, num_iterations):
             total_runs = selected_count * num_iterations
             current_run = 0
 
-            # Create Source object
+            # Create the Source object from the benchmark script's path.
+            # This is used for Context construction and to derive the default base_dir
+            # when no output directory is explicitly provided.
             source = Source(path=inspect.getfile(fn))
 
             # Determine base_dir for all benchmark outputs.
@@ -304,12 +328,14 @@ def benchmark(variants, num_iterations):
                     ) as ctx:
                         fn(ctx)
 
-            # Calculate total elapsed time
+            # Calculate and print total elapsed time, useful for user introspection.
             logger.info(
                 "Benchmark finished in %s.",
-                _format_elapsed(time.monotonic() - start_time),
+                format_elapsed_time(time.monotonic() - start_time),
             )
 
+        # Expose the input registration hook so users can decorate input providers
+        # with @my_benchmark.input on the returned wrapper.
         wrapper.input = inputs.register
         return wrapper
 
