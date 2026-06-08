@@ -15,10 +15,11 @@
 """Integration test: inner background process dies unexpectedly."""
 
 import shutil
-import sys
 import tempfile
 import time
 from pathlib import Path
+
+import pytest
 
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
@@ -38,43 +39,28 @@ COOPERATIVE = (
 DIES_QUICKLY = "import time; time.sleep(0.5)"
 
 
-def main():
-    """Run integration test for unexpected death of an inner background process.
+def test_unexpected_death():
+    """Verify that unexpected death of an inner background process is detected.
 
-    Verifies that when an inner background process dies before the context
-    manager exits, LambkinProcessDiedUnexpectedlyError is raised and the
-    outer background process is also terminated.
+    When an inner background process dies before the context manager exits,
+    LambkinProcessDiedUnexpectedlyError must be raised and the outer
+    background process must also be terminated with its cgroup cleaned up.
     """
     iteration_dir = Path(tempfile.mkdtemp())
     try:
         cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-
         shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+        cgroup1 = None
+        cgroup2 = None
 
-        print("Starting outer background process...")
-        try:
+        with pytest.raises(LambkinProcessDiedUnexpectedlyError):
             with background(shell.python3, "-c", COOPERATIVE) as bp1:
-                print(f"Outer process started — pid={bp1._proc.pid}")
-                print("Starting inner background process that will die quickly...")
                 cgroup1 = bp1._cgroup
                 with background(shell.python3, "-c", DIES_QUICKLY) as bp2:
-                    print(f"Inner process started — pid={bp2._proc.pid}")
-                    print("Waiting for inner process to die...")
                     cgroup2 = bp2._cgroup
                     time.sleep(2)
-        except LambkinProcessDiedUnexpectedlyError as e:
-            print(f"LambkinProcessDiedUnexpectedlyError raised correctly: {e}")
-            print(f"Outer process dead: {bp1._proc.poll() is not None}")
-            assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-            assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-            print("Unexpected death test passed")
-            return
 
-        print("ERROR: LambkinProcessDiedUnexpectedlyError was not raised")
+        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
     finally:
         shutil.rmtree(iteration_dir, ignore_errors=True)
-    sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

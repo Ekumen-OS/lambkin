@@ -15,10 +15,11 @@
 """Integration test: background process raises an exception intentionally."""
 
 import shutil
-import sys
 import tempfile
 import time
 from pathlib import Path
+
+import pytest
 
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
@@ -42,43 +43,30 @@ RAISES = (
 )
 
 
-def main():
-    """Run integration test for an intentional exception in a background process.
+def test_exception_in_background():
+    """Verify that an unhandled exception in a background process is detected.
 
-    Verifies that when a background process raises an unhandled exception and
-    exits with a non-zero return code, LambkinProcessDiedUnexpectedlyError is
-    raised and all other background processes are terminated.
+    When a background process raises an unhandled exception and exits with a
+    non-zero return code, LambkinProcessDiedUnexpectedlyError must be raised
+    and all other background processes must be terminated with their cgroups
+    cleaned up.
     """
     iteration_dir = Path(tempfile.mkdtemp())
     try:
         cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-
         shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+        cgroup1 = None
+        cgroup2 = None
 
-        print("Starting outer background process...")
-        try:
+        with pytest.raises(LambkinProcessDiedUnexpectedlyError):
             with background(shell.python3, "-c", COOPERATIVE) as bp1:
-                print(f"Outer process started — pid={bp1._proc.pid}")
                 cgroup1 = bp1._cgroup
                 with background(shell.python3, "-c", RAISES) as bp2:
-                    print(f"Inner process started — pid={bp2._proc.pid}")
-                    print("Waiting for inner process to raise and die...")
                     cgroup2 = bp2._cgroup
                     time.sleep(2)
-        except LambkinProcessDiedUnexpectedlyError as e:
-            print(f"LambkinProcessDiedUnexpectedlyError raised correctly: {e}")
-            print(f"Inner process dead: {bp2._proc.poll() is not None}")
-            print(f"Outer process dead: {bp1._proc.poll() is not None}")
-            assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-            assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-            print("Intentional exception in background test passed ")
-            return
 
-        print("ERROR: LambkinProcessDiedUnexpectedlyError was not raised ")
+        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
+
     finally:
         shutil.rmtree(iteration_dir, ignore_errors=True)
-    sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
