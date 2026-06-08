@@ -15,10 +15,11 @@
 """Integration test: foreground fails and background processes are cleaned up."""
 
 import shutil
-import sys
 import tempfile
 import time
 from pathlib import Path
+
+import pytest
 
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import (
@@ -34,47 +35,34 @@ COOPERATIVE = (
     "time.sleep(30)"
 )
 
+FOREGROUND_FAILURE_MESSAGE = "Foreground failed intentionally"
 
-def main():
-    """Run integration test for foreground failure with background processes running.
 
-    Verifies that when the foreground raises an exception, both background
-    processes are terminated cleanly and the original exception is propagated.
+def test_foreground_fails():
+    """Verify that a foreground failure terminates all background processes.
+
+    When the foreground raises an exception, both background processes must
+    be terminated cleanly and the original exception must propagate.
 
     Raises:
-        RuntimeError: Intentionally raised to simulate a foreground failure.
+        RuntimeError: Raised intentionally to simulate a foreground failure.
     """
     iteration_dir = Path(tempfile.mkdtemp())
     try:
         cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-
         shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+        cgroup1 = None
+        cgroup2 = None
 
-        print("Starting outer background process...")
-        try:
+        with pytest.raises(RuntimeError, match=FOREGROUND_FAILURE_MESSAGE):
             with background(shell.python3, "-c", COOPERATIVE) as bp1:
-                print(f"Outer process started — pid={bp1._proc.pid}")
                 cgroup1 = bp1._cgroup
                 with background(shell.python3, "-c", COOPERATIVE) as bp2:
-                    print(f"Inner process started — pid={bp2._proc.pid}")
-                    print("Foreground failing...")
                     cgroup2 = bp2._cgroup
                     time.sleep(0.5)
-                    raise RuntimeError("Foreground failed intentionally")
-        except RuntimeError as e:
-            print(f"RuntimeError propagated correctly: {e}")
-            print(f"Inner process dead: {bp2._proc.poll() is not None}")
-            print(f"Outer process dead: {bp1._proc.poll() is not None}")
-            assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-            assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-            print("Foreground failure test passed")
-            return
+                    raise RuntimeError(FOREGROUND_FAILURE_MESSAGE)
 
-        print("ERROR: RuntimeError was not propagated")
+        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
     finally:
         shutil.rmtree(iteration_dir, ignore_errors=True)
-    sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
