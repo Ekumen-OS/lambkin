@@ -29,10 +29,12 @@ before parsing, so they are always available on ``ctx.options``.
         - ``--show-options``
         - ``--log-output``
         - ``--log-level``
+        - ``--show-variants``
+        - ``--variants``
 
 Note:
-    ``--show-options`` behaves like ``--help``: it prints registered
-    options and exits immediately, never reaching the benchmark body.
+    ``--show-options`` and ``--show-variants`` behave like ``--help``: they
+    print information and exit immediately, never reaching the benchmark body.
 """
 
 import click
@@ -69,5 +71,20 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
         default=defaults.LOG_LEVEL,
         show_default=True,
         help="Log level for lambkin SDK output.",
+    ),
+    click.Option(
+        ["--show-variants"],
+        is_flag=True,
+        default=False,
+        help="Print all variants with their var_N number and exit.",
+    ),
+    click.Option(
+        ["--variants"],
+        default=None,
+        help=(
+            "Comma-separated variant numbers or ranges to run, matching var_N folder "
+            "names (e.g. --variants 3:5,42 runs var_3/, var_4/, var_5/, var_42/). "
+            "Defaults to all variants."
+        ),
     ),
 )
