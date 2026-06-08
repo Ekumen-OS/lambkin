@@ -46,6 +46,7 @@ from lambkin.core.ctx import (
 )
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
+from lambkin.core.decorators.output import OutputRegistry
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
 from lambkin.utils import format_elapsed_time
@@ -234,10 +235,12 @@ def benchmark(variants, num_iterations):
 
     def decorator(fn):
         inputs = InputRegistry()
+        outputs = OutputRegistry()
 
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
             # Parse CLI arguments, falling back to sys.argv if no args are provided.
+            last_ctx = None
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
 
@@ -346,6 +349,7 @@ def benchmark(variants, num_iterations):
         # Expose the input registration hook so users can decorate input providers
         # with @my_benchmark.input on the returned wrapper.
         wrapper.input = inputs.register
+        wrapper.output = outputs.register
         return wrapper
 
     return decorator
