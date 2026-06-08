@@ -17,12 +17,17 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import click
 import pytest
 import yaml
 
 from lambkin.common import defaults
 from lambkin.core.ctx.source import Source
-from lambkin.core.decorators.benchmark import _parse_options, benchmark
+from lambkin.core.decorators.benchmark import (
+    _parse_index_list,
+    _parse_options,
+    benchmark,
+)
 from lambkin.core.decorators.option import option
 
 
@@ -294,3 +299,102 @@ def test_benchmark_writes_variants_yaml(variants, tmp_path):
     content = yaml.safe_load(variants_file.read_text())
     expected = {f"var_{i + 1}": variant for i, variant in enumerate(variants)}
     assert content == expected
+
+
+@pytest.mark.parametrize(
+    "input,max_value,expected",
+    [
+        ("3", None, {3}),
+        ("1,3,5", None, {1, 3, 5}),
+        ("2:5", None, {2, 3, 4, 5}),
+        ("1:3,5", None, {1, 2, 3, 5}),
+        ("3", 3, {3}),
+    ],
+)
+def test_parse_index_list_valid(input, max_value, expected):
+    """_parse_index_list correctly parses valid inputs."""
+    assert _parse_index_list(input, "variant", max_value=max_value) == expected
+
+
+@pytest.mark.parametrize(
+    "raw,max_value",
+    [
+        ("0", None),
+        ("-1", None),
+        ("abc", None),
+        ("5:2", None),
+        ("5", 3),
+        ("2:5", 4),
+    ],
+)
+def test_parse_index_list_invalid(raw, max_value):
+    """_parse_index_list raises BadParameter for invalid inputs."""
+    with pytest.raises(click.exceptions.BadParameter):
+        _parse_index_list(raw, "variant", max_value=max_value)
+
+
+def test_show_variants_exits_with_zero(capsys):
+    """--show-variants exits with code 0."""
+
+    @benchmark(variants=[{"a": 1}], num_iterations=1)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit) as exc:
+        fn(args=["--show-variants"])
+
+    assert exc.value.code == 0
+
+
+@pytest.mark.parametrize(
+    "variants,expected_output",
+    [
+        (
+            [{"sensor_model": "beam", "num_particles": 10}],
+            ["[1]", "sensor_model=beam", "num_particles=10"],
+        ),
+        (
+            [{"sensor_model": "beam"}, {"sensor_model": "likelihood"}],
+            ["[1]", "[2]", "sensor_model=beam", "sensor_model=likelihood"],
+        ),
+    ],
+)
+def test_show_variants_output(capsys, variants, expected_output):
+    """--show-variants prints each variant's number and key=value pairs."""
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit):
+        fn(args=["--show-variants"])
+
+    captured = capsys.readouterr()
+    for expected in expected_output:
+        assert expected in captured.out
+
+
+def test_benchmark_variants_flag_filters_runs(variants, tmp_path):
+    """--variants only runs the selected variants."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(args=["--variants", "1"], base_dir=tmp_path)
+    assert len(contexts) == 1
+    assert contexts[0].variant.sensor_model == variants[0]["sensor_model"]
+    assert contexts[0].variant.num_particles == variants[0]["num_particles"]
+
+
+def test_benchmark_variants_flag_preserves_folder_numbering(variants, tmp_path):
+    """--variants keeps var_N folder names stable relative to the full sweep."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(args=["--variants", "2"], base_dir=tmp_path)
+    assert contexts[0].paths.variant_dir.name == "var_2"
