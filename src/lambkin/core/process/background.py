@@ -105,7 +105,7 @@ class BackgroundProcess:
             BackgroundProcess: This instance.
         """
         if self._dry_run:
-            logger.info("[DRY RUN BG] %s", shlex.join(self._argv))
+            logger.debug("[DRY RUN BG] %s", shlex.join(self._argv))
             return self
 
         self._cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)

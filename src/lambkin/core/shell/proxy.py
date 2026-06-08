@@ -298,7 +298,7 @@ class CommandProxy:
         per_call_log_output = kwargs.pop("log_output", None)
         argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
-            logger.info("[DRY RUN] %s", shlex.join(argv))
+            logger.debug("[DRY RUN] %s", shlex.join(argv))
             return subprocess.CompletedProcess(argv, returncode=0)
         try:
             stdout, stderr = self.open_streams(per_call_log_output)

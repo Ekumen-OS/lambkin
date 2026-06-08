@@ -81,14 +81,17 @@ class LambkinCommand(click.Command):
 @click.command(
     cls=LambkinCommand,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    params=[opt for opt in SDK_OPTIONS if "--log-level" in opt.opts],
 )
 @click.argument("script", type=click.Path(exists=True, path_type=Path))
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-@click.option(
-    "--log-level",
-    type=click.Choice(["debug", "info", "warning", "error"], case_sensitive=False),
-    default="info",
-)
+# @click.option(
+#     "--log-level",
+#     type=click.Choice(
+#         ["debug", "info", "warning", "error", "critical"], case_sensitive=False
+#     ),
+#     default=defaults.LOG_LEVEL,
+# )
 def main(script: Path, args: tuple, log_level: str) -> None:
     """Launch a lambkin benchmark script.
 
