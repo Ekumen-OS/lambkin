@@ -64,6 +64,7 @@ def test_run_with_no_hooks_does_not_raise():
     """run() with no registered hooks completes without error."""
     registry = OutputRegistry()
     registry.run(object())
+<<<<<<< HEAD
 
 
 def test_register_hook_with_no_parameters_raises():
@@ -109,3 +110,5 @@ def test_run_with_none_ctx_raises():
     registry = OutputRegistry()
     with pytest.raises(ValueError, match="context is None"):
         registry.run(None)
+=======
+>>>>>>> d71f6bd (Add nominal.ouput decorator)
