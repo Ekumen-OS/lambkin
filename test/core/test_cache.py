@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for lambkin.common.cache."""
+"""Unit tests for lambkin.core.ctx.cache."""
 
 import pytest
 import yaml
 
-from lambkin.common.cache import compute_run_hash, is_completed
+from lambkin.core.ctx.cache import compute_run_hash, is_completed
 from lambkin.sdk_options import SDK_OPTIONS
 
 METADATA_FILENAME = "lambkin_metadata.yaml"

@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Partial restart cache for lambkin benchmarks.
+"""Partial restart cache for lambkin benchmark contexts.
 
 Provides hash-based caching to skip (variant, iteration) pairs that have
-already completed successfully. The cache key is derived from the variant
-parameters, relevant options, and the benchmark source file contents, so
-that changing any of these invalidates only the affected iterations.
+already completed successfully. The cache key is derived from variant
+parameters, iteration index, and user-defined options. Completion is
+persisted to the iteration metadata file on disk.
 
-Completion is persisted to disk via metadata.yaml, so it survives process
-restarts, crashes, and interruptions.
+SDK options are excluded from the hash automatically to avoid invalidating
+cached results on changes that do not affect benchmark outputs.
 """
 
 from __future__ import annotations

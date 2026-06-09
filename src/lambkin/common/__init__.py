@@ -19,13 +19,10 @@ Provides defaults, named products, and base exceptions.
 
 from lambkin.common import defaults, exceptions
 
-from .cache import compute_run_hash, is_completed
 from .named_product import named_product
 
 __all__ = [
     "defaults",
     "named_product",
     "exceptions",
-    "compute_run_hash",
-    "is_completed",
 ]

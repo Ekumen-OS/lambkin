@@ -31,11 +31,7 @@ from typing import Any
 
 import yaml
 
-from lambkin.common import (
-    compute_run_hash,
-    defaults,
-    is_completed,
-)
+from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
     find_delegated_cgroup,
     kill_cgroup_tree,
@@ -44,6 +40,7 @@ from lambkin.core.process.cgroup import (
 )
 from lambkin.core.shell import ShellProxy
 
+from .cache import compute_run_hash, is_completed
 from .paths import RunPaths
 from .source import Source
 
