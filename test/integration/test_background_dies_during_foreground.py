@@ -58,3 +58,23 @@ def test_background_dies_during_foreground():
         assert not cgroup_exists(cgroup1), "Cgroup should have been removed"
     finally:
         shutil.rmtree(iteration_dir, ignore_errors=True)
+
+
+def test_background_dies_during_foreground_error_message():
+    """Verify that LambkinProcessDiedUnexpectedlyError.
+
+    Checks that the error message reaches the terminal when a background process
+    dies during a blocking foreground.
+    """
+    signals.setup()
+    iteration_dir = Path(tempfile.mkdtemp())
+    try:
+        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+        with pytest.raises(LambkinProcessDiedUnexpectedlyError) as exc_info:
+            with background(shell.python3, "-c", DIES_QUICKLY) as _:
+                shell.python3("-c", COOPERATIVE)
+        assert "python3" in str(exc_info.value)
+        assert "1" in str(exc_info.value)
+    finally:
+        shutil.rmtree(iteration_dir, ignore_errors=True)

@@ -30,8 +30,21 @@ def _make_handler(previous):
     """
 
     def _handle_sigusr1(signum, frame):
-        # SIGUSR1 is a general-purpose signal and could be sent by other
-        # processes or libraries. We only act on it if lambkin set the pending flag.
+        """Handle SIGUSR1 by interrupting proc.wait() or forwarding the signal.
+
+        Raises LambkinSIGUSR1Interrupt if lambkin set the pending flag, which
+        unblocks any foreground process waiting in CommandProxy.__call__.
+        Otherwise forwards to the previous handler to avoid swallowing
+        unrelated SIGUSR1s from other processes or libraries.
+
+        Args:
+            signum: The signal number received.
+            frame: The current stack frame.
+
+        Raises:
+            LambkinSIGUSR1Interrupt: If lambkin set the pending flag before
+                sending SIGUSR1.
+        """
         if sigusr1_pending.is_set():
             sigusr1_pending.clear()
             raise LambkinSIGUSR1Interrupt
