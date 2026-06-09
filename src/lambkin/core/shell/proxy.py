@@ -26,7 +26,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from lambkin.common import defaults
+from lambkin.common import defaults, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -303,9 +303,12 @@ class CommandProxy:
         try:
             stdout, stderr = self.open_streams(per_call_log_output)
             proc = None
+            interrupted = False
             try:
                 proc = self._make_popen(argv, stdout, stderr)
                 proc.wait()
+            except exceptions.LambkinSIGUSR1Interrupt:
+                interrupted = True
             finally:
                 if proc is not None and proc.poll() is None:
                     proc.kill()
@@ -314,9 +317,10 @@ class CommandProxy:
                     stdout.close()
                 if stderr:
                     stderr.close()
-            if proc.returncode != 0:
+            if not interrupted and proc.returncode != 0:
                 raise subprocess.CalledProcessError(proc.returncode, argv)
-            return subprocess.CompletedProcess(argv, returncode=proc.returncode)
+            if not interrupted:
+                return subprocess.CompletedProcess(argv, returncode=proc.returncode)
         except subprocess.CalledProcessError as e:
             raise CommandError(
                 argv,

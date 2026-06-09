@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Integration test: background process raises an exception intentionally."""
+"""Integration test: background process death interrupts a blocking foreground."""
 
 import shutil
 import tempfile
@@ -30,45 +29,32 @@ from lambkin.core.process.cgroup import (
 )
 from lambkin.core.shell.proxy import ShellProxy
 
-signals.setup()
-
 COOPERATIVE = (
     "import signal, sys, time; "
     "signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0)); "
     "time.sleep(30)"
 )
 
-RAISES = (
-    "import time; "
-    "time.sleep(0.5); "
-    "raise RuntimeError('intentional exception in background process')"
-)
+DIES_QUICKLY = "import sys, time; time.sleep(0.5); sys.exit(1)"
 
 
-def test_exception_in_background():
-    """Verify that an unhandled exception in a background process is detected.
+def test_background_dies_during_foreground():
+    """Verify that a background process dying interrupts a blocking foreground.
 
-    When a background process raises an unhandled exception and exits with a
-    non-zero return code, LambkinProcessDiedUnexpectedlyError must be raised
-    and all other background processes must be terminated with their cgroups
-    cleaned up.
+    When a background process dies unexpectedly while a foreground process is
+    blocking the main thread, LambkinProcessDiedUnexpectedlyError must be raised
+    and all cgroups must be cleaned up correctly.
     """
+    signals.setup()
     iteration_dir = Path(tempfile.mkdtemp())
     try:
         cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
         shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
         cgroup1 = None
-        cgroup2 = None
-
         with pytest.raises(LambkinProcessDiedUnexpectedlyError):
-            with background(shell.python3, "-c", COOPERATIVE) as bp1:
+            with background(shell.python3, "-c", DIES_QUICKLY) as bp1:
                 cgroup1 = bp1._cgroup
-                with background(shell.python3, "-c", RAISES) as bp2:
-                    cgroup2 = bp2._cgroup
-                    shell.python3("-c", COOPERATIVE)
-
-        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-
+                shell.python3("-c", COOPERATIVE)
+        assert not cgroup_exists(cgroup1), "Cgroup should have been removed"
     finally:
         shutil.rmtree(iteration_dir, ignore_errors=True)

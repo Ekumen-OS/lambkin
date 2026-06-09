@@ -1,18 +1,35 @@
-# Copyright 2026 Ekumen, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""Shared signalling state for inter-thread communication."""
+"""Shared signalling state for inter-thread communication.
 
+Provides a pending flag that BackgroundProcess monitor threads set before
+sending SIGUSR1 to the main thread, allowing the signal handler to distinguish
+lambkin-originated signals from unrelated SIGUSR1s sent by other processes.
+
+The SIGUSR1 handler is registered in the benchmark script process, not in the
+CLI, because the CLI launches the script as a separate subprocess. BackgroundProcess
+and its monitor thread live in the script's process, so the signal is sent and
+handled there.
+"""
+
+import signal
 import threading
 
+from lambkin.common.exceptions import LambkinSIGUSR1Interrupt
+
 sigusr1_pending = threading.Event()
+
+
+def _make_handler(previous):
+    def _handle_sigusr1(signum, frame):
+        if sigusr1_pending.is_set():
+            sigusr1_pending.clear()
+            raise LambkinSIGUSR1Interrupt
+        elif callable(previous):
+            previous(signum, frame)
+
+    return _handle_sigusr1
+
+
+def setup():
+    """Register the SIGUSR1 handler for the benchmark script process."""
+    previous = signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+    signal.signal(signal.SIGUSR1, _make_handler(previous))

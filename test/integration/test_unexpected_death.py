@@ -16,11 +16,11 @@
 
 import shutil
 import tempfile
-import time
 from pathlib import Path
 
 import pytest
 
+from lambkin.common import signals
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import (
@@ -29,6 +29,8 @@ from lambkin.core.process.cgroup import (
     make_iteration_cgroup,
 )
 from lambkin.core.shell.proxy import ShellProxy
+
+signals.setup()
 
 COOPERATIVE = (
     "import signal, sys, time; "
@@ -58,7 +60,7 @@ def test_unexpected_death():
                 cgroup1 = bp1._cgroup
                 with background(shell.python3, "-c", DIES_QUICKLY) as bp2:
                     cgroup2 = bp2._cgroup
-                    time.sleep(2)
+                    shell.python3("-c", COOPERATIVE)
 
         assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
         assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"

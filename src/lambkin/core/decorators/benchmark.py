@@ -30,7 +30,6 @@ Raises ValueError if variants is empty.
 import functools
 import inspect
 import logging
-import signal
 import sys
 import time
 
@@ -38,7 +37,7 @@ import click
 import yaml
 from click.formatting import HelpFormatter
 
-from lambkin.common import defaults, exceptions, signals
+from lambkin.common import defaults, signals
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
@@ -79,19 +78,6 @@ def _show_options(fn) -> None:
                 for opt in user_options
             ])
     click.echo(formatter.getvalue(), nl=False)
-
-
-def _make_sigusr1_handler(previous):
-    def _handle_sigusr1(signum, frame):
-        # SIGUSR1 is a general-purpose signal and could be sent by other
-        # processes or libraries. We only act on it if lambkin set the pending flag.
-        if signals.sigusr1_pending.is_set():
-            signals.sigusr1_pending.clear()
-            raise exceptions.LambkinProcessDiedUnexpectedlyError([], 1)
-        elif callable(previous):
-            previous(signum, frame)
-
-    return _handle_sigusr1
 
 
 def _show_variants(variants) -> None:
@@ -324,8 +310,7 @@ def benchmark(variants, num_iterations):
             # variant_index is always the original 0-based position in the full
             # variants list so that output folder numbers (var_N) are stable
             # regardless of which subset is selected at the CLI.
-            previous = signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-            signal.signal(signal.SIGUSR1, _make_sigusr1_handler(previous))
+            signals.setup()
             for variant_index, variant in enumerate(variants):
                 if selected_variants and (variant_index + 1) not in selected_variants:
                     continue
