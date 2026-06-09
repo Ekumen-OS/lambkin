@@ -92,7 +92,13 @@ class BackgroundProcess:
         (self._cgroup / "cgroup.procs").write_text(str(os.getpid()))
 
     def _monitor_process(self) -> None:
-        """Monitor thread that detects if the process dies unexpectedly."""
+        """Monitor thread that detects if the process dies unexpectedly.
+
+        If the process dies before the context manager exits, sets
+        sigusr1_pending and sends SIGUSR1 to the main thread to interrupt
+        any blocking foreground process. BackgroundProcess.__exit__ is
+        responsible for raising LambkinProcessDiedUnexpectedlyError.
+        """
         self._proc.wait()
         if not self._exiting.is_set():
             self._died_unexpectedly = True

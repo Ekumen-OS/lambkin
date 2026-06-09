@@ -292,8 +292,6 @@ class CommandProxy:
         Raises:
             CommandError: If the process exits with a non-zero return code,
                 or if the executable is not found or not executable.
-            subprocess.CalledProcessError: Internal — caught and re-raised as
-                ``CommandError``. Never propagates to the caller.
         """
         per_call_log_output = kwargs.pop("log_output", None)
         argv = self.build_argv(*args, **kwargs)
@@ -318,15 +316,14 @@ class CommandProxy:
                 if stderr:
                     stderr.close()
             if not interrupted and proc.returncode != 0:
-                raise subprocess.CalledProcessError(proc.returncode, argv)
+                raise CommandError(
+                    argv,
+                    f"Command {shlex.join(argv)!r} failed with return code"
+                    f" {proc.returncode}.",
+                    returncode=proc.returncode,
+                )
             if not interrupted:
                 return subprocess.CompletedProcess(argv, returncode=proc.returncode)
-        except subprocess.CalledProcessError as e:
-            raise CommandError(
-                argv,
-                f"Command {shlex.join(argv)!r} failed with return code {e.returncode}.",
-                returncode=e.returncode,
-            ) from e
         # FileNotFoundError and PermissionError must come before OSError,
         # as they are subclasses of it. Order matters here.
         except FileNotFoundError:
