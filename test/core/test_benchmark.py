@@ -54,6 +54,7 @@ def test_parse_options_returns_empty_dict_when_no_options():
         "log_level": defaults.LOG_LEVEL,
         "show_variants": False,
         "variants": None,
+        "no_cache": False,
     }
 
 
@@ -73,6 +74,7 @@ def test_parse_options_returns_defaults_when_no_args():
         "log_level": defaults.LOG_LEVEL,
         "show_variants": False,
         "variants": None,
+        "no_cache": False,
         "clock_rate": 100.0,
         "sensor_topic": "/scan",
     }
@@ -94,6 +96,7 @@ def test_parse_options_returns_cli_values_when_provided():
         "log_level": defaults.LOG_LEVEL,
         "show_variants": False,
         "variants": None,
+        "no_cache": False,
         "clock_rate": 50.0,
         "sensor_topic": "/scan",
     }
@@ -398,3 +401,37 @@ def test_benchmark_variants_flag_preserves_folder_numbering(variants, tmp_path):
 
     fn(args=["--variants", "2"], base_dir=tmp_path)
     assert contexts[0].paths.variant_dir.name == "var_2"
+
+
+def test_benchmark_skips_completed_iterations_on_rerun(variants, tmp_path):
+    """Benchmark does not call fn for iterations already completed."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append((ctx._variant_index, ctx.iteration))
+
+    # First run — completes all iterations
+    fn(base_dir=tmp_path)
+    assert len(contexts) == len(variants)
+
+    # Second run — all already completed, fn never called
+    contexts.clear()
+    fn(base_dir=tmp_path)
+    assert len(contexts) == 0
+
+
+def test_benchmark_no_cache_forces_full_rerun(variants, tmp_path):
+    """--no-cache reruns all iterations even if already completed."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append((ctx._variant_index, ctx.iteration))
+
+    fn(base_dir=tmp_path)
+    assert len(contexts) == len(variants)
+
+    contexts.clear()
+    fn(args=["--no-cache"], base_dir=tmp_path)
+    assert len(contexts) == len(variants)
