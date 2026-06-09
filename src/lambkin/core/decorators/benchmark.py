@@ -270,38 +270,37 @@ def benchmark(variants, num_iterations):
             # when no output directory is explicitly provided.
             source = Source(path=inspect.getfile(fn))
 
-            # Determine base_dir for all benchmark outputs.
+            # Determine base_dir for all benchmark outputs and create directory.
             base_dir = (
                 base_dir
                 if base_dir
                 else source.path.parent / defaults.BENCHMARKS_DIRNAME
             )
+            base_dir.mkdir(parents=True, exist_ok=True)
 
-            # The base context is used to resolve inputs and write variants.yaml.
-            # A side effect is that creates a directory for variant 1 / iteration 1
-            # containing a metadata file with the information available at this
-            # point in time. However, this directory will later be overwritten
-            # with the actual data collected for variant 1 / iteration 1 during
-            # execution.
-            with Context(
+            # A lightweight base context is used to resolve inputs and derive the
+            # variants.yaml path. Unlike the per-iteration contexts created in the
+            # loop below, this context is never entered — __enter__ is not called —
+            # so no directories, cgroups, or metadata files are created. All side
+            # effects are deferred to __enter__, which is only invoked for real
+            # (variant, iteration) pairs inside the loop.
+            # TODO(teresa-ortega): Consider an alternative approach for managing
+            # the base context.
+            base_ctx = Context(
                 variant={},
                 iteration=0,
                 options=options,
                 source=source,
                 base_dir=base_dir,
                 variant_index=0,
-            ) as base_ctx:
-                # TODO(teresa-ortega): Consider an alternative approach for managing
-                # the base context.
-                resolved_inputs = inputs.resolve(base_ctx)
-                variants_map = {
-                    f"var_{i + 1}": variant for i, variant in enumerate(variants)
-                }
-                variants_map_path = base_ctx.paths.base_dir / "variants.yaml"
-                with open(variants_map_path, "w") as f:
-                    yaml.dump(
-                        variants_map, f, default_flow_style=False, sort_keys=False
-                    )
+            )
+            resolved_inputs = inputs.resolve(base_ctx)
+            variants_map = {
+                f"var_{i + 1}": variant for i, variant in enumerate(variants)
+            }
+            variants_map_path = base_ctx.paths.base_dir / "variants.yaml"
+            with open(variants_map_path, "w") as f:
+                yaml.dump(variants_map, f, default_flow_style=False, sort_keys=False)
 
             # Calculate start time
             start_time = time.monotonic()
@@ -326,6 +325,8 @@ def benchmark(variants, num_iterations):
                         inputs=resolved_inputs,
                         variant_index=variant_index,
                     ) as ctx:
+                        if ctx.skipped:
+                            continue
                         fn(ctx)
 
             # Calculate and print total elapsed time, useful for user introspection.
