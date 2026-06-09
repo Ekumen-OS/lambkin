@@ -74,5 +74,11 @@ def groundtruth(ctx):
     return ctx.source.path.parent / "groundtruth" / "groundtruth.txt"
 
 
+@nominal.output
+def plots(ctx):
+    """Generate and save benchmark plots using aggregated evo_ape results."""
+    print(f"output called with ctx: {ctx.paths.base_dir}")
+
+
 if __name__ == "__main__":
     nominal()
