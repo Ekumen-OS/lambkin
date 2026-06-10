@@ -25,6 +25,12 @@ from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
 from lambkin.core.shell.proxy import ShellProxy
 
+COOPERATIVE = (
+    "import signal, sys, time; "
+    "signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0)); "
+    "time.sleep(30)"
+)
+
 
 @pytest.fixture
 def fake_cgroup(tmp_path):
@@ -143,7 +149,7 @@ def test_background_process_raises_if_dies_unexpectedly(tmp_path):
     shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
     with pytest.raises(LambkinProcessDiedUnexpectedlyError):
         with background(shell.sleep, "0"):
-            shell.sleep("30")
+            shell.python3("-c", COOPERATIVE)
 
 
 def test_background_process_nested(tmp_path):
@@ -206,26 +212,26 @@ def test_background_console_mode_creates_no_log_files(tmp_path):
 
 def test_background_process_sets_sigusr1_pending_on_unexpected_death(tmp_path):
     """sigusr1_pending is set by the monitor thread when a process dies unexpectedly."""
-    from lambkin.common import signals as lambkin_signals
-
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
 
-    lambkin_signals.sigusr1_pending.clear()
+    signals.sigusr1_pending.clear()
     pending_was_set = []
 
     def _capturing_handler(signum, frame):
-        pending_was_set.append(lambkin_signals.sigusr1_pending.is_set())
+        pending_was_set.append(signals.sigusr1_pending.is_set())
         raise LambkinProcessDiedUnexpectedlyError([], 1)
 
+    previous = signal.getsignal(signal.SIGUSR1)
     signal.signal(signal.SIGUSR1, _capturing_handler)
-
-    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
-    with pytest.raises(LambkinProcessDiedUnexpectedlyError):
-        with background(shell.sleep, "0"):
-            shell.sleep("30")
-
-    assert pending_was_set and pending_was_set[0], (
-        "sigusr1_pending should be set before the signal handler runs"
-    )
+    try:
+        shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+        with pytest.raises(LambkinProcessDiedUnexpectedlyError):
+            with background(shell.sleep, "0"):
+                shell.python3("-c", COOPERATIVE)
+        assert pending_was_set and pending_was_set[0], (
+            "sigusr1_pending should be set before the signal handler runs"
+        )
+    finally:
+        signal.signal(signal.SIGUSR1, previous)
