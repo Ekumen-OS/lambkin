@@ -37,7 +37,7 @@ import click
 import yaml
 from click.formatting import HelpFormatter
 
-from lambkin.common import defaults
+from lambkin.common import defaults, signals
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
@@ -310,6 +310,7 @@ def benchmark(variants, num_iterations):
             # variant_index is always the original 0-based position in the full
             # variants list so that output folder numbers (var_N) are stable
             # regardless of which subset is selected at the CLI.
+            signals.setup()
             for variant_index, variant in enumerate(variants):
                 if selected_variants and (variant_index + 1) not in selected_variants:
                     continue

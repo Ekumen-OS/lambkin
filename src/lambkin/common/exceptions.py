@@ -52,3 +52,13 @@ class LambkinProcessDiedUnexpectedlyError(LambkinError):
             f"Background process {' '.join(argv)!r} died unexpectedly "
             f"with return code {returncode}."
         )
+
+
+class LambkinSIGUSR1Interrupt(BaseException):
+    """Raised by the SIGUSR1 handler to interrupt a blocking proc.wait().
+
+    This is an internal interrupt mechanism. It is caught by
+    CommandProxy.__call__ and swallowed — it never propagates to the caller.
+    BackgroundProcess.__exit__ is responsible for raising
+    LambkinProcessDiedUnexpectedlyError with the correct argv and returncode.
+    """
