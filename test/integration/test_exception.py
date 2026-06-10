@@ -30,8 +30,6 @@ from lambkin.core.process.cgroup import (
 )
 from lambkin.core.shell.proxy import ShellProxy
 
-signals.setup()
-
 COOPERATIVE = (
     "import signal, sys, time; "
     "signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0)); "
@@ -53,6 +51,7 @@ def test_exception_in_background():
     and all other background processes must be terminated with their cgroups
     cleaned up.
     """
+    signals.setup()
     iteration_dir = Path(tempfile.mkdtemp())
     try:
         cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
