@@ -17,8 +17,7 @@
 Provides defaults, named products, and base exceptions.
 """
 
-from lambkin.common import defaults, exceptions, signals
-from lambkin.common.signals import setup
+from lambkin.common import defaults, exceptions
 
 from .named_product import named_product
 
@@ -26,6 +25,4 @@ __all__ = [
     "defaults",
     "exceptions",
     "named_product",
-    "signals",
-    "setup",
 ]
