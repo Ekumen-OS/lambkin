@@ -74,7 +74,7 @@ def test_background_dies_during_foreground_error_message():
         with pytest.raises(LambkinProcessDiedUnexpectedlyError) as exc_info:
             with background(shell.python3, "-c", DIES_QUICKLY) as _:
                 shell.python3("-c", COOPERATIVE)
-        assert "python3" in str(exc_info.value)
-        assert "1" in str(exc_info.value)
+        assert exc_info.value.argv == ["python3", "-c", DIES_QUICKLY]
+        assert exc_info.value.returncode == 1
     finally:
         shutil.rmtree(iteration_dir, ignore_errors=True)
