@@ -22,6 +22,8 @@ layer and decorators during a run.
 from __future__ import annotations
 
 import datetime
+import logging
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -38,8 +40,11 @@ from lambkin.core.process.cgroup import (
 )
 from lambkin.core.shell import ShellProxy
 
+from .cache import compute_run_hash, is_completed
 from .paths import RunPaths
 from .source import Source
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -51,6 +56,7 @@ class Context:
     folders on disk.
 
     Attributes:
+        METADATA_FILENAME: Name of the metadata file written per iteration.
         variant: Namespaced algorithm parameters for this run.
             All key-value pairs from the variant dict are exposed as attributes.
         options: Namespaced runtime options.
@@ -61,7 +67,14 @@ class Context:
         paths: Output paths for this (variant, iteration) run.
         shell: ShellProxy instance configured for this run, with working directory
             set to the iteration output folder and cgroup set to the iteration cgroup.
+            Only available after ``__enter__`` is called on a cache miss. Accessing
+            it on a cache hit (``ctx.skipped is True``) raises ``AttributeError``.
+        skipped: True if this iteration was skipped due to a cache hit. Always
+            check ``ctx.skipped`` before accessing ``ctx.shell`` or writing any
+            outputs.
     """
+
+    METADATA_FILENAME = "lambkin_metadata.yaml"
 
     def __init__(
         self,
@@ -75,10 +88,9 @@ class Context:
     ) -> None:
         """Initialize a Context for one (variant, iteration) benchmark run.
 
-        Only the parameters needed to build the namespaced sub-objects are
-        stored at construction time. Output subfolders for variant and iteration
-        are created immediately, while any other subfolder is created on first
-        access.
+        Construction is lightweight — no directories, cgroups, or metadata
+        are created here. Full initialization is deferred to ``__enter__``,
+        which first checks the cache and skips setup entirely on a hit.
 
         Args:
             variant (dict): Algorithm parameters for this run, as defined by the user.
@@ -124,6 +136,42 @@ class Context:
             RunPaths.from_indices(base_dir, variant_index, iteration),
         )
 
+        # ctx._run_hash — computed internally, never passed in by callers
+        object.__setattr__(
+            self,
+            "_run_hash",
+            compute_run_hash(variant, iteration, options),
+        )
+
+        # ctx._skipped and ctx._iteration_cgroup set in __enter__
+        object.__setattr__(self, "_skipped", False)
+        object.__setattr__(self, "_iteration_cgroup", None)
+
+    def __enter__(self) -> Context:
+        """Enter the context manager, initializing the iteration if not cached.
+
+        Checks the cache first. On a hit, sets ``_skipped=True`` and returns
+        without creating directories, cgroups, or metadata. On a miss, cleans
+        up any leftover artifacts from a previous failed run, then performs
+        full initialization: creates output directories, sets up the iteration
+        cgroup, configures the shell proxy, and writes the initial metadata.
+
+        Returns:
+            This Context instance.
+        """
+        # Check the cache before doing any work. On a hit the iteration is
+        # marked as skipped and __exit__ will be a no-op, so no directories,
+        # cgroups, or metadata are created for this run.
+        no_cache = getattr(self.options, "no_cache", False)
+        if not no_cache and is_completed(self.metadata_path, self._run_hash):
+            object.__setattr__(self, "_skipped", True)
+            logger.info(
+                "var_%d/iter_%d cache hit, skipping.",
+                self._variant_index + 1,
+                self.iteration + 1,
+            )
+            return self
+
         # Find cgroup for the current iteration
         iteration_cgroup = make_iteration_cgroup(
             find_delegated_cgroup(),
@@ -146,21 +194,50 @@ class Context:
         # Save the start time for this run, to be written to metadata
         object.__setattr__(self, "_started_at", datetime.datetime.now().isoformat())
 
-        # Setup directories
+        # Setup directories and remove leftovers from any previous failed run
         self._setup_directories()
 
         # Write metadata after all attributes are set up
-        self._write_metadata()
+        self.write_metadata()
 
-    def _write_metadata(self) -> None:
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit the context manager, killing and removing the iteration cgroup.
+
+        If the iteration was skipped due to a cache hit, exits immediately.
+        Otherwise marks the iteration as completed if no exception propagated,
+        then kills and removes the iteration cgroup.
+
+        Args:
+            exc_type: Exception type if an exception is propagating, else None.
+            exc_val: Exception value if an exception is propagating, else None.
+            exc_tb: Exception traceback if an exception is propagating, else None.
+        """
+        if self._skipped:
+            return
+        dry_run = getattr(self.options, "dry_run", defaults.DRY_RUN)
+        if exc_type is None and not dry_run:
+            self.write_metadata(completed_at=datetime.datetime.now().isoformat())
+        kill_cgroup_tree(self._iteration_cgroup)
+        remove_cgroup_tree(self._iteration_cgroup)
+
+    def write_metadata(self, completed_at: str | None = None) -> None:
         """Write a YAML metadata file to the iteration output directory.
 
         Serializes run identity, parameters, source, and output paths
-        to ``metadata.yaml`` inside ``paths.iteration_dir``. The file
-        is written once at context creation time and is not updated afterwards.
+        to ``lambkin_metadata.yaml`` inside ``paths.iteration_dir``. Called
+        once at context initialization time and again after successful
+        completion to add the completed_at timestamp.
+
+        Args:
+            completed_at: ISO timestamp marking successful completion. If
+                provided, it is added to the metadata file. Omitted on the
+                initial write at context initialization time.
         """
         metadata = {
             "started_at": self._started_at,
+            "run_hash": self._run_hash,
             "variant_index": self._variant_index,
             "iteration": self.iteration,
             "variant": vars(self.variant),
@@ -172,14 +249,33 @@ class Context:
                 "iteration_dir": str(self.paths.iteration_dir),
             },
         }
-        meta_path = self.paths.iteration_dir / "lambkin_metadata.yaml"
-        with open(meta_path, "w") as f:
+        if completed_at is not None:
+            metadata["completed_at"] = completed_at
+        with open(self.metadata_path, "w") as f:
             yaml.dump(metadata, f, default_flow_style=False, sort_keys=False)
 
+    @property
+    def metadata_path(self) -> Path:
+        """Path to the metadata file for this iteration."""
+        return self.paths.iteration_dir / self.METADATA_FILENAME
+
+    @property
+    def skipped(self) -> bool:
+        """Return True if this iteration was skipped due to a cache hit."""
+        return self._skipped
+
     def _setup_directories(self) -> None:
-        """Create variant and iteration directories."""
+        """Prepare variant and iteration directories for a fresh run.
+
+        Creates the variant directory if it does not exist. Removes the
+        iteration directory and all its contents if it exists from a previous
+        failed run, then recreates it clean. A failed iteration never has
+        completed_at written, so its contents are always safe to remove.
+        """
         self.paths.variant_dir.mkdir(parents=True, exist_ok=True)
-        self.paths.iteration_dir.mkdir(parents=True, exist_ok=True)
+        if self.paths.iteration_dir.exists():
+            shutil.rmtree(self.paths.iteration_dir)
+        self.paths.iteration_dir.mkdir()
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the Context state."""
@@ -195,18 +291,3 @@ class Context:
             f"  iteration_dir = {self.paths.iteration_dir}\n"
             f")"
         )
-
-    def __enter__(self) -> Context:
-        """Enter the context manager, returning this instance."""
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Exit the context manager, killing and removing the iteration cgroup.
-
-        Args:
-            exc_type: Exception type if an exception is propagating, else None.
-            exc_val: Exception value if an exception is propagating, else None.
-            exc_tb: Exception traceback if an exception is propagating, else None.
-        """
-        kill_cgroup_tree(self._iteration_cgroup)
-        remove_cgroup_tree(self._iteration_cgroup)
