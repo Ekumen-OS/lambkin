@@ -67,6 +67,11 @@ class Context:
         paths: Output paths for this (variant, iteration) run.
         shell: ShellProxy instance configured for this run, with working directory
             set to the iteration output folder and cgroup set to the iteration cgroup.
+            Only available after ``__enter__`` is called on a cache miss. Accessing
+            it on a cache hit (``ctx.skipped is True``) raises ``AttributeError``.
+        skipped: True if this iteration was skipped due to a cache hit. Always
+            check ``ctx.skipped`` before accessing ``ctx.shell`` or writing any
+            outputs.
     """
 
     METADATA_FILENAME = "lambkin_metadata.yaml"
