@@ -14,11 +14,11 @@
 
 """Unit tests for background process management via cgroups v2."""
 
-import signal
 import time
 
 import pytest
 
+from lambkin.common import signals
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
@@ -137,15 +137,12 @@ def test_background_process_raises_if_dies_unexpectedly(tmp_path):
     iteration_dir.mkdir(parents=True)
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
 
-    signal.signal(
-        signal.SIGUSR1,
-        lambda s, f: (_ for _ in ()).throw(LambkinProcessDiedUnexpectedlyError([], 1)),
-    )
+    signals.setup()
 
     shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
     with pytest.raises(LambkinProcessDiedUnexpectedlyError):
         with background(shell.sleep, "0"):
-            time.sleep(1)
+            shell.sleep("30")
 
 
 def test_background_process_nested(tmp_path):
