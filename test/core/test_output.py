@@ -14,6 +14,8 @@
 
 """Unit tests for the input decorator in lambkin.core.decorators."""
 
+import pytest
+
 from lambkin.core.decorators.output import OutputRegistry
 
 
@@ -62,3 +64,41 @@ def test_run_with_no_hooks_does_not_raise():
     """run() with no registered hooks completes without error."""
     registry = OutputRegistry()
     registry.run(object())
+
+
+def test_register_hook_with_no_parameters_raises():
+    """A hook with no parameters raises ValueError at register time."""
+    registry = OutputRegistry()
+
+    def bad_hook():
+        pass
+
+    with pytest.raises(ValueError, match="exactly 1 parameter"):
+        registry.register(bad_hook)
+
+
+def test_register_hook_with_extra_parameters_raises():
+    """A hook with more than 1 parameter raises ValueError at register time."""
+    registry = OutputRegistry()
+
+    def bad_hook(ctx, extra):
+        pass
+
+    with pytest.raises(ValueError, match="exactly 1 parameter"):
+        registry.register(bad_hook)
+
+
+def test_register_duplicate_name_raises():
+    """Registering two hooks with the same name raises ValueError."""
+    registry = OutputRegistry()
+
+    def plots(ctx):
+        pass
+
+    registry.register(plots)
+
+    def plots(ctx):  # noqa: F811
+        pass
+
+    with pytest.raises(ValueError, match="already registered"):
+        registry.register(plots)

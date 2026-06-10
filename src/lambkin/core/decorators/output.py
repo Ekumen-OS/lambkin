@@ -20,6 +20,16 @@ execution of output hooks for a benchmark function. Hooks are registered via the
 loop completes, receiving the context of the last iteration.
 """
 
+import inspect
+
+
+def _validate_hook_signature(hook_fn) -> None:
+    """Validate that the hook function accepts a single 'ctx' parameter."""
+    params = list(inspect.signature(hook_fn).parameters.keys())
+
+    if len(params) != 1:
+        raise ValueError(f"Hook '{hook_fn.__name__}' must have exactly 1 parameter.")
+
 
 class OutputRegistry:
     """Manages the registration and execution of output hooks for a benchmark."""
@@ -29,7 +39,25 @@ class OutputRegistry:
         self._hooks = []
 
     def register(self, hook_fn):
-        """Decorator used to register a function as an output handler."""
+        """Decorator used to register a function as an output handler.
+
+        Args:
+            hook_fn: function to register as an output hook. Must accept
+                a single ``ctx`` argument.
+
+        Returns:
+            The original function, unchanged.
+
+        Raises:
+            ValueError: if the hook signature is invalid or its name is already
+                registered.
+        """
+        _validate_hook_signature(hook_fn)
+        existing_names = [h.__name__ for h in self._hooks]
+        if hook_fn.__name__ in existing_names:
+            raise ValueError(
+                f"Hook name conflict: '{hook_fn.__name__}' is already registered."
+            )
         self._hooks.append(hook_fn)
         return hook_fn
 
