@@ -32,7 +32,16 @@ def _validate_hook_signature(hook_fn) -> None:
 
 
 class OutputRegistry:
-    """Manages the registration and execution of output hooks for a benchmark."""
+    """Manages the registration and execution of output hooks for a benchmark.
+
+    Warning:
+        Output hooks receive the context of the last benchmark iteration,
+        but by the time they run, the iteration cgroup has already been torn
+        down. Do not call ``ctx.shell`` or launch any processes inside an
+        output hook — it will fail with a confusing error. Output hooks are
+        intended for reading paths and artifacts from disk only, for example
+        via ``ctx.paths.base_dir``.
+    """
 
     def __init__(self):
         """Initialize the OutputRegistry."""
