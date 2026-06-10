@@ -62,6 +62,9 @@ def setup():
     launches the script as a separate subprocess — BackgroundProcess and its
     monitor thread live in the script's process, so the signal is sent and
     handled there.
+
+    Note: Calling this function multiple times will chain handlers, which is
+    harmless but unnecessary.
     """
     previous = signal.signal(signal.SIGUSR1, signal.SIG_DFL)
     signal.signal(signal.SIGUSR1, _make_handler(previous))
