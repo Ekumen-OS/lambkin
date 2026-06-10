@@ -14,9 +14,9 @@
 
 """Output decorator for lambkin.
 
-Provides the :class:`OutputRegistry` class, which manages the registration and
+Provides the "OutputRegistry" class, which manages the registration and
 execution of output hooks for a benchmark function. Hooks are registered via the
-:meth:`OutputRegistry.register` method and executed once after the full benchmark
+"OutputRegistry.register" method and executed once after the full benchmark
 loop completes, receiving the context of the last iteration.
 """
 
@@ -64,8 +64,17 @@ class OutputRegistry:
     def run(self, ctx):
         """Run all registered output hooks with the last iteration context.
 
+        Calls each registered hook in registration order, passing ``ctx`` as
+        the sole argument. If no hooks are registered, this method does nothing.
+
         Args:
-            ctx: Context of the last benchmark iteration.
+            ctx: Context of the last benchmark iteration, passed as-is to
+                each hook.
+
+        Raises:
+            ValueError: if ctx is None.
         """
+        if ctx is None:
+            raise ValueError("Cannot run output hooks: context is None.")
         for hook in self._hooks:
             hook(ctx)
