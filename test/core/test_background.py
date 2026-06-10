@@ -235,3 +235,4 @@ def test_background_process_sets_sigusr1_pending_on_unexpected_death(tmp_path):
         )
     finally:
         signal.signal(signal.SIGUSR1, previous)
+        signals.sigusr1_pending.clear()
