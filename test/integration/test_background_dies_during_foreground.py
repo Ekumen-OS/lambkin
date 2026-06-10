@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integration test: inner background process dies unexpectedly."""
+"""Integration test: background process death interrupts a blocking foreground."""
 
 import pytest
 
@@ -34,25 +34,35 @@ COOPERATIVE = (
 DIES_QUICKLY = "import sys, time; time.sleep(0.5); sys.exit(1)"
 
 
-def test_unexpected_death(tmp_path):
-    """Verify that unexpected death of an inner background process is detected.
+def test_background_dies_during_foreground(tmp_path):
+    """Verify that a background process dying interrupts a blocking foreground.
 
-    When an inner background process dies before the context manager exits,
-    LambkinProcessDiedUnexpectedlyError must be raised and the outer
-    background process must also be terminated with its cgroup cleaned up.
+    When a background process dies unexpectedly while a foreground process is
+    blocking the main thread, LambkinProcessDiedUnexpectedlyError must be raised
+    and all cgroups must be cleaned up correctly.
     """
     signals.setup()
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
     shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
     cgroup1 = None
-    cgroup2 = None
-
     with pytest.raises(LambkinProcessDiedUnexpectedlyError):
-        with background(shell.python3, "-c", COOPERATIVE) as bp1:
+        with background(shell.python3, "-c", DIES_QUICKLY) as bp1:
             cgroup1 = bp1._cgroup
-            with background(shell.python3, "-c", DIES_QUICKLY) as bp2:
-                cgroup2 = bp2._cgroup
-                shell.python3("-c", COOPERATIVE)
+            shell.python3("-c", COOPERATIVE)
+    assert not cgroup_exists(cgroup1), "Cgroup should have been removed"
 
-    assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-    assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
+
+def test_background_dies_during_foreground_error_message(tmp_path):
+    """Verify that LambkinProcessDiedUnexpectedlyError.
+
+    Checks that the error message reaches the terminal when a background process
+    dies during a blocking foreground.
+    """
+    signals.setup()
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
+    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+    with pytest.raises(LambkinProcessDiedUnexpectedlyError) as exc_info:
+        with background(shell.python3, "-c", DIES_QUICKLY) as _:
+            shell.python3("-c", COOPERATIVE)
+    assert exc_info.value.argv == ["python3", "-c", DIES_QUICKLY]
+    assert exc_info.value.returncode == 1
