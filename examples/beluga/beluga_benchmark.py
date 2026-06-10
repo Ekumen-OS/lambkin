@@ -77,7 +77,7 @@ def groundtruth(ctx):
 @nominal.output
 def plots(ctx):
     """Generate and save benchmark plots using aggregated evo_ape results."""
-    print(f"output called with ctx: {ctx.paths.base_dir}")
+    lambkin.logger.info(f"output called with ctx: {ctx.paths.base_dir}")
 
 
 if __name__ == "__main__":
