@@ -47,7 +47,7 @@ def _make_handler(previous):
         """
         if sigusr1_pending.is_set():
             sigusr1_pending.clear()
-            raise LambkinSIGUSR1Interrupt
+            raise LambkinSIGUSR1Interrupt()
         elif callable(previous):
             previous(signum, frame)
 
