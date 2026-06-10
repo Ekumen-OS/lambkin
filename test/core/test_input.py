@@ -185,3 +185,27 @@ def test_input_hook_called_once_regardless_of_variants_and_iterations(tmp_path):
     nominal(base_dir=tmp_path)
 
     assert call_count == 1
+
+
+def test_input_hooks_called_even_when_all_iterations_cached(variant, tmp_path):
+    """Input hooks are resolved even when all iterations are cache hits."""
+    call_count = 0
+
+    @benchmark(variants=variant, num_iterations=1)
+    def nominal(ctx):
+        pass
+
+    @nominal.input
+    def dataset(ctx):
+        nonlocal call_count
+        call_count += 1
+        return "path/to/dataset.mcap"
+
+    # First run — completes the iteration
+    nominal(base_dir=tmp_path)
+    assert call_count == 1
+
+    # Second run — iteration is cached, but input hooks still resolve
+    call_count = 0
+    nominal(base_dir=tmp_path)
+    assert call_count == 1
