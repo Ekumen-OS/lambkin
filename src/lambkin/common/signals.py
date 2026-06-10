@@ -10,6 +10,7 @@ and its monitor thread live in the script's process, so the signal is sent and
 handled there.
 """
 
+import os
 import signal
 import threading
 
@@ -48,8 +49,11 @@ def _make_handler(previous):
         if sigusr1_pending.is_set():
             sigusr1_pending.clear()
             raise LambkinSIGUSR1Interrupt()
-        elif callable(previous):
-            previous(signum, frame)
+        else:
+            # Restore the previous handler and re-raise the signal to forward it
+            # faithfully, whether it is a callable, SIG_DFL, or SIG_IGN.
+            signal.signal(signal.SIGUSR1, previous)
+            os.kill(os.getpid(), signal.SIGUSR1)
 
     return _handle_sigusr1
 
