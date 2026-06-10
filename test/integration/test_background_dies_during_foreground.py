@@ -13,10 +13,6 @@
 # limitations under the License.
 """Integration test: background process death interrupts a blocking foreground."""
 
-import shutil
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from lambkin.common import signals
@@ -38,7 +34,7 @@ COOPERATIVE = (
 DIES_QUICKLY = "import sys, time; time.sleep(0.5); sys.exit(1)"
 
 
-def test_background_dies_during_foreground():
+def test_background_dies_during_foreground(tmp_path):
     """Verify that a background process dying interrupts a blocking foreground.
 
     When a background process dies unexpectedly while a foreground process is
@@ -46,35 +42,27 @@ def test_background_dies_during_foreground():
     and all cgroups must be cleaned up correctly.
     """
     signals.setup()
-    iteration_dir = Path(tempfile.mkdtemp())
-    try:
-        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
-        cgroup1 = None
-        with pytest.raises(LambkinProcessDiedUnexpectedlyError):
-            with background(shell.python3, "-c", DIES_QUICKLY) as bp1:
-                cgroup1 = bp1._cgroup
-                shell.python3("-c", COOPERATIVE)
-        assert not cgroup_exists(cgroup1), "Cgroup should have been removed"
-    finally:
-        shutil.rmtree(iteration_dir, ignore_errors=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
+    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+    cgroup1 = None
+    with pytest.raises(LambkinProcessDiedUnexpectedlyError):
+        with background(shell.python3, "-c", DIES_QUICKLY) as bp1:
+            cgroup1 = bp1._cgroup
+            shell.python3("-c", COOPERATIVE)
+    assert not cgroup_exists(cgroup1), "Cgroup should have been removed"
 
 
-def test_background_dies_during_foreground_error_message():
+def test_background_dies_during_foreground_error_message(tmp_path):
     """Verify that LambkinProcessDiedUnexpectedlyError.
 
     Checks that the error message reaches the terminal when a background process
     dies during a blocking foreground.
     """
     signals.setup()
-    iteration_dir = Path(tempfile.mkdtemp())
-    try:
-        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
-        with pytest.raises(LambkinProcessDiedUnexpectedlyError) as exc_info:
-            with background(shell.python3, "-c", DIES_QUICKLY) as _:
-                shell.python3("-c", COOPERATIVE)
-        assert exc_info.value.argv == ["python3", "-c", DIES_QUICKLY]
-        assert exc_info.value.returncode == 1
-    finally:
-        shutil.rmtree(iteration_dir, ignore_errors=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
+    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+    with pytest.raises(LambkinProcessDiedUnexpectedlyError) as exc_info:
+        with background(shell.python3, "-c", DIES_QUICKLY) as _:
+            shell.python3("-c", COOPERATIVE)
+    assert exc_info.value.argv == ["python3", "-c", DIES_QUICKLY]
+    assert exc_info.value.returncode == 1

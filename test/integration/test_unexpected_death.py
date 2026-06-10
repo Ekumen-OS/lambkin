@@ -11,12 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Integration test: inner background process dies unexpectedly."""
-
-import shutil
-import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -36,10 +31,10 @@ COOPERATIVE = (
     "time.sleep(30)"
 )
 
-DIES_QUICKLY = "import time; time.sleep(0.5)"
+DIES_QUICKLY = "import sys, time; time.sleep(0.5); sys.exit(1)"
 
 
-def test_unexpected_death():
+def test_unexpected_death(tmp_path):
     """Verify that unexpected death of an inner background process is detected.
 
     When an inner background process dies before the context manager exits,
@@ -47,21 +42,17 @@ def test_unexpected_death():
     background process must also be terminated with its cgroup cleaned up.
     """
     signals.setup()
-    iteration_dir = Path(tempfile.mkdtemp())
-    try:
-        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
-        cgroup1 = None
-        cgroup2 = None
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
+    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+    cgroup1 = None
+    cgroup2 = None
 
-        with pytest.raises(LambkinProcessDiedUnexpectedlyError):
-            with background(shell.python3, "-c", COOPERATIVE) as bp1:
-                cgroup1 = bp1._cgroup
-                with background(shell.python3, "-c", DIES_QUICKLY) as bp2:
-                    cgroup2 = bp2._cgroup
-                    shell.python3("-c", COOPERATIVE)
+    with pytest.raises(LambkinProcessDiedUnexpectedlyError):
+        with background(shell.python3, "-c", COOPERATIVE) as bp1:
+            cgroup1 = bp1._cgroup
+            with background(shell.python3, "-c", DIES_QUICKLY) as bp2:
+                cgroup2 = bp2._cgroup
+                shell.python3("-c", COOPERATIVE)
 
-        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-    finally:
-        shutil.rmtree(iteration_dir, ignore_errors=True)
+    assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+    assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"

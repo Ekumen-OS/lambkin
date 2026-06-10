@@ -14,10 +14,6 @@
 
 """Integration test: background process raises an exception intentionally."""
 
-import shutil
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from lambkin.common import signals
@@ -43,7 +39,7 @@ RAISES = (
 )
 
 
-def test_exception_in_background():
+def test_exception_in_background(tmp_path):
     """Verify that an unhandled exception in a background process is detected.
 
     When a background process raises an unhandled exception and exits with a
@@ -52,22 +48,17 @@ def test_exception_in_background():
     cleaned up.
     """
     signals.setup()
-    iteration_dir = Path(tempfile.mkdtemp())
-    try:
-        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
-        cgroup1 = None
-        cgroup2 = None
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
+    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+    cgroup1 = None
+    cgroup2 = None
 
-        with pytest.raises(LambkinProcessDiedUnexpectedlyError):
-            with background(shell.python3, "-c", COOPERATIVE) as bp1:
-                cgroup1 = bp1._cgroup
-                with background(shell.python3, "-c", RAISES) as bp2:
-                    cgroup2 = bp2._cgroup
-                    shell.python3("-c", COOPERATIVE)
+    with pytest.raises(LambkinProcessDiedUnexpectedlyError):
+        with background(shell.python3, "-c", COOPERATIVE) as bp1:
+            cgroup1 = bp1._cgroup
+            with background(shell.python3, "-c", RAISES) as bp2:
+                cgroup2 = bp2._cgroup
+                shell.python3("-c", COOPERATIVE)
 
-        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-
-    finally:
-        shutil.rmtree(iteration_dir, ignore_errors=True)
+    assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+    assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"

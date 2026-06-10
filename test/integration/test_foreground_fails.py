@@ -11,13 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Integration test: foreground fails and background processes are cleaned up."""
 
-import shutil
-import tempfile
 import time
-from pathlib import Path
 
 import pytest
 
@@ -38,7 +34,7 @@ COOPERATIVE = (
 FOREGROUND_FAILURE_MESSAGE = "Foreground failed intentionally"
 
 
-def test_foreground_fails():
+def test_foreground_fails(tmp_path):
     """Verify that a foreground failure terminates all background processes.
 
     When the foreground raises an exception, both background processes must
@@ -47,22 +43,18 @@ def test_foreground_fails():
     Raises:
         RuntimeError: Raised intentionally to simulate a foreground failure.
     """
-    iteration_dir = Path(tempfile.mkdtemp())
-    try:
-        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
-        cgroup1 = None
-        cgroup2 = None
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
+    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+    cgroup1 = None
+    cgroup2 = None
 
-        with pytest.raises(RuntimeError, match=FOREGROUND_FAILURE_MESSAGE):
-            with background(shell.python3, "-c", COOPERATIVE) as bp1:
-                cgroup1 = bp1._cgroup
-                with background(shell.python3, "-c", COOPERATIVE) as bp2:
-                    cgroup2 = bp2._cgroup
-                    time.sleep(0.5)
-                    raise RuntimeError(FOREGROUND_FAILURE_MESSAGE)
+    with pytest.raises(RuntimeError, match=FOREGROUND_FAILURE_MESSAGE):
+        with background(shell.python3, "-c", COOPERATIVE) as bp1:
+            cgroup1 = bp1._cgroup
+            with background(shell.python3, "-c", COOPERATIVE) as bp2:
+                cgroup2 = bp2._cgroup
+                time.sleep(0.5)
+                raise RuntimeError(FOREGROUND_FAILURE_MESSAGE)
 
-        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-    finally:
-        shutil.rmtree(iteration_dir, ignore_errors=True)
+    assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+    assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
