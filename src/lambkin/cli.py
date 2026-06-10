@@ -29,6 +29,7 @@ import os
 import signal
 import subprocess
 import sys
+import termios
 import uuid
 from pathlib import Path
 
@@ -78,6 +79,34 @@ class LambkinCommand(click.Command):
             formatter.write_text("Run 'lambkin SCRIPT --show-options' to list them.")
 
 
+def _save_terminal_state() -> list | None:
+    """Save the current terminal state for later restoration.
+
+    Reads the terminal attributes from stdin using termios. If stdin is not
+    a terminal (e.g. in CI or when stdin is redirected), returns None and
+    the save is a no-op.
+
+    Returns:
+        The terminal attribute list as returned by termios.tcgetattr, or None
+        if stdin is not a terminal.
+    """
+    if sys.stdin.isatty():
+        return termios.tcgetattr(sys.stdin.fileno())
+    return None
+
+
+def _restore_terminal_state(state: list | None) -> None:
+    """Restore stdin terminal attributes to a previously saved state.
+
+    If state is None or stdin is no longer a terminal, this is a no-op.
+
+    Args:
+        state: Terminal attribute list to restore, or None.
+    """
+    if state is not None and sys.stdin.isatty():
+        termios.tcsetattr(sys.stdin.fileno(), termios.TCSANOW, state)
+
+
 @click.command(
     cls=LambkinCommand,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
@@ -93,8 +122,12 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     This guarantees that the full process tree can be killed cleanly on
     interruption without affecting the rest of the user session.
 
+    The benchmark script is launched in a new session (setsid) so that
+    Ctrl-C is delivered only to the CLI, which then kills the benchmark
+    cgroup cleanly rather than letting SIGINT crash the script mid-run.
+
     On Ctrl-C, all processes in the benchmark cgroup are terminated and the
-    cgroup tree is removed before exiting.
+    cgroup tree is removed, and the terminal state is restored before exiting.
 
     Exit codes:
         0    The benchmark script completed successfully.
@@ -105,6 +138,10 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     # (e.g. detect an already active scope, support partial restarts).
     # To be addressed in phase 6.
     configure_logging(log_level)
+
+    # Prefer app.slice as the parent cgroup for a stable, predictable location
+    # in the cgroup hierarchy. Fall back to the current delegated cgroup if
+    # app.slice is not available (e.g. inside a container).
     parent = find_app_slice()
     if parent is None:
         logger.debug("app.slice not available, falling back to delegated cgroup")
@@ -113,10 +150,21 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
     logger.debug("run_cgroup: %s", run_cgroup)
 
+    # Save the terminal state before launching the benchmark script.
+    # start_new_session=True detaches the script from the terminal's process
+    # group, which can leave the terminal in a bad state when the script is
+    # killed. We restore it after the script exits.
+    terminal_state = _save_terminal_state()
+
     def _handle_sigint(signum, frame):
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)
+
+    # Launch the benchmark script in a new session so that Ctrl-C (SIGINT) is
+    # delivered only to the CLI process, not to the script.
+    # preexec_fn places the child process inside run_cgroup immediately after
+    # fork() but before exec(), ensuring it is tracked from the start.
     proc = subprocess.Popen(
         [sys.executable, str(script), "--log-level", log_level, *args],
         start_new_session=True,
@@ -128,8 +176,9 @@ def main(script: Path, args: tuple, log_level: str) -> None:
         logger.warning("Interrupted, cleaning up benchmark processes...")
         kill_cgroup_tree(run_cgroup)
         remove_cgroup_tree(run_cgroup)
-        if sys.stdin.isatty():
-            os.system("stty sane")
+        _restore_terminal_state(terminal_state)
         sys.exit(130)
+
+    _restore_terminal_state(terminal_state)
     remove_cgroup_tree(run_cgroup)
     sys.exit(proc.returncode)
