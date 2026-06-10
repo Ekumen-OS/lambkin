@@ -409,11 +409,12 @@ def test_benchmark_skips_completed_iterations_on_rerun(variants, tmp_path):
 
     @benchmark(variants=variants, num_iterations=1)
     def fn(ctx):
-        contexts.append((ctx._variant_index, ctx.iteration))
+        contexts.append(ctx)
 
     # First run — completes all iterations
     fn(base_dir=tmp_path)
     assert len(contexts) == len(variants)
+    assert all(not ctx.skipped for ctx in contexts)
 
     # Second run — all already completed, fn never called
     contexts.clear()
