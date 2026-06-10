@@ -24,12 +24,13 @@ from __future__ import annotations
 import logging
 import os
 import shlex
+import signal
 import subprocess
 import threading
 from pathlib import Path
 from typing import Any
 
-from lambkin.common import defaults, exceptions
+from lambkin.common import defaults, exceptions, signals
 from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
 from lambkin.core.shell.proxy import CommandProxy
 
@@ -91,10 +92,18 @@ class BackgroundProcess:
         (self._cgroup / "cgroup.procs").write_text(str(os.getpid()))
 
     def _monitor_process(self) -> None:
-        """Monitor thread that detects if the process dies unexpectedly."""
+        """Monitor thread that detects if the process dies unexpectedly.
+
+        If the process dies before the context manager exits, sets
+        sigusr1_pending and sends SIGUSR1 to the main thread to interrupt
+        any blocking foreground process. BackgroundProcess.__exit__ is
+        responsible for raising LambkinProcessDiedUnexpectedlyError.
+        """
         self._proc.wait()
         if not self._exiting.is_set():
             self._died_unexpectedly = True
+            signals.sigusr1_pending.set()
+            os.kill(os.getpid(), signal.SIGUSR1)
 
     def __enter__(self) -> BackgroundProcess:
         """Start the background process inside its own cgroup.

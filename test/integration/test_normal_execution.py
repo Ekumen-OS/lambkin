@@ -11,13 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Integration test: normal execution with two nested background processes."""
 
-import shutil
-import tempfile
 import time
-from pathlib import Path
 
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import (
@@ -34,27 +30,23 @@ COOPERATIVE = (
 )
 
 
-def test_normal_execution():
+def test_normal_execution(tmp_path):
     """Verify normal execution with two nested background processes.
 
     Both background processes start correctly, the foreground runs to
     completion, and both background processes are terminated in reverse
     order with their cgroups cleaned up.
     """
-    iteration_dir = Path(tempfile.mkdtemp())
-    try:
-        cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
-        shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
-        cgroup1 = None
-        cgroup2 = None
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path)
+    shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
+    cgroup1 = None
+    cgroup2 = None
 
-        with background(shell.python3, "-c", COOPERATIVE) as bp1:
-            cgroup1 = bp1._cgroup
-            with background(shell.python3, "-c", COOPERATIVE) as bp2:
-                cgroup2 = bp2._cgroup
-                time.sleep(1)
+    with background(shell.python3, "-c", COOPERATIVE) as bp1:
+        cgroup1 = bp1._cgroup
+        with background(shell.python3, "-c", COOPERATIVE) as bp2:
+            cgroup2 = bp2._cgroup
+            time.sleep(1)
 
-        assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
-        assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"
-    finally:
-        shutil.rmtree(iteration_dir, ignore_errors=True)
+    assert not cgroup_exists(cgroup2), "Inner cgroup should have been removed"
+    assert not cgroup_exists(cgroup1), "Outer cgroup should have been removed"

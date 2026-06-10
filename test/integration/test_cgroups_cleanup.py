@@ -14,8 +14,6 @@
 
 """Integration test: cgroup tree is fully removed after iteration ends."""
 
-import shutil
-import tempfile
 from pathlib import Path
 
 from lambkin.core.ctx.context import Context
@@ -29,33 +27,29 @@ COOPERATIVE = (
 )
 
 
-def test_cgroups_cleanup():
+def test_cgroups_cleanup(tmp_path):
     """Verify full cgroup tree cleanup after a Context exits.
 
     After a Context exits, the process cgroup and iteration cgroup must be
     fully removed from the filesystem.
     """
-    base_dir = Path(tempfile.mkdtemp())
-    try:
-        source = Source(path=Path(__file__))
-        child_cgroup = None
-        iteration_cgroup = None
+    source = Source(path=Path(__file__))
+    child_cgroup = None
+    iteration_cgroup = None
 
-        with Context(
-            variant={},
-            iteration=0,
-            options={},
-            source=source,
-            base_dir=base_dir,
-            variant_index=0,
-        ) as ctx:
-            with background(ctx.shell.python3, "-c", COOPERATIVE) as bp:
-                child_cgroup = bp._cgroup
-            iteration_cgroup = ctx._iteration_cgroup
+    with Context(
+        variant={},
+        iteration=0,
+        options={},
+        source=source,
+        base_dir=tmp_path,
+        variant_index=0,
+    ) as ctx:
+        with background(ctx.shell.python3, "-c", COOPERATIVE) as bp:
+            child_cgroup = bp._cgroup
+        iteration_cgroup = ctx._iteration_cgroup
 
-        assert not child_cgroup.exists(), f"process cgroup not removed: {child_cgroup}"
-        assert not iteration_cgroup.exists(), (
-            f"iteration cgroup not removed: {iteration_cgroup}"
-        )
-    finally:
-        shutil.rmtree(base_dir, ignore_errors=True)
+    assert not child_cgroup.exists(), f"process cgroup not removed: {child_cgroup}"
+    assert not iteration_cgroup.exists(), (
+        f"iteration cgroup not removed: {iteration_cgroup}"
+    )

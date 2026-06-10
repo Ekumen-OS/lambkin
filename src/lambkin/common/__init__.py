@@ -14,15 +14,16 @@
 
 """Common utilities and primitives shared across the lambkin SDK.
 
-Provides defaults, named products, and base exceptions.
+Provides defaults, named products, base exceptions, and signal handling utilities.
 """
 
-from lambkin.common import defaults, exceptions
+from lambkin.common import defaults, exceptions, signals
 
 from .named_product import named_product
 
 __all__ = [
     "defaults",
-    "named_product",
     "exceptions",
+    "named_product",
+    "signals",
 ]
