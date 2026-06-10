@@ -31,6 +31,7 @@ before parsing, so they are always available on ``ctx.options``.
         - ``--log-level``
         - ``--show-variants``
         - ``--variants``
+        - ``--no-cache``
 
 Note:
     ``--show-options`` and ``--show-variants`` behave like ``--help``: they
@@ -85,6 +86,16 @@ SDK_OPTIONS: tuple[click.Option, ...] = (
             "Comma-separated variant numbers or ranges to run, matching var_N folder "
             "names (e.g. --variants 3:5,42 runs var_3/, var_4/, var_5/, var_42/). "
             "Defaults to all variants."
+        ),
+    ),
+    click.Option(
+        ["--no-cache"],
+        is_flag=True,
+        show_default=True,
+        default=False,
+        help=(
+            "Bypass the partial restart cache and force a full rerun of all "
+            "iterations, regardless of prior completion."
         ),
     ),
 )

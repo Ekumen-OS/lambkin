@@ -126,7 +126,7 @@ def test_hook_returning_blank_string_raises():
         registry.resolve(ctx)
 
 
-def test_ctx_inputs_populated_before_fn_runs(variant):
+def test_ctx_inputs_populated_before_fn_runs(variant, tmp_path):
     """ctx.inputs.dataset is available inside the benchmark function after resolve."""
     seen = []
 
@@ -138,11 +138,11 @@ def test_ctx_inputs_populated_before_fn_runs(variant):
     def dataset(ctx):
         return "path/to/dataset.mcap"
 
-    nominal(base_dir="/tmp")
+    nominal(base_dir=tmp_path)
     assert seen == ["path/to/dataset.mcap"]
 
 
-def test_multiple_inputs_all_injected(variant):
+def test_multiple_inputs_all_injected(variant, tmp_path):
     """All registered inputs are injected into ctx.inputs before the benchmark runs."""
     seen = []
 
@@ -158,11 +158,11 @@ def test_multiple_inputs_all_injected(variant):
     def map(ctx):
         return "path/to/map.yaml"
 
-    nominal(base_dir="/tmp")
+    nominal(base_dir=tmp_path)
     assert seen == [("path/to/dataset.mcap", "path/to/map.yaml")]
 
 
-def test_input_hook_called_once_regardless_of_variants_and_iterations():
+def test_input_hook_called_once_regardless_of_variants_and_iterations(tmp_path):
     """Input hooks are resolved once, regardless of variants and iterations."""
     call_count = 0
 
@@ -182,6 +182,30 @@ def test_input_hook_called_once_regardless_of_variants_and_iterations():
         call_count += 1
         return "path/to/dataset.mcap"
 
-    nominal(base_dir="/tmp")
+    nominal(base_dir=tmp_path)
 
+    assert call_count == 1
+
+
+def test_input_hooks_called_even_when_all_iterations_cached(variant, tmp_path):
+    """Input hooks are resolved even when all iterations are cache hits."""
+    call_count = 0
+
+    @benchmark(variants=variant, num_iterations=1)
+    def nominal(ctx):
+        pass
+
+    @nominal.input
+    def dataset(ctx):
+        nonlocal call_count
+        call_count += 1
+        return "path/to/dataset.mcap"
+
+    # First run — completes the iteration
+    nominal(base_dir=tmp_path)
+    assert call_count == 1
+
+    # Second run — iteration is cached, but input hooks still resolve
+    call_count = 0
+    nominal(base_dir=tmp_path)
     assert call_count == 1

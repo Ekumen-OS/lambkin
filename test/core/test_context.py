@@ -18,6 +18,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 from lambkin.core.ctx.context import Context
 from lambkin.core.ctx.source import Source
@@ -44,13 +45,14 @@ def base_source():
 @pytest.fixture
 def ctx(tmp_path, base_variant, base_options, base_source):
     """Return a fully constructed Context instance for testing."""
-    return Context(
+    with Context(
         variant=base_variant,
         iteration=0,
         options=base_options,
         source=base_source,
         base_dir=tmp_path,
-    )
+    ) as ctx:
+        yield ctx
 
 
 @pytest.mark.parametrize(
@@ -67,7 +69,7 @@ def ctx(tmp_path, base_variant, base_options, base_source):
         ({"sensor_model": "beam", "num_particles": 1}, 10, 2, "beam", 1),
     ],
 )
-def test_output_dirs_are_created_on_instantiation(
+def test_output_dirs_are_created_on_entry(
     tmp_path,
     base_options,
     base_source,
@@ -77,25 +79,25 @@ def test_output_dirs_are_created_on_instantiation(
     expected_sensor,
     expected_particles,
 ):
-    """variation_dir and iteration_dir are created on disk on instantiation."""
-    ctx = Context(
+    """variant_dir and iteration_dir are created on disk on context entry."""
+    with Context(
         variant=variant,
         iteration=iteration,
         options=base_options,
         source=base_source,
         base_dir=tmp_path,
         variant_index=variant_index,
-    )
-    expected_variant_dir = tmp_path / f"var_{variant_index + 1}"
-    expected_iteration_dir = expected_variant_dir / f"iter_{iteration + 1}"
+    ) as ctx:
+        expected_variant_dir = tmp_path / f"var_{variant_index + 1}"
+        expected_iteration_dir = expected_variant_dir / f"iter_{iteration + 1}"
 
-    assert ctx.paths.base_dir == tmp_path
-    assert ctx.paths.variant_dir == expected_variant_dir
-    assert ctx.paths.iteration_dir == expected_iteration_dir
-    assert ctx.paths.variant_dir.exists()
-    assert ctx.paths.iteration_dir.exists()
-    assert ctx.variant.sensor_model == expected_sensor
-    assert ctx.variant.num_particles == expected_particles
+        assert ctx.paths.base_dir == tmp_path
+        assert ctx.paths.variant_dir == expected_variant_dir
+        assert ctx.paths.iteration_dir == expected_iteration_dir
+        assert ctx.paths.variant_dir.exists()
+        assert ctx.paths.iteration_dir.exists()
+        assert ctx.variant.sensor_model == expected_sensor
+        assert ctx.variant.num_particles == expected_particles
 
 
 @pytest.mark.parametrize(
@@ -123,15 +125,15 @@ def test_variation_attributes(
     tmp_path, base_options, base_source, variant, expected_attrs
 ):
     """ctx.variation exposes all key-value pairs from the variation dict."""
-    ctx = Context(
+    with Context(
         variant=variant,
         iteration=0,
         options=base_options,
         source=base_source,
         base_dir=tmp_path,
-    )
-    for key, value in expected_attrs.items():
-        assert getattr(ctx.variant, key) == value
+    ) as ctx:
+        for key, value in expected_attrs.items():
+            assert getattr(ctx.variant, key) == value
 
 
 @pytest.mark.parametrize(
@@ -161,16 +163,16 @@ def test_options_attributes(
     expected_rate,
 ):
     """ctx.options exposes clock, qos_option_path and rate correctly."""
-    ctx = Context(
+    with Context(
         variant=base_variant,
         iteration=0,
         options=options,
         source=base_source,
         base_dir=tmp_path,
-    )
-    assert ctx.options.clock == expected_clock
-    assert ctx.options.qos_option_path == expected_qos
-    assert ctx.options.rate == expected_rate
+    ) as ctx:
+        assert ctx.options.clock == expected_clock
+        assert ctx.options.qos_option_path == expected_qos
+        assert ctx.options.rate == expected_rate
 
 
 def test_source_path_is_set_correctly(ctx):
@@ -186,39 +188,194 @@ def test_inputs_defaults_to_empty_namespace(ctx):
 @pytest.mark.parametrize("iteration", [0, 1, 5, 42])
 def test_iteration_stored(tmp_path, base_variant, base_options, base_source, iteration):
     """ctx.iteration stores the zero-based repetition index."""
-    ctx = Context(
+    with Context(
         variant=base_variant,
         iteration=iteration,
         options=base_options,
         source=base_source,
         base_dir=tmp_path,
-    )
-    assert ctx.iteration == iteration
+    ) as ctx:
+        assert ctx.iteration == iteration
 
 
 def test_context_is_immutable(tmp_path):
     """Context fields cannot be reassigned after construction."""
     source = Source("/my_benchmark.py")
-    ctx = Context(
+    with Context(
         variant={"sensor_model": "beam"},
         iteration=0,
         options={"dry_run": True},
         source=source,
         base_dir=tmp_path,
         variant_index=0,
-    )
+    ) as ctx:
+        with pytest.raises(AttributeError):
+            ctx.variant = SimpleNamespace()
 
-    with pytest.raises(AttributeError):
-        ctx.variant = SimpleNamespace()
+        with pytest.raises(AttributeError):
+            ctx.options = SimpleNamespace()
 
-    with pytest.raises(AttributeError):
-        ctx.options = SimpleNamespace()
+        with pytest.raises(AttributeError):
+            ctx.inputs = SimpleNamespace()
 
-    with pytest.raises(AttributeError):
-        ctx.inputs = SimpleNamespace()
+        with pytest.raises(AttributeError):
+            ctx.iteration = 99
 
-    with pytest.raises(AttributeError):
-        ctx.iteration = 99
+        with pytest.raises(AttributeError):
+            ctx.shell = None
 
-    with pytest.raises(AttributeError):
-        ctx.shell = None
+
+def test_context_skipped_is_false_on_cache_miss(
+    tmp_path, base_variant, base_options, base_source
+):
+    """ctx.skipped is False on first run when no completed iteration exists."""
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=base_options,
+        source=base_source,
+        base_dir=tmp_path,
+    ) as ctx:
+        assert ctx.skipped is False
+
+
+def test_context_skipped_is_true_on_cache_hit(
+    tmp_path, base_variant, base_options, base_source
+):
+    """ctx.skipped is True when the iteration was already completed."""
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=base_options,
+        source=base_source,
+        base_dir=tmp_path,
+    ):
+        pass
+
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=base_options,
+        source=base_source,
+        base_dir=tmp_path,
+    ) as ctx:
+        assert ctx.skipped is True
+
+
+def test_completed_at_written_on_clean_exit(
+    tmp_path, base_variant, base_options, base_source
+):
+    """completed_at is written to metadata after a successful iteration."""
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=base_options,
+        source=base_source,
+        base_dir=tmp_path,
+    ) as ctx:
+        pass
+
+    content = yaml.safe_load(ctx.metadata_path.read_text())
+    assert "completed_at" in content
+    assert "run_hash" in content
+
+
+def test_completed_at_not_written_on_exception(
+    tmp_path, base_variant, base_options, base_source
+):
+    """completed_at is not written when an exception propagates out of the context."""
+    with pytest.raises(RuntimeError):
+        with Context(
+            variant=base_variant,
+            iteration=0,
+            options=base_options,
+            source=base_source,
+            base_dir=tmp_path,
+        ) as ctx:
+            raise RuntimeError("simulated failure")
+
+    content = yaml.safe_load(ctx.metadata_path.read_text())
+    assert "completed_at" not in content
+
+
+def test_no_cache_forces_rerun(tmp_path, base_variant, base_source):
+    """no_cache flag bypasses the cache check when iteration was already completed."""
+    options = {
+        "dry_run": False,
+        "no_cache": False,
+        "log_output": "file",
+        "log_level": "info",
+    }
+    options_no_cache = {**options, "no_cache": True}
+
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=options,
+        source=base_source,
+        base_dir=tmp_path,
+    ):
+        pass
+
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=options_no_cache,
+        source=base_source,
+        base_dir=tmp_path,
+    ) as ctx:
+        assert ctx.skipped is False
+
+
+def test_dry_run_does_not_mark_completed(tmp_path, base_variant, base_source):
+    """Dry-run iterations do not write completed_at to metadata."""
+    options = {
+        "dry_run": True,
+        "no_cache": False,
+        "log_output": "file",
+        "log_level": "info",
+    }
+
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=options,
+        source=base_source,
+        base_dir=tmp_path,
+    ) as ctx:
+        pass
+
+    if ctx.metadata_path.exists():
+        content = yaml.safe_load(ctx.metadata_path.read_text())
+        assert "completed_at" not in content
+
+
+def test_leftover_artifacts_are_cleaned_on_rerun(
+    tmp_path, base_variant, base_options, base_source
+):
+    """Leftover artifacts from a failed run are removed on the next entry."""
+    # First run — creates an artifact then fails
+    with pytest.raises(RuntimeError):
+        with Context(
+            variant=base_variant,
+            iteration=0,
+            options=base_options,
+            source=base_source,
+            base_dir=tmp_path,
+        ) as ctx:
+            artifact = ctx.paths.iteration_dir / "output" / "data.mcap"
+            artifact.parent.mkdir(parents=True)
+            artifact.touch()
+            raise RuntimeError("simulated failure")
+
+    assert (tmp_path / "var_1" / "iter_1" / "output").exists()
+
+    # Second run — iteration_dir should be clean
+    with Context(
+        variant=base_variant,
+        iteration=0,
+        options=base_options,
+        source=base_source,
+        base_dir=tmp_path,
+    ) as ctx:
+        assert not (ctx.paths.iteration_dir / "output").exists()
