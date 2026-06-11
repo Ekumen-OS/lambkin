@@ -39,10 +39,12 @@ import yaml
 from click.formatting import HelpFormatter
 
 from lambkin.common import defaults, signals
-from lambkin.core.ctx.benchmark_context import BenchmarkContext
-from lambkin.core.ctx.iteration_context import IterationContext
+from lambkin.core.ctx import (
+    BenchmarkContext,
+    IterationContext,
+    VariantContext,
+)
 from lambkin.core.ctx.source import Source
-from lambkin.core.ctx.variant_context import VariantContext
 from lambkin.core.decorators.input import InputRegistry
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
