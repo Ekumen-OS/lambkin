@@ -148,7 +148,9 @@ class IterationContext:
             A fully initialized ``IterationContext`` ready to be used as a
             context manager.
         """
-        bctx = BenchmarkContext(source=source, options=options, base_dir=base_dir)
+        bctx = BenchmarkContext(
+            source=source, options=options, base_dir=base_dir, variants=[]
+        )
         vctx = VariantContext(
             benchmark_ctx=bctx,
             variant=variant,

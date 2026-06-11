@@ -49,12 +49,11 @@ def variant():
 
 
 @pytest.fixture
-def bctx(tmp_path, source, base_options):
-    """An entered BenchmarkContext."""
-    with BenchmarkContext(
-        source=source, options=base_options, base_dir=tmp_path
-    ) as ctx:
-        yield ctx
+def bctx(source, base_options, tmp_path):
+    """A BenchmarkContext with empty variants, not entered."""
+    return BenchmarkContext(
+        source=source, options=base_options, base_dir=tmp_path, variants=[]
+    )
 
 
 @pytest.fixture
@@ -71,7 +70,9 @@ class TestBenchmarkContext:
         """__enter__ creates the base directory on disk."""
         target = tmp_path / "results"
         assert not target.exists()
-        with BenchmarkContext(source=source, options=base_options, base_dir=target):
+        with BenchmarkContext(
+            source=source, options=base_options, base_dir=target, variants=[]
+        ):
             assert target.exists()
 
     def test_source_property(self, bctx, source):
@@ -86,7 +87,7 @@ class TestBenchmarkContext:
     def test_raw_options_returns_original_dict(self, tmp_path, source, base_options):
         """raw_options returns the original dict, not the SimpleNamespace."""
         with BenchmarkContext(
-            source=source, options=base_options, base_dir=tmp_path
+            source=source, options=base_options, base_dir=tmp_path, variants=[]
         ) as bctx:
             assert bctx.raw_options == base_options
             assert isinstance(bctx.raw_options, dict)
@@ -95,26 +96,26 @@ class TestBenchmarkContext:
         """base_dir property returns a Path equal to the one passed in."""
         assert bctx.base_dir == tmp_path
 
-    def test_write_variants_yaml(self, bctx, tmp_path):
-        """write_variants_yaml writes var_N keys to variants.yaml."""
-        variants = [
-            {"sensor_model": "beam", "num_particles": 10},
-            {"sensor_model": "likelihood", "num_particles": 100},
-        ]
-        path = bctx.write_variants_yaml(variants)
-
-        assert path == tmp_path / "variants.yaml"
-        assert path.exists()
-
-        content = yaml.safe_load(path.read_text())
-        assert content == {
-            "var_1": {"sensor_model": "beam", "num_particles": 10},
-            "var_2": {"sensor_model": "likelihood", "num_particles": 100},
-        }
+    def test_write_variants_yaml(self, tmp_path, source, base_options):
+        """_write_variants writes var_N keys to variants.yaml on __enter__."""
+        variants = [{"sensor_model": "beam"}, {"sensor_model": "likelihood"}]
+        bctx = BenchmarkContext(
+            source=source, options=base_options, base_dir=tmp_path, variants=variants
+        )
+        with bctx:
+            path = tmp_path / "variants.yaml"
+            assert path.exists()
+            content = yaml.safe_load(path.read_text())
+            assert content == {
+                "var_1": {"sensor_model": "beam"},
+                "var_2": {"sensor_model": "likelihood"},
+            }
 
     def test_exit_is_noop(self, tmp_path, source, base_options):
         """__exit__ does not raise and does not remove the directory."""
-        with BenchmarkContext(source=source, options=base_options, base_dir=tmp_path):
+        with BenchmarkContext(
+            source=source, options=base_options, base_dir=tmp_path, variants=[]
+        ):
             pass
         assert tmp_path.exists()
 
@@ -262,7 +263,7 @@ class TestIterationContext:
             "log_level": "info",
         }
         with BenchmarkContext(
-            source=source, options=options, base_dir=tmp_path
+            source=source, options=options, base_dir=tmp_path, variants=[]
         ) as bctx:
             with VariantContext(
                 benchmark_ctx=bctx, variant={"x": 1}, variant_index=0
@@ -282,7 +283,7 @@ class TestIterationContext:
         }
         with pytest.raises(RuntimeError):
             with BenchmarkContext(
-                source=source, options=options, base_dir=tmp_path
+                source=source, options=options, base_dir=tmp_path, variants=[]
             ) as bctx:
                 with VariantContext(
                     benchmark_ctx=bctx, variant={"x": 1}, variant_index=0
@@ -302,7 +303,7 @@ class TestIterationContext:
         }
         variant = {"x": 1}
         with BenchmarkContext(
-            source=source, options=options, base_dir=tmp_path
+            source=source, options=options, base_dir=tmp_path, variants=[]
         ) as bctx:
             with VariantContext(
                 benchmark_ctx=bctx, variant=variant, variant_index=0
@@ -324,7 +325,7 @@ class TestIterationContext:
         variant = {"x": 1}
 
         with BenchmarkContext(
-            source=source, options=options_normal, base_dir=tmp_path
+            source=source, options=options_normal, base_dir=tmp_path, variants=[]
         ) as bctx:
             with VariantContext(
                 benchmark_ctx=bctx, variant=variant, variant_index=0
@@ -333,7 +334,7 @@ class TestIterationContext:
                     pass
 
         with BenchmarkContext(
-            source=source, options=options_no_cache, base_dir=tmp_path
+            source=source, options=options_no_cache, base_dir=tmp_path, variants=[]
         ) as bctx:
             with VariantContext(
                 benchmark_ctx=bctx, variant=variant, variant_index=0
@@ -353,7 +354,7 @@ class TestIterationContext:
 
         with pytest.raises(RuntimeError):
             with BenchmarkContext(
-                source=source, options=options, base_dir=tmp_path
+                source=source, options=options, base_dir=tmp_path, variants=[]
             ) as bctx:
                 with VariantContext(
                     benchmark_ctx=bctx, variant=variant, variant_index=0
@@ -366,7 +367,7 @@ class TestIterationContext:
         assert stale.exists()
 
         with BenchmarkContext(
-            source=source, options=options, base_dir=tmp_path
+            source=source, options=options, base_dir=tmp_path, variants=[]
         ) as bctx:
             with VariantContext(
                 benchmark_ctx=bctx, variant=variant, variant_index=0

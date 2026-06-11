@@ -277,9 +277,9 @@ def benchmark(variants, num_iterations):
 
             start_time = time.monotonic()
 
-            with BenchmarkContext(source, options, base_dir) as bctx:
+            with BenchmarkContext(source, options, base_dir, variants) as bctx:
+                # variants.yaml is written to base_dir on __enter__
                 resolved_inputs = bctx.resolve_inputs(inputs)
-                bctx.write_variants_yaml(variants)
                 signals.setup()
                 for variant_index, variant in enumerate(variants):
                     if (
