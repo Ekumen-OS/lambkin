@@ -29,8 +29,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-import yaml
-
 from .source import Source
 
 logger = logging.getLogger(__name__)
@@ -39,24 +37,20 @@ logger = logging.getLogger(__name__)
 class BenchmarkContext:
     """Outermost context for a benchmark run.
 
-    Owns ``source``, ``options``, ``base_dir``, ``variants``, input resolution,
-    and the ``variants.yaml`` manifest written to the base directory.
+    Owns ``source``, ``options``, and ``base_dir`` for the entire duration
+    of the benchmark loop — entered once, exited once.
 
     Attributes:
         source: Source object describing the benchmark script being executed.
         options: Namespaced runtime options (read-only).
         base_dir: Root directory for all benchmark results (read-only).
-        variants: List of variant dicts for this benchmark run (read-only).
     """
-
-    VARIANTS_FILENAME = "variants.yaml"
 
     def __init__(
         self,
         source: Source,
         options: dict[str, Any],
         base_dir: Path | str,
-        variants: list[dict],
     ) -> None:
         """Initialize the benchmark context.
 
@@ -68,13 +62,11 @@ class BenchmarkContext:
             source: Source object describing the benchmark script.
             options: Parsed options dict from CLI / ``@lambkin.option``.
             base_dir: Root directory for all benchmark results.
-            variants: List of variant dicts to sweep over.
         """
         self._source = source
         self._options = SimpleNamespace(**options)
         self._base_dir = Path(base_dir)
         self._raw_options = options
-        self._variants = variants
 
     @property
     def source(self) -> Source:
@@ -103,7 +95,6 @@ class BenchmarkContext:
             This BenchmarkContext instance.
         """
         self._base_dir.mkdir(parents=True, exist_ok=True)
-        self._write_variants()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -125,20 +116,6 @@ class BenchmarkContext:
             or ``None`` if no hooks are registered.
         """
         return inputs.resolve(self)
-
-    def _write_variants(self) -> Path:
-        """Write the ``variants.yaml`` manifest to ``base_dir``.
-
-        Returns:
-            Path to the written file.
-        """
-        variants_map = {
-            f"var_{i + 1}": variant for i, variant in enumerate(self._variants)
-        }
-        path = self._base_dir / self.VARIANTS_FILENAME
-        with open(path, "w") as f:
-            yaml.dump(variants_map, f, default_flow_style=False, sort_keys=False)
-        return path
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the BenchmarkContext state."""

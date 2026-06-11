@@ -32,8 +32,10 @@ import inspect
 import logging
 import sys
 import time
+from pathlib import Path
 
 import click
+import yaml
 from click.formatting import HelpFormatter
 
 from lambkin.common import defaults, signals
@@ -188,6 +190,14 @@ def _parse_options(fn, cli_args):
     return click_ctx.params
 
 
+def _write_variants_yaml(base_dir: Path, variants: list[dict]) -> None:
+    """Write variants.yaml mapping var_N to variant dicts to base_dir."""
+    variants_map = {f"var_{i + 1}": v for i, v in enumerate(variants)}
+    path = base_dir / "variants.yaml"
+    with open(path, "w") as f:
+        yaml.dump(variants_map, f, default_flow_style=False, sort_keys=False)
+
+
 def benchmark(variants, num_iterations):
     """Drive the benchmark execution loop over all variants and iterations.
 
@@ -277,8 +287,8 @@ def benchmark(variants, num_iterations):
 
             start_time = time.monotonic()
 
-            with BenchmarkContext(source, options, base_dir, variants) as bctx:
-                # variants.yaml is written to base_dir on __enter__
+            with BenchmarkContext(source, options, base_dir) as bctx:
+                _write_variants_yaml(bctx.base_dir, variants)
                 resolved_inputs = bctx.resolve_inputs(inputs)
                 signals.setup()
                 for variant_index, variant in enumerate(variants):
