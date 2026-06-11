@@ -17,12 +17,12 @@
 Provides the @benchmark decorator, which drives the execution loop over all
 variants and iterations. It collects CLI option definitions registered by
 @option, parses them once before the loop using an internal click parser, and
-injects the resulting values into a Context class on each (variant, iteration)
-pair.
+injects the resulting values into an IterationContext on each
+(variant, iteration) pair.
 
-Input hooks registered via "@nominal.input" are managed by "InputRegistry"
-instance and resolved before the benchmark function runs on each iteration,
-injecting their return values into "ctx.inputs".
+Input hooks registered via "@nominal.input" are managed by an "InputRegistry"
+instance and resolved once at benchmark scope before the loop starts, injecting
+their return values into ctx.inputs.
 
 Raises ValueError if variants is empty.
 """
@@ -191,7 +191,12 @@ def _parse_options(fn, cli_args):
 
 
 def _write_variants_yaml(base_dir: Path, variants: list[dict]) -> None:
-    """Write variants.yaml mapping var_N to variant dicts to base_dir."""
+    """Write a variants.yaml file mapping var_N keys to variant dicts.
+
+    Args:
+        base_dir: Root directory for all benchmark results.
+        variants: Full list of variant dicts in benchmark order.
+    """
     variants_map = {f"var_{i + 1}": v for i, v in enumerate(variants)}
     path = base_dir / "variants.yaml"
     with open(path, "w") as f:
@@ -201,22 +206,23 @@ def _write_variants_yaml(base_dir: Path, variants: list[dict]) -> None:
 def benchmark(variants, num_iterations):
     """Drive the benchmark execution loop over all variants and iterations.
 
-    Parses CLI options registered by @lambkin.option once before the loop, then
-    creates a Context for each (variant, iteration) pair and calls the decorated
-    function with it. Input hooks registered via @nominal.input are resolved
-    before each call, injecting their return values into ctx.inputs.
+    Parses CLI options registered by @lambkin.option once before the loop.
+    Creates a BenchmarkContext for the entire run, a VariantContext per
+    variant, and an IterationContext per (variant, iteration) pair. Input
+    hooks registered via @nominal.input are resolved once at benchmark scope
+    and injected into each IterationContext as ctx.inputs.
 
     Args:
-        variants (list[dict]): Sequence of variant dicts to sweep over. Each dict
-           is exposed as attributes on ``ctx.variant``.
-        num_iterations (int): Number of times to repeat each variant. Controls the
-            ``iter_<N>`` subfolders under each variant directory.
+        variants (list[dict]): Sequence of variant dicts to sweep over. Each
+            dict is exposed as attributes on ``ctx.variant``.
+        num_iterations (int): Number of times to repeat each variant. Controls
+            the ``iter_<N>`` subfolders under each variant directory.
 
     Returns:
         A decorator that wraps the benchmark function with the execution loop.
 
     Raises:
-        ValueError: If variants is empty
+        ValueError: If variants is empty.
     """
     if not variants:
         raise ValueError(
@@ -229,10 +235,11 @@ def benchmark(variants, num_iterations):
 
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
-            # Parse CLI arguments, falling back to sys.argv if no args provided.
+            # Parse CLI arguments, falling back to sys.argv if no args are provided.
             if args is not None:
                 cli_args = args
             elif base_dir is not None:
+                # Programmatic call (tests, scripts) — do not read sys.argv.
                 cli_args = []
             else:
                 cli_args = sys.argv[1:]
@@ -250,15 +257,19 @@ def benchmark(variants, num_iterations):
             log_level = options.get("log_level", defaults.LOG_LEVEL)
             cli_variants = options.get("variants")
 
+            # Configure the logging level for the SDK.
             configure_logging(log_level)
 
             # Resolve variant filter from CLI options.
+            # Numbers match the var_N folder names on disk.
             selected_variants = (
                 _parse_index_list(cli_variants, "variant", max_value=len(variants))
                 if cli_variants
                 else None
             )
 
+            # Log benchmark scope and compute total runs against the effective
+            # selection — all variants, or only those requested via --variants.
             logger.info(
                 "Starting benchmark: %d variant(s), %d iteration(s) each.",
                 len(variants),
@@ -278,19 +289,38 @@ def benchmark(variants, num_iterations):
             total_runs = selected_count * num_iterations
             current_run = 0
 
+            # Create the Source object from the benchmark script's path.
+            # This is used for BenchmarkContext construction and to derive the
+            # default base_dir when no output directory is explicitly provided.
             source = Source(path=inspect.getfile(fn))
+
+            # Determine base_dir for all benchmark outputs.
             base_dir = (
                 base_dir
                 if base_dir
                 else source.path.parent / defaults.BENCHMARKS_DIRNAME
             )
 
+            # Calculate start time for elapsed time reporting at the end.
             start_time = time.monotonic()
 
             with BenchmarkContext(source, options, base_dir) as bctx:
+                # Write the variants manifest once before the loop so it is
+                # always present even if the run is interrupted mid-sweep.
                 _write_variants_yaml(bctx.base_dir, variants)
+
+                # Resolve inputs once at benchmark scope — hooks run before
+                # any variant or iteration context is created.
                 resolved_inputs = bctx.resolve_inputs(inputs)
+
+                # Register the SIGUSR1 handler before any BackgroundProcess
+                # is started inside the benchmark function.
                 signals.setup()
+
+                # Loop over variants and iterations using the three-level context
+                # hierarchy. variant_index is always the original 0-based position
+                # in the full variants list so that output folder numbers (var_N)
+                # are stable regardless of which subset is selected at the CLI.
                 for variant_index, variant in enumerate(variants):
                     if (
                         selected_variants
@@ -300,6 +330,8 @@ def benchmark(variants, num_iterations):
 
                     with VariantContext(bctx, variant, variant_index) as vctx:
                         for iteration in range(num_iterations):
+                            # Log the current run number and
+                            # total runs to track progress.
                             current_run += 1
                             logger.info("Benchmark run %d/%d", current_run, total_runs)
                             with IterationContext(
@@ -309,6 +341,7 @@ def benchmark(variants, num_iterations):
                                     continue
                                 fn(ctx)
 
+            # Calculate and print total elapsed time, useful for user introspection.
             logger.info(
                 "Benchmark finished in %s.",
                 format_elapsed_time(time.monotonic() - start_time),
