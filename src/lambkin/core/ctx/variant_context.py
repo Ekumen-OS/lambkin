@@ -29,6 +29,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from .benchmark_context import BenchmarkContext
+from .source import Source
 
 
 class VariantContext:
@@ -67,6 +68,35 @@ class VariantContext:
         self._variant = SimpleNamespace(**variant)
         self._variant_index = variant_index
         self._variant_dir = benchmark_ctx.base_dir / f"var_{variant_index + 1}"
+
+    @classmethod
+    def from_params(
+        cls,
+        variant: dict[str, Any],
+        variant_index: int,
+        options: dict[str, Any],
+        source: Source,
+        base_dir: Path | str,
+    ) -> VariantContext:
+        """Construct a VariantContext directly from raw parameters.
+
+        Builds the necessary ``BenchmarkContext`` parent internally. Useful
+        in tests and tooling that need a fully configured ``VariantContext``
+        without going through the ``@benchmark`` decorator.
+
+        Args:
+            variant: Algorithm parameters for this variant.
+            variant_index: Zero-based index of this variant.
+            options: Parsed options dict.
+            source: Source object describing the benchmark script.
+            base_dir: Root directory for all benchmark results.
+
+        Returns:
+            A fully initialized ``VariantContext`` ready to be used as a
+            context manager.
+        """
+        bctx = BenchmarkContext(source=source, options=options, base_dir=base_dir)
+        return cls(benchmark_ctx=bctx, variant=variant, variant_index=variant_index)
 
     @property
     def variant(self) -> SimpleNamespace:
