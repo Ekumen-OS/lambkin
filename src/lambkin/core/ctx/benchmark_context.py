@@ -66,7 +66,6 @@ class BenchmarkContext:
         self._source = source
         self._options = SimpleNamespace(**options)
         self._base_dir = Path(base_dir)
-        self._raw_options = options
 
     @property
     def source(self) -> Source:
@@ -82,11 +81,6 @@ class BenchmarkContext:
     def base_dir(self) -> Path:
         """Root directory for all benchmark results."""
         return self._base_dir
-
-    @property
-    def raw_options(self) -> dict[str, Any]:
-        """Raw options dict (used by child contexts and cache logic)."""
-        return self._raw_options
 
     def __enter__(self) -> BenchmarkContext:
         """Create the base output directory on disk.

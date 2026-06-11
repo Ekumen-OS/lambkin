@@ -106,12 +106,11 @@ class IterationContext:
             iteration,
         )
         self._run_hash = compute_run_hash(
-            variant_ctx.raw_variant,
+            vars(variant_ctx.variant),
             iteration,
-            variant_ctx.raw_options,
+            vars(variant_ctx.options),
         )
 
-        # Lazily set in __enter__
         self._shell: ShellProxy | None = None
         self._skipped: bool = False
         self._iteration_cgroup = None

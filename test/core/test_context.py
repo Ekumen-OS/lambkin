@@ -80,14 +80,6 @@ class TestBenchmarkContext:
         assert bctx.options.dry_run is True
         assert bctx.options.log_level == "info"
 
-    def test_raw_options_returns_original_dict(self, tmp_path, source, base_options):
-        """raw_options returns the original dict, not the SimpleNamespace."""
-        with BenchmarkContext(
-            source=source, options=base_options, base_dir=tmp_path
-        ) as bctx:
-            assert bctx.raw_options == base_options
-            assert isinstance(bctx.raw_options, dict)
-
     def test_base_dir_property(self, tmp_path, bctx):
         """base_dir property returns a Path equal to the one passed in."""
         assert bctx.base_dir == tmp_path
@@ -126,14 +118,6 @@ class TestVariantContext:
         """variant_index returns the zero-based index."""
         assert vctx.variant_index == 0
 
-    def test_raw_variant_returns_original_dict(self, bctx, variant):
-        """raw_variant returns the original dict."""
-        with VariantContext(
-            benchmark_ctx=bctx, variant=variant, variant_index=0
-        ) as vctx:
-            assert vctx.raw_variant == variant
-            assert isinstance(vctx.raw_variant, dict)
-
     def test_source_delegated_to_benchmark_context(self, vctx, source):
         """Source is delegated to BenchmarkContext."""
         assert vctx.source is source
@@ -145,10 +129,6 @@ class TestVariantContext:
     def test_base_dir_delegated_to_benchmark_context(self, vctx, tmp_path):
         """base_dir is delegated to BenchmarkContext."""
         assert vctx.base_dir == tmp_path
-
-    def test_raw_options_delegated_to_benchmark_context(self, vctx, base_options):
-        """raw_options is delegated to BenchmarkContext."""
-        assert vctx.raw_options == base_options
 
     def test_exit_is_noop(self, bctx, variant):
         """__exit__ does not raise and does not remove the variant directory."""

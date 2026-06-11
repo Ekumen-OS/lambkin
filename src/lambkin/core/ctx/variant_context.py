@@ -65,7 +65,6 @@ class VariantContext:
         """
         self._benchmark_ctx = benchmark_ctx
         self._variant = SimpleNamespace(**variant)
-        self._raw_variant = variant  # kept for hash / IterationContext construction
         self._variant_index = variant_index
         self._variant_dir = benchmark_ctx.base_dir / f"var_{variant_index + 1}"
 
@@ -85,11 +84,6 @@ class VariantContext:
         return self._variant_dir
 
     @property
-    def raw_variant(self) -> dict[str, Any]:
-        """Raw variant dict (used by IterationContext and cache logic)."""
-        return self._raw_variant
-
-    @property
     def source(self):
         """Source object — delegated to BenchmarkContext."""
         return self._benchmark_ctx.source
@@ -103,11 +97,6 @@ class VariantContext:
     def base_dir(self) -> Path:
         """Root benchmark output directory — delegated to BenchmarkContext."""
         return self._benchmark_ctx.base_dir
-
-    @property
-    def raw_options(self) -> dict:
-        """Raw options dict — delegated to BenchmarkContext."""
-        return self._benchmark_ctx.raw_options
 
     def __enter__(self) -> VariantContext:
         """Create the variant output directory on disk.
