@@ -32,7 +32,6 @@ from typing import Any
 
 import yaml
 
-from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
     find_delegated_cgroup,
     kill_cgroup_tree,
@@ -230,8 +229,9 @@ class IterationContext:
         Returns:
             This IterationContext instance.
         """
-        no_cache = getattr(self.options, "no_cache", False)
-        if not no_cache and is_completed(self._metadata_path, self._run_hash):
+        if not self.options.no_cache and is_completed(
+            self._metadata_path, self._run_hash
+        ):
             self._skipped = True
             logger.info(
                 "var_%d/iter_%d cache hit, skipping.",
@@ -240,23 +240,20 @@ class IterationContext:
             )
             return self
 
-        dry_run = getattr(self.options, "dry_run", defaults.DRY_RUN)
-
-        if not dry_run:
+        if not self.options.dry_run:
             self._iteration_cgroup = make_iteration_cgroup(
                 find_delegated_cgroup(),
                 self._paths.iteration_dir,
             )
 
         self._shell = ShellProxy(
-            dry_run=dry_run,
+            dry_run=self.options.dry_run,
             cwd=self._paths.iteration_dir,
             cgroup=self._iteration_cgroup,
-            log_output=getattr(self.options, "log_output", defaults.LOG_OUTPUT),
+            log_output=self.options.log_output,
         )
 
         self._started_at = datetime.datetime.now().isoformat()
-
         self._setup_directories()
         self.write_metadata()
         return self
@@ -276,9 +273,7 @@ class IterationContext:
         if self._skipped:
             return
 
-        dry_run = getattr(self.options, "dry_run", defaults.DRY_RUN)
-
-        if exc_type is None and not dry_run:
+        if exc_type is None and not self.options.dry_run:
             self.write_metadata(completed_at=datetime.datetime.now().isoformat())
 
         if self._iteration_cgroup is not None:

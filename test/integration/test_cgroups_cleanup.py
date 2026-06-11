@@ -41,7 +41,7 @@ def test_cgroups_cleanup(tmp_path):
         variant={},
         variant_index=0,
         iteration=0,
-        options={},
+        options={"dry_run": False, "no_cache": False, "log_output": "file"},
         source=source,
         base_dir=tmp_path,
     ) as ctx:
