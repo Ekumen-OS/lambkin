@@ -34,12 +34,13 @@ import sys
 import time
 
 import click
-import yaml
 from click.formatting import HelpFormatter
 
 from lambkin.common import defaults, signals
-from lambkin.core.ctx.context import Context
+from lambkin.core.ctx.benchmark_context import BenchmarkContext
+from lambkin.core.ctx.iteration_context import IterationContext
 from lambkin.core.ctx.source import Source
+from lambkin.core.ctx.variant_context import VariantContext
 from lambkin.core.decorators.input import InputRegistry
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
@@ -218,8 +219,13 @@ def benchmark(variants, num_iterations):
 
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
-            # Parse CLI arguments, falling back to sys.argv if no args are provided.
-            cli_args = sys.argv[1:] if args is None else args
+            # Parse CLI arguments, falling back to sys.argv if no args provided.
+            if args is not None:
+                cli_args = args
+            elif base_dir is not None:
+                cli_args = []
+            else:
+                cli_args = sys.argv[1:]
             options = _parse_options(fn, cli_args)
 
             # Handle early-exit flags before any benchmark setup.
@@ -234,19 +240,15 @@ def benchmark(variants, num_iterations):
             log_level = options.get("log_level", defaults.LOG_LEVEL)
             cli_variants = options.get("variants")
 
-            # Configure the logging level for the SDK.
             configure_logging(log_level)
 
-            # Resolve variant and iteration filters from CLI options.
-            # Numbers match the var_N / iter_N folder names on disk.
+            # Resolve variant filter from CLI options.
             selected_variants = (
                 _parse_index_list(cli_variants, "variant", max_value=len(variants))
                 if cli_variants
                 else None
             )
 
-            # Log benchmark scope and compute total runs against the effective
-            # selection — all variants, or only those requested via --variants.
             logger.info(
                 "Starting benchmark: %d variant(s), %d iteration(s) each.",
                 len(variants),
@@ -262,75 +264,41 @@ def benchmark(variants, num_iterations):
                 )
             else:
                 selected_count = len(variants)
+
             total_runs = selected_count * num_iterations
             current_run = 0
 
-            # Create the Source object from the benchmark script's path.
-            # This is used for Context construction and to derive the default base_dir
-            # when no output directory is explicitly provided.
             source = Source(path=inspect.getfile(fn))
-
-            # Determine base_dir for all benchmark outputs and create directory.
             base_dir = (
                 base_dir
                 if base_dir
                 else source.path.parent / defaults.BENCHMARKS_DIRNAME
             )
-            base_dir.mkdir(parents=True, exist_ok=True)
 
-            # A lightweight base context is used to resolve inputs and derive the
-            # variants.yaml path. Unlike the per-iteration contexts created in the
-            # loop below, this context is never entered — __enter__ is not called —
-            # so no directories, cgroups, or metadata files are created. All side
-            # effects are deferred to __enter__, which is only invoked for real
-            # (variant, iteration) pairs inside the loop.
-            # TODO(teresa-ortega): Consider an alternative approach for managing
-            # the base context.
-            base_ctx = Context(
-                variant={},
-                iteration=0,
-                options=options,
-                source=source,
-                base_dir=base_dir,
-                variant_index=0,
-            )
-            resolved_inputs = inputs.resolve(base_ctx)
-            variants_map = {
-                f"var_{i + 1}": variant for i, variant in enumerate(variants)
-            }
-            variants_map_path = base_ctx.paths.base_dir / "variants.yaml"
-            with open(variants_map_path, "w") as f:
-                yaml.dump(variants_map, f, default_flow_style=False, sort_keys=False)
-
-            # Calculate start time
             start_time = time.monotonic()
 
-            # Loop over variants and iterations, creating a new Context for each run.
-            # variant_index is always the original 0-based position in the full
-            # variants list so that output folder numbers (var_N) are stable
-            # regardless of which subset is selected at the CLI.
-            signals.setup()
-            for variant_index, variant in enumerate(variants):
-                if selected_variants and (variant_index + 1) not in selected_variants:
-                    continue
-                for iteration in range(num_iterations):
-                    # Log the current run number and total runs to track progress.
-                    current_run += 1
-                    logger.info("Benchmark run %d/%d", current_run, total_runs)
-                    with Context(
-                        variant=variant,
-                        iteration=iteration,
-                        options=options,
-                        source=source,
-                        base_dir=base_dir,
-                        inputs=resolved_inputs,
-                        variant_index=variant_index,
-                    ) as ctx:
-                        if ctx.skipped:
-                            continue
-                        fn(ctx)
+            with BenchmarkContext(source, options, base_dir) as bctx:
+                resolved_inputs = bctx.resolve_inputs(inputs)
+                bctx.write_variants_yaml(variants)
+                signals.setup()
+                for variant_index, variant in enumerate(variants):
+                    if (
+                        selected_variants
+                        and (variant_index + 1) not in selected_variants
+                    ):
+                        continue
 
-            # Calculate and print total elapsed time, useful for user introspection.
+                    with VariantContext(bctx, variant, variant_index) as vctx:
+                        for iteration in range(num_iterations):
+                            current_run += 1
+                            logger.info("Benchmark run %d/%d", current_run, total_runs)
+                            with IterationContext(
+                                vctx, iteration, resolved_inputs
+                            ) as ctx:
+                                if ctx.skipped:
+                                    continue
+                                fn(ctx)
+
             logger.info(
                 "Benchmark finished in %s.",
                 format_elapsed_time(time.monotonic() - start_time),

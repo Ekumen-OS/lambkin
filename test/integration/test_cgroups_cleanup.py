@@ -16,7 +16,7 @@
 
 from pathlib import Path
 
-from lambkin.core.ctx.context import Context
+from lambkin.core.ctx import IterationContext
 from lambkin.core.ctx.source import Source
 from lambkin.core.process.background import background
 
@@ -37,13 +37,13 @@ def test_cgroups_cleanup(tmp_path):
     child_cgroup = None
     iteration_cgroup = None
 
-    with Context(
+    with IterationContext.from_params(
         variant={},
+        variant_index=0,
         iteration=0,
         options={},
         source=source,
         base_dir=tmp_path,
-        variant_index=0,
     ) as ctx:
         with background(ctx.shell.python3, "-c", COOPERATIVE) as bp:
             child_cgroup = bp._cgroup

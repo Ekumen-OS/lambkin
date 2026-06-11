@@ -61,14 +61,13 @@ def _make_handler(previous):
 def setup():
     """Register the SIGUSR1 handler for the benchmark script process.
 
-    Must be called once before any BackgroundProcess is started. Registered
-    in the benchmark script process rather than the CLI because the CLI
-    launches the script as a separate subprocess — BackgroundProcess and its
-    monitor thread live in the script's process, so the signal is sent and
-    handled there.
-
-    Note: Calling this function multiple times will chain handlers, which is
-    harmless but unnecessary.
+    Idempotent: if the lambkin handler is already registered, does nothing.
+    Must be called once before any BackgroundProcess is started.
     """
+    current = signal.getsignal(signal.SIGUSR1)
+    if callable(current) and getattr(current, "__qualname__", "").endswith(
+        "_handle_sigusr1"
+    ):
+        return
     previous = signal.signal(signal.SIGUSR1, signal.SIG_DFL)
     signal.signal(signal.SIGUSR1, _make_handler(previous))

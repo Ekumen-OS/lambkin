@@ -16,7 +16,7 @@
 
 import pytest
 
-from lambkin.core.ctx import Context
+from lambkin.core.ctx import IterationContext
 from lambkin.core.decorators.benchmark import benchmark
 from lambkin.core.decorators.input import InputRegistry
 
@@ -42,7 +42,7 @@ def test_register_returns_original_function():
 def test_registered_hook_name_is_preserved():
     """The ctx.inputs attribute name is the hook's __name__."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = IterationContext.__new__(IterationContext)
 
     def my_dataset(ctx):
         return "some_value"
@@ -77,7 +77,7 @@ def test_hook_with_extra_parameters_raises():
 def test_hook_returning_none_raises():
     """A hook that returns None raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = IterationContext.__new__(IterationContext)
 
     def dataset(ctx):
         return None
@@ -90,7 +90,7 @@ def test_hook_returning_none_raises():
 def test_hook_with_no_return_raises():
     """A hook with no return statement raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = IterationContext.__new__(IterationContext)
 
     def dataset(ctx):
         pass
@@ -103,7 +103,7 @@ def test_hook_with_no_return_raises():
 def test_hook_returning_empty_string_raises():
     """A hook that returns an empty string raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = IterationContext.__new__(IterationContext)
 
     def dataset(ctx):
         return ""
@@ -116,7 +116,7 @@ def test_hook_returning_empty_string_raises():
 def test_hook_returning_blank_string_raises():
     """A hook that returns a whitespace-only string raises ValueError."""
     registry = InputRegistry()
-    ctx = Context.__new__(Context)
+    ctx = IterationContext.__new__(IterationContext)
 
     def dataset(ctx):
         return "   "
