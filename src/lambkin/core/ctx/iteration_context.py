@@ -203,7 +203,7 @@ class IterationContext:
 
     @property
     def options(self) -> SimpleNamespace:
-        """Namespaced runtime options — delegated to BenchmarkContext."""
+        """Namespaced options delegated to BenchmarkContext via VariantContext."""
         return self._variant_ctx.options
 
     @property
