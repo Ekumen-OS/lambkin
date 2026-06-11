@@ -1,33 +1,51 @@
-"""Abstracts access to the new SDK's benchmark filesystem layout."""
+"""Abstracts access to the benchmark filesystem layout.
 
-import pathlib
-from collections.abc import Iterable, Mapping
-from typing import NamedTuple
+Provides utilities to traverse benchmark output directories and
+read iteration metadata produced by the SDK.
+"""
+
+from pathlib import Path
+from types import SimpleNamespace
 
 import yaml
 
 
-class Location(NamedTuple):
-    """A path with associated semi-structured metadata."""
+def iterations(ctx_or_path: object | Path) -> list:
+    """Traverse the benchmark output tree and return all iteration entries.
 
-    path: pathlib.Path
-    metadata: Mapping
-
-
-Locations = Iterable[Location]
-
-
-def iterations(base_dir: pathlib.Path) -> Locations:
-    """Iterate over all iteration output directories in a benchmark.
+    Accepts either a benchmark context (exposing ``paths.base_dir``) or a
+    plain :class:`~pathlib.Path` to the benchmark base directory, so that
+    users writing custom reports can call this function directly without
+    needing a live context.
 
     Args:
-        base_dir: path to the benchmark base directory (ctx.paths.base_dir).
+        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
+            benchmark base directory.
 
-    Yields:
-        Location tuples of (iteration_path, metadata) for each iteration found.
+    Returns:
+        A list of :class:`~types.SimpleNamespace` objects, one per iteration,
+        each with the following attributes:
+
+        - ``iter_dir``: :class:`~pathlib.Path` to the iteration directory.
+        - ``variant``: variant directory name (e.g. ``"var_1"``).
+        - ``iteration``: iteration index (int).
+        - ``params``: :class:`~types.SimpleNamespace` of variant parameters.
     """
-    for meta_path in sorted(base_dir.glob("var_*/iter_*/lambkin_metadata.yaml")):
-        iteration_path = meta_path.parent
+    root = (
+        ctx_or_path.paths.base_dir if not isinstance(ctx_or_path, Path) else ctx_or_path
+    )
+    results = []
+    for meta_path in sorted(root.glob("var_*/iter_*/lambkin_metadata.yaml")):
+        iter_dir = meta_path.parent
+        variant_name = iter_dir.parent.name
         with open(meta_path) as f:
             meta = yaml.safe_load(f)
-        yield Location(iteration_path, meta)
+        results.append(
+            SimpleNamespace(
+                iter_dir=iter_dir,
+                variant=variant_name,
+                iteration=meta.get("iteration", 0),
+                params=SimpleNamespace(**meta.get("variant", {})),
+            )
+        )
+    return results
