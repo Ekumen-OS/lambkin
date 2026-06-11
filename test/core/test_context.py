@@ -241,8 +241,8 @@ class TestIterationContext:
     def test_metadata_written_on_enter(self, vctx):
         """Metadata file is written on context entry."""
         with IterationContext(variant_ctx=vctx, iteration=0) as ctx:
-            assert ctx.metadata_path.exists()
-            content = yaml.safe_load(ctx.metadata_path.read_text())
+            assert ctx._metadata_path.exists()
+            content = yaml.safe_load(ctx._metadata_path.read_text())
             assert "started_at" in content
             assert "run_hash" in content
             assert "variant_index" in content
@@ -251,7 +251,7 @@ class TestIterationContext:
         """dry_run=True never writes completed_at."""
         with IterationContext(variant_ctx=vctx, iteration=0) as ctx:
             pass
-        content = yaml.safe_load(ctx.metadata_path.read_text())
+        content = yaml.safe_load(ctx._metadata_path.read_text())
         assert "completed_at" not in content
 
     def test_completed_at_written_on_clean_exit(self, tmp_path, source):
@@ -270,7 +270,7 @@ class TestIterationContext:
             ) as vctx:
                 with IterationContext(variant_ctx=vctx, iteration=0) as ctx:
                     pass
-        content = yaml.safe_load(ctx.metadata_path.read_text())
+        content = yaml.safe_load(ctx._metadata_path.read_text())
         assert "completed_at" in content
 
     def test_completed_at_not_written_on_exception(self, tmp_path, source):
@@ -290,7 +290,7 @@ class TestIterationContext:
                 ) as vctx:
                     with IterationContext(variant_ctx=vctx, iteration=0) as ctx:
                         raise RuntimeError("simulated failure")
-        content = yaml.safe_load(ctx.metadata_path.read_text())
+        content = yaml.safe_load(ctx._metadata_path.read_text())
         assert "completed_at" not in content
 
     def test_skipped_is_true_on_cache_hit(self, tmp_path, source):

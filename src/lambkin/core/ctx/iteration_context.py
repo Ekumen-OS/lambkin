@@ -215,6 +215,11 @@ class IterationContext:
         """Benchmark source — delegated to BenchmarkContext."""
         return self._variant_ctx.source
 
+    @property
+    def _metadata_path(self) -> Path:
+        """Path to the metadata YAML file for this iteration."""
+        return self._paths.iteration_dir / self.METADATA_FILENAME
+
     def __enter__(self) -> IterationContext:
         """Initialize the iteration, skipping if already cached.
 
@@ -229,7 +234,7 @@ class IterationContext:
             This IterationContext instance.
         """
         no_cache = getattr(self.options, "no_cache", False)
-        if not no_cache and is_completed(self.metadata_path, self._run_hash):
+        if not no_cache and is_completed(self._metadata_path, self._run_hash):
             self._skipped = True
             logger.info(
                 "var_%d/iter_%d cache hit, skipping.",
@@ -309,13 +314,8 @@ class IterationContext:
         }
         if completed_at is not None:
             metadata["completed_at"] = completed_at
-        with open(self.metadata_path, "w") as f:
+        with open(self._metadata_path, "w") as f:
             yaml.dump(metadata, f, default_flow_style=False, sort_keys=False)
-
-    @property
-    def metadata_path(self) -> Path:
-        """Path to the metadata YAML file for this iteration."""
-        return self._paths.iteration_dir / self.METADATA_FILENAME
 
     def _setup_directories(self) -> None:
         """Create variant and iteration directories, clearing stale artifacts.
