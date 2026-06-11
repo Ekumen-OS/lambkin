@@ -31,7 +31,6 @@ from typing import Any
 
 import yaml
 
-from .paths import RunPaths
 from .source import Source
 
 logger = logging.getLogger(__name__)
@@ -108,9 +107,9 @@ class BenchmarkContext:
     def resolve_inputs(self, inputs) -> SimpleNamespace | None:
         """Resolve all registered input hooks against this context.
 
-        Creates a minimal ``RunPaths`` (variant_index=0, iteration=0) so
-        that input hooks that inspect ``ctx.paths.base_dir`` work correctly.
-        No directories, cgroups, or metadata are created.
+        Input hooks receive this BenchmarkContext as ``ctx`` and may access
+        ``ctx.base_dir`` and ``ctx.source``. No directories, cgroups, or
+        metadata are created.
 
         Args:
             inputs: The ``InputRegistry`` holding hooks registered via
@@ -136,15 +135,6 @@ class BenchmarkContext:
         with open(path, "w") as f:
             yaml.dump(variants_map, f, default_flow_style=False, sort_keys=False)
         return path
-
-    @property
-    def paths(self) -> RunPaths:
-        """Minimal RunPaths so input hooks can access ``ctx.paths.base_dir``.
-
-        The variant/iteration indices are fixed at 0 and the derived
-        subdirectories are never created.
-        """
-        return RunPaths.from_indices(self._base_dir, 0, 0)
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the BenchmarkContext state."""

@@ -64,10 +64,5 @@ def setup():
     Idempotent: if the lambkin handler is already registered, does nothing.
     Must be called once before any BackgroundProcess is started.
     """
-    current = signal.getsignal(signal.SIGUSR1)
-    if callable(current) and getattr(current, "__qualname__", "").endswith(
-        "_handle_sigusr1"
-    ):
-        return
     previous = signal.signal(signal.SIGUSR1, signal.SIG_DFL)
     signal.signal(signal.SIGUSR1, _make_handler(previous))

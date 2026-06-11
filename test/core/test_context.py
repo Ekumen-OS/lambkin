@@ -112,10 +112,6 @@ class TestBenchmarkContext:
             "var_2": {"sensor_model": "likelihood", "num_particles": 100},
         }
 
-    def test_paths_shim_returns_base_dir(self, bctx, tmp_path):
-        """paths.base_dir points to the benchmark base directory."""
-        assert bctx.paths.base_dir == tmp_path
-
     def test_exit_is_noop(self, tmp_path, source, base_options):
         """__exit__ does not raise and does not remove the directory."""
         with BenchmarkContext(source=source, options=base_options, base_dir=tmp_path):
