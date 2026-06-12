@@ -307,7 +307,7 @@ def benchmark(variants, num_iterations):
 
                 # Resolve inputs once at benchmark scope — hooks run before
                 # any variant or iteration context is created.
-                resolved_inputs = bctx.resolve_inputs(inputs)
+                resolved_inputs = inputs.resolve(bctx)
 
                 # Register the SIGUSR1 handler before any BackgroundProcess
                 # is started inside the benchmark function.

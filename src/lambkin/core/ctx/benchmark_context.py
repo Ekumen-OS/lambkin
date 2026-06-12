@@ -94,23 +94,6 @@ class BenchmarkContext:
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """No-op — BenchmarkContext holds no resources that need cleanup."""
 
-    def resolve_inputs(self, inputs) -> SimpleNamespace | None:
-        """Resolve all registered input hooks against this context.
-
-        Input hooks receive this BenchmarkContext as ``ctx`` and may access
-        ``ctx.base_dir`` and ``ctx.source``. No directories, cgroups, or
-        metadata are created.
-
-        Args:
-            inputs: The ``InputRegistry`` holding hooks registered via
-                ``@benchmark.input``.
-
-        Returns:
-            A ``SimpleNamespace`` with one attribute per registered hook,
-            or ``None`` if no hooks are registered.
-        """
-        return inputs.resolve(self)
-
     def __repr__(self) -> str:
         """Return a human-readable summary of the BenchmarkContext state."""
         return (
