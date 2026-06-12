@@ -434,3 +434,92 @@ def test_benchmark_no_cache_forces_full_rerun(variants, tmp_path):
     contexts.clear()
     fn(args=["--no-cache"], base_dir=tmp_path)
     assert len(contexts) == len(variants)
+
+
+def test_benchmark_scoped_hook_called_once_before_loop(variants, tmp_path):
+    """Benchmark-scoped input hooks are resolved once before any variant runs."""
+    call_count = 0
+    seen_inputs = []
+
+    @benchmark(variants=variants, num_iterations=2)
+    def fn(ctx):
+        seen_inputs.append(ctx.inputs.shared)
+
+    @fn.input(scope="benchmark")
+    def shared(ctx):
+        nonlocal call_count
+        call_count += 1
+        return "shared.mcap"
+
+    fn(base_dir=tmp_path)
+
+    # Hook called exactly once regardless of variants and iterations
+    assert call_count == 1
+
+    # All iterations see the same benchmark-scoped input
+    assert all(v == "shared.mcap" for v in seen_inputs)
+    assert len(seen_inputs) == len(variants) * 2
+
+
+def test_benchmark_variant_scoped_hook_called_once_per_variant(variants, tmp_path):
+    """Variant-scoped input hooks are resolved once per variant."""
+    call_count = 0
+
+    @benchmark(variants=variants, num_iterations=3)
+    def fn(ctx):
+        pass
+
+    @fn.input(scope="variant")
+    def dataset(ctx):
+        nonlocal call_count
+        call_count += 1
+        return f"{ctx.variant.sensor_model}.mcap"
+
+    fn(base_dir=tmp_path)
+    assert call_count == len(variants)
+
+
+def test_benchmark_iteration_scoped_hook_not_called_on_cache_hit(tmp_path):
+    """Iteration-scoped hooks are not resolved when iteration is a cache hit."""
+    call_count = 0
+
+    @benchmark(variants=[{"x": 1}], num_iterations=1)
+    def fn(ctx):
+        pass
+
+    @fn.input(scope="iteration")
+    def seed(ctx):
+        nonlocal call_count
+        call_count += 1
+        return f"seed_{ctx.iteration}"
+
+    # First run — cache miss, hook is called
+    fn(base_dir=tmp_path)
+    assert call_count == 1
+
+    # Second run — cache hit, iteration-scoped hook not called
+    call_count = 0
+    fn(base_dir=tmp_path)
+    assert call_count == 0
+
+
+def test_benchmark_partial_restart_only_reruns_failed_iterations(tmp_path):
+    """Only failed iterations rerun on a partial restart."""
+    calls = []
+    should_fail = [True]
+
+    @benchmark(variants=[{"x": 1}, {"x": 2}], num_iterations=1)
+    def fn(ctx):
+        calls.append(ctx.variant_index)
+        if ctx.variant_index == 1 and should_fail[0]:
+            raise RuntimeError("simulated failure")
+
+    with pytest.raises(RuntimeError):
+        fn(base_dir=tmp_path)
+
+    assert calls == [0, 1]
+
+    calls.clear()
+    should_fail[0] = False
+    fn(base_dir=tmp_path)
+    assert calls == [1]
