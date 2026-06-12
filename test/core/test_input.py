@@ -304,6 +304,21 @@ def test_inputs_locked_after_resolution(bctx):
         bctx.inputs = SimpleNamespace(reference="other.tum")
 
 
+def test_variant_context_inputs_locked_after_resolution(vctx):
+    """vctx.inputs raises AttributeError if assigned again after resolution."""
+    vctx.inputs = SimpleNamespace(dataset="data.mcap")
+    with pytest.raises(AttributeError, match="read-only after resolution"):
+        vctx.inputs = SimpleNamespace(dataset="other.mcap")
+
+
+def test_iteration_context_inputs_locked_after_resolution(vctx):
+    """ctx.inputs raises AttributeError if assigned again after resolution."""
+    with IterationContext(variant_ctx=vctx, iteration=0) as ctx:
+        ctx.inputs = SimpleNamespace(seed="seed_0")
+        with pytest.raises(AttributeError, match="read-only after resolution"):
+            ctx.inputs = SimpleNamespace(seed="seed_1")
+
+
 def test_ctx_inputs_populated_before_fn_runs(variant, tmp_path):
     """ctx.inputs.dataset is available inside the benchmark function after resolve."""
     seen = []

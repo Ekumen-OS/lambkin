@@ -353,7 +353,8 @@ def benchmark(variants, num_iterations):
             )
 
         # Expose the input registration hook so users can decorate input providers
-        # with @my_benchmark.input on the returned wrapper.
+        # with @my_benchmark.input (benchmark scope, default) or
+        # @my_benchmark.input(scope="variant") / @my_benchmark.input(scope="iteration").
         wrapper.input = inputs.register
 
         # Expose the output registration hook so users can decorate output providers
