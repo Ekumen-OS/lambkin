@@ -367,3 +367,26 @@ class TestIterationContext:
         with ctx as entered:
             assert entered is ctx
             assert ctx.paths.iteration_dir.exists()
+
+    def test_shell_raises_on_cache_hit(self, tmp_path, source):
+        """Accessing shell on a cache hit raises AttributeError."""
+        options = {
+            "dry_run": False,
+            "no_cache": False,
+            "log_output": "file",
+            "log_level": "info",
+        }
+        variant = {"x": 1}
+
+        with BenchmarkContext(
+            source=source, options=options, base_dir=tmp_path
+        ) as bctx:
+            with VariantContext(
+                benchmark_ctx=bctx, variant=variant, variant_index=0
+            ) as vctx:
+                with IterationContext(variant_ctx=vctx, iteration=0):
+                    pass
+                with IterationContext(variant_ctx=vctx, iteration=0) as ctx:
+                    assert ctx.skipped is True
+                    with pytest.raises(AttributeError):
+                        _ = ctx.shell
