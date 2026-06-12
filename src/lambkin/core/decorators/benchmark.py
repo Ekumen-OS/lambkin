@@ -240,7 +240,6 @@ def benchmark(variants, num_iterations):
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
             # Parse CLI arguments, falling back to sys.argv if no args are provided.
-            last_ctx = None
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
 
@@ -304,22 +303,10 @@ def benchmark(variants, num_iterations):
             start_time = time.monotonic()
 
             with BenchmarkContext(source, options, base_dir) as bctx:
-                # Write the variants manifest once before the loop so it is
-                # always present even if the run is interrupted mid-sweep.
                 _write_variants_yaml(bctx.base_dir, variants)
-
-                # Resolve inputs once at benchmark scope — hooks run before
-                # any variant or iteration context is created.
                 resolved_inputs = inputs.resolve(bctx)
-
-                # Register the SIGUSR1 handler before any BackgroundProcess
-                # is started inside the benchmark function.
                 signals.setup()
 
-                # Loop over variants and iterations using the three-level context
-                # hierarchy. variant_index is always the original 0-based position
-                # in the full variants list so that output folder numbers (var_N)
-                # are stable regardless of which subset is selected at the CLI.
                 for variant_index, variant in enumerate(variants):
                     if (
                         selected_variants
@@ -329,8 +316,6 @@ def benchmark(variants, num_iterations):
 
                     with VariantContext(bctx, variant, variant_index) as vctx:
                         for iteration in range(num_iterations):
-                            # Log the current run number and
-                            # total runs to track progress.
                             current_run += 1
                             logger.info("Benchmark run %d/%d", current_run, total_runs)
                             with IterationContext(
@@ -340,6 +325,7 @@ def benchmark(variants, num_iterations):
                                     continue
                                 fn(ctx)
 
+            outputs.run(bctx)
             # Calculate and print total elapsed time, useful for user introspection.
             logger.info(
                 "Benchmark finished in %s.",

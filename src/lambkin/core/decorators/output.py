@@ -15,9 +15,9 @@
 """Output decorator for lambkin.
 
 Provides the "OutputRegistry" class, which manages the registration and
-execution of output hooks for a benchmark function. Hooks are registered via the
-"OutputRegistry.register" method and executed once after the full benchmark
-loop completes, receiving the context of the last iteration.
+execution of output hooks for a benchmark function. Hooks are registered via
+the "OutputRegistry.register" method and executed once after the full benchmark
+loop completes, receiving the benchmark-scoped context.
 """
 
 import inspect
@@ -26,7 +26,6 @@ import inspect
 def _validate_hook_signature(hook_fn) -> None:
     """Validate that the hook function accepts a single 'ctx' parameter."""
     params = list(inspect.signature(hook_fn).parameters.keys())
-
     if len(params) != 1:
         raise ValueError(f"Hook '{hook_fn.__name__}' must have exactly 1 parameter.")
 
@@ -35,12 +34,11 @@ class OutputRegistry:
     """Manages the registration and execution of output hooks for a benchmark.
 
     Warning:
-        Output hooks receive the context of the last benchmark iteration,
-        but by the time they run, the iteration cgroup has already been torn
-        down. Do not call ``ctx.shell`` or launch any processes inside an
-        output hook — it will fail with a confusing error. Output hooks are
-        intended for reading paths and artifacts from disk only, for example
-        via ``ctx.paths.base_dir``.
+        Output hooks receive a ``BenchmarkContext`` — not an
+        ``IterationContext``. The cgroup and shell of every iteration have
+        already been torn down by the time hooks run. Do not call
+        ``ctx.shell`` or launch any processes inside an output hook — use
+        ``ctx.base_dir`` and read artifacts from disk.
     """
 
     def __init__(self):
@@ -48,11 +46,11 @@ class OutputRegistry:
         self._hooks = []
 
     def register(self, hook_fn):
-        """Decorator used to register a function as an output handler.
+        """Register a function as an output hook.
 
         Args:
-            hook_fn: function to register as an output hook. Must accept
-                a single ``ctx`` argument.
+            hook_fn: Function to register as an output hook. Must accept
+                a single ``ctx`` argument (a ``BenchmarkContext``).
 
         Returns:
             The original function, unchanged.
@@ -70,18 +68,17 @@ class OutputRegistry:
         self._hooks.append(hook_fn)
         return hook_fn
 
-    def run(self, ctx):
-        """Run all registered output hooks with the last iteration context.
+    def run(self, ctx) -> None:
+        """Run all registered output hooks with the benchmark context.
 
         Calls each registered hook in registration order, passing ``ctx`` as
         the sole argument. If no hooks are registered, this method does nothing.
 
         Args:
-            ctx: Context of the last benchmark iteration, passed as-is to
-                each hook.
+            ctx: ``BenchmarkContext`` for the completed benchmark run.
 
         Raises:
-            ValueError: if ctx is None.
+            ValueError: if ``ctx`` is ``None``.
         """
         if ctx is None:
             raise ValueError("Cannot run output hooks: context is None.")
