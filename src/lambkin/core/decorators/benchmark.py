@@ -238,13 +238,7 @@ def benchmark(variants, num_iterations):
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
             # Parse CLI arguments, falling back to sys.argv if no args are provided.
-            if args is not None:
-                cli_args = args
-            elif base_dir is not None:
-                # Programmatic call (tests, scripts) — do not read sys.argv.
-                cli_args = []
-            else:
-                cli_args = sys.argv[1:]
+            cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
 
             # Handle early-exit flags before any benchmark setup.

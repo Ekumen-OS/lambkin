@@ -122,7 +122,7 @@ def test_benchmark_loops_over_variants_and_iterations(variants, tmp_path):
     def fn(ctx):
         calls.append(ctx)
 
-    fn(base_dir=tmp_path)
+    fn(args=[], base_dir=tmp_path)
     assert len(calls) == 6
 
 
@@ -411,12 +411,12 @@ def test_benchmark_skips_completed_iterations_on_rerun(variants, tmp_path):
     def fn(ctx):
         contexts.append(ctx)
 
-    fn(base_dir=tmp_path)
+    fn(args=[], base_dir=tmp_path)
     assert len(contexts) == len(variants)
     assert all(not ctx.skipped for ctx in contexts)
 
     contexts.clear()
-    fn(base_dir=tmp_path)
+    fn(args=[], base_dir=tmp_path)
     assert len(contexts) == 0
 
 
@@ -428,7 +428,7 @@ def test_benchmark_no_cache_forces_full_rerun(variants, tmp_path):
     def fn(ctx):
         contexts.append((ctx.variant_index, ctx.iteration))
 
-    fn(base_dir=tmp_path)
+    fn(args=[], base_dir=tmp_path)
     assert len(contexts) == len(variants)
 
     contexts.clear()
