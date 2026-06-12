@@ -18,12 +18,16 @@ Provides the benchmark execution context and source information
 for a single (variation, iteration) run.
 """
 
-from .context import Context
+from .benchmark_context import BenchmarkContext
+from .iteration_context import IterationContext
 from .paths import RunPaths
 from .source import Source
+from .variant_context import VariantContext
 
 __all__ = [
-    "Context",
+    "BenchmarkContext",
+    "VariantContext",
+    "IterationContext",
     "RunPaths",
     "Source",
 ]
