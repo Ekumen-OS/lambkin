@@ -255,7 +255,7 @@ class IterationContext:
 
         self._started_at = datetime.datetime.now().isoformat()
         self._setup_directories()
-        self.write_metadata()
+        self._write_metadata()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -274,13 +274,13 @@ class IterationContext:
             return
 
         if exc_type is None and not self.options.dry_run:
-            self.write_metadata(completed_at=datetime.datetime.now().isoformat())
+            self._write_metadata(completed_at=datetime.datetime.now().isoformat())
 
         if self._iteration_cgroup is not None:
             kill_cgroup_tree(self._iteration_cgroup)
             remove_cgroup_tree(self._iteration_cgroup)
 
-    def write_metadata(self, completed_at: str | None = None) -> None:
+    def _write_metadata(self, completed_at: str | None = None) -> None:
         """Write a YAML metadata file to the iteration output directory.
 
         Called once at context entry and again after successful completion
