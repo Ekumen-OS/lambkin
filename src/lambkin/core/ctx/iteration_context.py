@@ -143,7 +143,7 @@ class IterationContext:
             inputs: Optional resolved input namespace.
 
         Returns:
-            A fully initialized ``IterationContext`` ready to be used as a
+            An ``IterationContext`` ready to be used as a
             context manager.
         """
         bctx = BenchmarkContext(source=source, options=options, base_dir=base_dir)

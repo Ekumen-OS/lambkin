@@ -92,7 +92,7 @@ class VariantContext:
             base_dir: Root directory for all benchmark results.
 
         Returns:
-            A fully initialized ``VariantContext`` ready to be used as a
+            A ``VariantContext`` ready to be used as a
             context manager.
         """
         bctx = BenchmarkContext(source=source, options=options, base_dir=base_dir)
@@ -114,7 +114,7 @@ class VariantContext:
         return self._variant_dir
 
     @property
-    def source(self):
+    def source(self) -> Source:
         """Source object — delegated to BenchmarkContext."""
         return self._benchmark_ctx.source
 
