@@ -14,7 +14,7 @@
 """Benchmark-scoped context.
 
 Owns the outermost lifecycle of a benchmark run: source identity, parsed
-options, base output directory, input resolution, and variants.yaml writing.
+options and base output directory.
 Lives for the entire duration of the benchmark loop — entered once, exited
 once.
 
@@ -24,14 +24,11 @@ before the variant/iteration loops.
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 from .source import Source
-
-logger = logging.getLogger(__name__)
 
 
 class BenchmarkContext:
