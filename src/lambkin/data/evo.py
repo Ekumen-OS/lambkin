@@ -1,237 +1,118 @@
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Data access module for evo_ape results.
 
 Provides utilities to collect and aggregate evo_ape result files
 produced by benchmark runs.
 """
 
-import os
 import warnings
-from collections.abc import Iterable, Mapping
 from importlib import import_module
+from pathlib import Path
+from types import SimpleNamespace
 
-import numpy as np
-import pandas as pd
-
-from lambkin.common.utilities import enforce_nonempty, safe_merge
 from lambkin.data import access
-from lambkin.data.access import Locations
 
 
-def _to_evo_filestem(name: str, name_format: str) -> str:
-    """Convert name to a filestem like evo does.
+def series(ctx_or_path: object | Path, filename: str) -> list:
+    """Collect evo_ape timeseries results across all iterations.
 
-    Args:
-        name: trajectory or file name.
-        name_format: format of the name ('ros' or 'path').
-
-    Returns:
-        A filestem string.
-
-    Raises:
-        ValueError: if name_format is unknown.
-    """
-    if name_format == "ros":
-        return name.lstrip("/").replace(":", "/").replace("/", "_")
-    if name_format == "path":
-        return os.path.splitext(os.path.basename(name))[0]
-    raise ValueError(f"unknown name format: {name_format}")
-
-
-def series(ctx, filename):
-    """Collect evo_ape results across all variations and iterations.
-
-    Convenience function for use in ``@nominal.output`` hooks. Walks all
-    iteration directories under ``ctx.paths.base_dir`` and collects all
-    available data from each evo_ape result zip file.
+    Walks all iteration directories and collects the evo_ape result
+    zip file matching ``filename`` from each one.
 
     Args:
-        ctx: context of the last benchmark iteration.
+        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
+            benchmark base directory.
         filename: name of the evo_ape result zip file (e.g. ``"output.ape.zip"``).
 
     Returns:
-        A dict with keys ``"time"``, ``"ape"``, ``"distance"``, ``"stats"``,
-        and ``"info"``, each a list with one entry per iteration.
+        A list of :class:`~types.SimpleNamespace` objects, one per iteration,
+        each with the following attributes:
+
+        - ``iter_dir``: :class:`~pathlib.Path` to the iteration directory.
+        - ``variant``: variant directory name.
+        - ``iteration``: iteration index.
+        - ``params``: variant parameters as a :class:`~types.SimpleNamespace`.
+        - ``time``: array of timestamps from start in seconds.
+        - ``ape``: array of APE error values in meters.
+        - ``distance``: array of distances from start in meters (may be None).
     """
-    result_data = {"time": [], "ape": [], "distance": [], "stats": [], "info": []}
     file_interface = import_module("evo.tools.file_interface")
-    for path, _ in access.iterations(ctx.paths.base_dir):
-        result_path = path / filename
+    results = []
+    for entry in access.iterations(ctx_or_path):
+        result_path = entry.iter_dir / filename
         if not result_path.exists():
             warnings.warn(f"{result_path} is missing", stacklevel=2)
             continue
         result = file_interface.load_res_file(result_path)
-        result_data["time"].append(result.np_arrays.get("seconds_from_start"))
-        result_data["ape"].append(result.np_arrays.get("error_array"))
-        result_data["distance"].append(result.np_arrays.get("distances_from_start"))
-        result_data["stats"].append(result.stats)
-        result_data["info"].append(result.info)
-    return result_data
+        results.append(
+            SimpleNamespace(
+                iter_dir=entry.iter_dir,
+                variant=entry.variant,
+                iteration=entry.iteration,
+                params=entry.params,
+                time=result.np_arrays.get("seconds_from_start"),
+                ape=result.np_arrays.get("error_array"),
+                distance=result.np_arrays.get("distances_from_start"),
+            )
+        )
+    return results
 
 
-def _series(
-    trajectory_name: str,
-    metric_name: str,
-    *,
-    target_iterations: Locations,
-    trajectory_name_format: str = "ros",
-    normalization: str | None = "wide",
-) -> Iterable[tuple[Mapping, np.ndarray, np.ndarray]] | pd.DataFrame:
-    """Yield trajectory metric timeseries per benchmark iteration.
+def stats(ctx_or_path: object | Path, filename: str) -> list:
+    """Collect evo_ape statistics across all iterations.
+
+    Walks all iteration directories and collects the evo_ape result
+    zip file matching ``filename`` from each one.
 
     Args:
-        trajectory_name: name of the trajectory of interest.
-        metric_name: name of the metric of interest (e.g. ape, rpe).
-        target_iterations: iteration locations to target.
-        trajectory_name_format: name format for trajectories as used by evo.
-        normalization: style for data normalization ('wide', 'long', or None).
+        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
+            benchmark base directory.
+        filename: name of the evo_ape result zip file (e.g. ``"output.ape.zip"``).
 
     Returns:
-        A DataFrame if normalized, otherwise a generator of (metadata, time,
-        value) tuples.
+        A list of :class:`~types.SimpleNamespace` objects, one per iteration,
+        each with the following attributes:
 
-    Raises:
-        ValueError: if normalization style is unknown.
+        - ``iter_dir``: :class:`~pathlib.Path` to the iteration directory.
+        - ``variant``: variant directory name.
+        - ``iteration``: iteration index.
+        - ``params``: variant parameters as a :class:`~types.SimpleNamespace`.
+        - ``rmse``: root mean square error.
+        - ``mean``: mean error.
+        - ``median``: median error.
+        - ``std``: standard deviation.
+        - ``min``: minimum error.
+        - ``max``: maximum error.
+        - ``sse``: sum of squared errors.
     """
-    target_iterations = enforce_nonempty(target_iterations, "no target iterations")
-
-    trajectory_filestem = _to_evo_filestem(trajectory_name, trajectory_name_format)
-    metric_filename = f"{trajectory_filestem}.{metric_name}.zip"
-
-    def _denormalized_impl():
-        file_interface = import_module("evo.tools.file_interface")
-        for path, metadata in target_iterations:
-            result_path = path / metric_filename
-            if not result_path.exists():
-                warnings.warn(f"{result_path} is missing", stacklevel=2)
-                continue
-            result = file_interface.load_res_file(result_path)
-            time = result.np_arrays["seconds_from_start"]
-            value = result.np_arrays["error_array"]
-            yield metadata, time, value
-
-    if normalization == "wide":
-        normalized_metric_name = f"{trajectory_name}.{metric_name}"
-        df = pd.json_normalize(
-            [
-                safe_merge(
-                    metadata,
-                    {
-                        normalized_metric_name: {
-                            "series": {"time": time, "value": value}
-                        }
-                    },
-                )
-                for metadata, time, value in _denormalized_impl()
-            ],
-            sep=".",
-        )
-        return (
-            df
-            .explode(
-                list(df.columns[df.columns.str.startswith(normalized_metric_name)])
+    file_interface = import_module("evo.tools.file_interface")
+    results = []
+    for entry in access.iterations(ctx_or_path):
+        result_path = entry.iter_dir / filename
+        if not result_path.exists():
+            warnings.warn(f"{result_path} is missing", stacklevel=2)
+            continue
+        result = file_interface.load_res_file(result_path)
+        results.append(
+            SimpleNamespace(
+                iter_dir=entry.iter_dir,
+                variant=entry.variant,
+                iteration=entry.iteration,
+                params=entry.params,
+                **result.stats,
             )
-            .reset_index(drop=True)
-            .infer_objects()
         )
-    if normalization == "long":
-        df = pd.json_normalize(
-            [
-                safe_merge(
-                    metadata,
-                    {
-                        "trajectory": {"name": trajectory_name},
-                        "metric": {
-                            "name": metric_name,
-                            "series": {"time": time, "value": value},
-                        },
-                    },
-                )
-                for metadata, time, value in _denormalized_impl()
-            ],
-            sep=".",
-        )
-        return (
-            df
-            .explode(list(df.columns[df.columns.str.startswith("metric.series")]))
-            .reset_index(drop=True)
-            .infer_objects()
-        )
-    if normalization is None:
-        return _denormalized_impl()
-    raise ValueError(f"unknown normalization style: {normalization}")
-
-
-def _stats(
-    trajectory_name: str,
-    metric_name: str,
-    *,
-    target_iterations: Locations,
-    trajectory_name_format: str = "ros",
-    normalization: str | None = "wide",
-) -> Iterable[tuple[Mapping, Mapping]] | pd.DataFrame:
-    """Yield trajectory metric statistics per benchmark iteration.
-
-    Args:
-        trajectory_name: name of the trajectory of interest.
-        metric_name: name of the metric of interest (e.g. ape, rpe).
-        target_iterations: iteration locations to target.
-        trajectory_name_format: name format for trajectories as used by evo.
-        normalization: style for data normalization ('wide', 'long', or None).
-
-    Returns:
-        A DataFrame if normalized, otherwise a generator of (metadata, stats) tuples.
-
-    Raises:
-        ValueError: if normalization style is unknown.
-    """
-    target_iterations = enforce_nonempty(target_iterations, "no target iterations")
-
-    trajectory_filestem = _to_evo_filestem(trajectory_name, trajectory_name_format)
-    result_filename = f"{trajectory_filestem}.{metric_name}.zip"
-
-    def _denormalized_impl():
-        file_interface = import_module("evo.tools.file_interface")
-        for path, metadata in target_iterations:
-            result_path = path / result_filename
-            if not result_path.exists():
-                warnings.warn(f"{result_path} is missing", stacklevel=2)
-                continue
-            result = file_interface.load_res_file(result_path)
-            yield metadata, result.stats
-
-    if normalization == "wide":
-        normalized_metric_name = f"{trajectory_name}.{metric_name}"
-        return (
-            pd
-            .json_normalize(
-                [
-                    safe_merge(metadata, {normalized_metric_name: statistics})
-                    for metadata, statistics in _denormalized_impl()
-                ],
-                sep=".",
-            )
-            .reset_index(drop=True)
-            .infer_objects()
-        )
-    if normalization == "long":
-        return (
-            pd
-            .json_normalize(
-                [
-                    safe_merge(
-                        metadata,
-                        {
-                            "trajectory": {"name": trajectory_name},
-                            "metric": {"name": metric_name, **statistics},
-                        },
-                    )
-                    for metadata, statistics in _denormalized_impl()
-                ],
-                sep=".",
-            )
-            .reset_index(drop=True)
-            .infer_objects()
-        )
-    if normalization is None:
-        return _denormalized_impl()
-    raise ValueError(f"unknown normalization style: {normalization}")
+    return results
