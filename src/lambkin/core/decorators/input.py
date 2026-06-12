@@ -14,14 +14,35 @@
 
 """Input decorator for lambkin.
 
-Provides the class "InputRegistry" class, which manages the registration and
-resolution of input hooks for a benchmark function. Hooks are registered via the
-"InputRegistry.register" method and resolved before the benchmark function runs,
-injecting their return values into "ctx.inputs" under the hook's function name.
+Provides the ``InputRegistry`` class, which manages the registration and
+resolution of scoped input hooks for a benchmark function.
+
+Hooks are registered via ``InputRegistry.register`` and resolved against
+the appropriate context by calling ``registry.resolve(ctx)``. The registry
+dispatches on ``ctx.scope`` to determine which hooks to run. Merging with
+parent scope inputs is delegated to the context's ``inputs`` setter.
+
+Hooks can be scoped to one of three lifecycle levels:
+
+- ``"benchmark"`` (default): resolved once before the variant loop, against
+  a ``BenchmarkContext``. Use for inputs that do not depend on the current
+  variant or iteration (e.g. downloading a shared dataset).
+- ``"variant"``: resolved once per variant, against a ``VariantContext``.
+  Use for inputs that depend on ``ctx.variant`` but not ``ctx.iteration``
+  (e.g. selecting a dataset file by sensor model).
+- ``"iteration"``: resolved once per iteration on a cache miss, against an
+  ``IterationContext``. Use for inputs that depend on both ``ctx.variant``
+  and ``ctx.iteration`` (e.g. computing a per-iteration random seed).
+
+Hook names must be unique across all scopes. Registering two hooks with
+the same name — regardless of scope — raises a ``ValueError`` at decoration
+time.
 """
 
 import inspect
 from types import SimpleNamespace
+
+_VALID_SCOPES = frozenset({"benchmark", "variant", "iteration"})
 
 
 def _validate_result(hook_fn, result) -> None:
@@ -37,67 +58,125 @@ def _validate_result(hook_fn, result) -> None:
 
 
 def _validate_hook_signature(hook_fn) -> None:
-    """Validate that the hook function accepts a single 'ctx' parameter."""
+    """Validate that the hook function accepts a single parameter."""
     params = list(inspect.signature(hook_fn).parameters.keys())
-
     if len(params) != 1:
         raise ValueError(f"Hook '{hook_fn.__name__}' must have exactly 1 parameter.")
 
 
 class InputRegistry:
-    """Manages the registration and resolution of input hooks for a benchmark.
+    """Manages the registration and resolution of scoped input hooks.
 
-    Warning:
-        Hooks are resolved with a base context containing dummy variant and
-        iteration values. Accessing Accessing ``ctx.variant`` or
-        ``ctx.iteration`` inside a hook will silently return empty/wrong values.
-        Hooks should only depend on ``ctx.options`` or other stable context fields.
+    Hooks are bucketed by scope (``benchmark``, ``variant``, ``iteration``)
+    and resolved by calling ``registry.resolve(ctx)``, which dispatches on
+    ``ctx.scope``. Merging with parent scope inputs is handled by the
+    context's ``inputs`` setter.
+
+    All hook names must be unique across all scopes.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the InputRegistry."""
-        self._hooks = []
+        self._hooks: dict[str, list] = {
+            "benchmark": [],
+            "variant": [],
+            "iteration": [],
+        }
 
-    def register(self, hook_fn):
-        """Decorator used to register a function as an input provider.
+    def _all_names(self) -> set[str]:
+        """Return all registered hook names across all scopes."""
+        return {h.__name__ for hooks in self._hooks.values() for h in hooks}
 
-        Warning:
-            Do not access ``ctx.variant`` or ``ctx.iteration`` inside the hook;
-            they will contain dummy values at resolve time, leading to silent
-            bugs that are hard to trace.
+    def _do_register(self, fn, scope: str):
+        """Register a single hook function under the given scope.
 
         Args:
-            hook_fn: The function to register as an input provider.
+            fn: The hook function to register.
+            scope: The scope to register the hook under.
 
         Returns:
-            The hook function, unchanged.
+            The hook function unchanged.
 
         Raises:
-            ValueError: If the hook signature is invalid or its name is already
-                registered.
+            ValueError: If the hook signature is invalid or its name conflicts
+                with an already-registered hook in any scope.
         """
-        _validate_hook_signature(hook_fn)
-        existing_names = [h.__name__ for h in self._hooks]
-        if hook_fn.__name__ in existing_names:
+        _validate_hook_signature(fn)
+        if fn.__name__ in self._all_names():
             raise ValueError(
-                f"Hook name conflict: '{hook_fn.__name__}' is already registered."
+                f"Hook name conflict: '{fn.__name__}' is already registered "
+                f"in another scope. Hook names must be unique across all scopes."
             )
-        self._hooks.append(hook_fn)
-        return hook_fn
+        self._hooks[scope].append(fn)
+        return fn
 
-    def resolve(self, ctx):
-        """Resolve all registered input hooks and return a SimpleNamespace snapshot.
+    def register(self, hook_fn=None, *, scope: str = "benchmark"):
+        """Register a function as a scoped input provider.
 
-        Collects all hook results into a local dict first so ctx is never
-        mutated during resolution. The returned snapshot is passed to the
-        Context constructor by the benchmark runner.
+        Supports two calling conventions::
+
+            @nominal.input
+            def dataset(ctx): ...                      # benchmark scope
+
+            @nominal.input(scope="variant")
+            def dataset(ctx): ...                      # variant scope
+
+        Args:
+            hook_fn: The function to register. When the decorator is used
+                without arguments, this is the decorated function. When called
+                with arguments (e.g. ``scope="variant"``), this is ``None``
+                and a decorator is returned instead.
+            scope: Lifecycle scope for this hook. One of ``"benchmark"``,
+                ``"variant"``, or ``"iteration"``. Defaults to ``"benchmark"``.
 
         Returns:
-            SimpleNamespace: A snapshot mapping each hook's function name to
-                its return value.
+            The hook function unchanged (when used as a plain decorator), or
+            a decorator (when called with arguments).
+
+        Raises:
+            ValueError: If ``scope`` is not valid, the hook signature is
+                invalid, or the hook name is already registered in any scope.
         """
+        if scope not in _VALID_SCOPES:
+            raise ValueError(
+                f"Invalid scope {scope!r}. Must be one of: "
+                f"{', '.join(sorted(_VALID_SCOPES))}."
+            )
+        if hook_fn is not None:
+            return self._do_register(hook_fn, scope)
+
+        def decorator(fn):
+            return self._do_register(fn, scope)
+
+        return decorator
+
+    def resolve(self, ctx) -> SimpleNamespace:
+        """Resolve input hooks for the given context scope.
+
+        Dispatches on ``ctx.scope`` to determine which hooks to run and
+        returns the results as a ``SimpleNamespace``. Merging with parent
+        scope inputs is delegated to the context's ``inputs`` setter.
+
+        Args:
+            ctx: A ``BenchmarkContext``, ``VariantContext``, or
+                ``IterationContext`` instance.
+
+        Returns:
+            A ``SimpleNamespace`` containing the inputs resolved at this
+            scope only. The context's ``inputs`` setter handles merging
+            with parent inputs.
+
+        Raises:
+            ValueError: If ``ctx.scope`` is not a recognized scope.
+        """
+        scope = ctx.scope
+        if scope not in _VALID_SCOPES:
+            raise ValueError(
+                f"Unknown context scope {scope!r}. Must be one of: "
+                f"{', '.join(sorted(_VALID_SCOPES))}."
+            )
         resolved = {}
-        for hook in self._hooks:
+        for hook in self._hooks[scope]:
             result = hook(ctx)
             _validate_result(hook, result)
             resolved[hook.__name__] = result
