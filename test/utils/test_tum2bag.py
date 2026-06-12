@@ -110,6 +110,8 @@ def _make_ros_stubs() -> None:
 
 _make_ros_stubs()
 
+import rosbag2_py  # noqa: E402
+
 from lambkin.utils.tum2bag import _parse_tum, tum2bag  # noqa: E402
 
 
@@ -233,8 +235,6 @@ def test_tum2bag_writes_merged_messages(tmp_path: Path) -> None:
     )
     writer = MagicMock()
 
-    import rosbag2_py
-
     rosbag2_py.SequentialReader = MagicMock(return_value=reader)
     rosbag2_py.SequentialWriter = MagicMock(return_value=writer)
 
@@ -260,13 +260,12 @@ def test_tum2bag_custom_builder(tmp_path: Path) -> None:
     builder_calls = []
 
     def my_builder(t_ns, x, y, z, qx, qy, qz, qw):
+        """Build a custom message from TUM pose fields."""
         builder_calls.append((t_ns, x, y, z, qx, qy, qz, qw))
         return MagicMock(), "my_pkg/msg/MyPose"
 
     reader = _make_reader_mock([], [])
     writer = MagicMock()
-
-    import rosbag2_py
 
     rosbag2_py.SequentialReader = MagicMock(return_value=reader)
     rosbag2_py.SequentialWriter = MagicMock(return_value=writer)

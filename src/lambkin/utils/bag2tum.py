@@ -37,6 +37,9 @@ import sys
 from pathlib import Path
 
 import click
+import rclpy.serialization
+import rosbag2_py
+from geometry_msgs.msg import PoseStamped
 
 from lambkin.sdk_options import SDK_OPTIONS
 
@@ -69,10 +72,6 @@ def bag2tum(
         ValueError: If ``topic`` is not found in the bag or its type is not
             ``geometry_msgs/msg/PoseStamped``.
     """
-    import rclpy.serialization
-    import rosbag2_py
-    from geometry_msgs.msg import PoseStamped
-
     input_bag = Path(input_bag)
     output_tum = Path(output_tum)
 

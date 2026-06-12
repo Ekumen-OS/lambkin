@@ -100,7 +100,24 @@ def _make_ros_stubs() -> None:
 
 _make_ros_stubs()
 
+import rclpy.serialization  # noqa: E402
+import rosbag2_py  # noqa: E402
+from geometry_msgs.msg import PoseStamped  # noqa: E402
+
 from lambkin.utils.bag2tum import bag2tum  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _reset_ros_stubs() -> None:
+    """Reset mutable stub state before each test.
+
+    ``test_tum2bag.py`` runs first and overwrites ``sys.modules["rosbag2_py"]``
+    with its own stub. This fixture ensures ``SequentialReader`` and
+    ``deserialize_message`` are reset to safe defaults before every test so
+    that cross-module stub contamination does not cause false failures.
+    """
+    rosbag2_py.SequentialReader = MagicMock
+    rclpy.serialization.deserialize_message = MagicMock(return_value=None)
 
 
 def _make_reader_mock(topic_types, messages):
@@ -122,7 +139,7 @@ def _make_reader_mock(topic_types, messages):
     return reader
 
 
-def _make_pose_msg(t_s: float, x: float, y: float, z: float):
+def _make_pose_msg(t_s: float, x: float, y: float, z: float) -> PoseStamped:
     """Return a stub PoseStamped with the given timestamp and position.
 
     Args:
@@ -134,8 +151,6 @@ def _make_pose_msg(t_s: float, x: float, y: float, z: float):
     Returns:
         A stub ``PoseStamped`` instance with header stamp and position set.
     """
-    from geometry_msgs.msg import PoseStamped
-
     msg = PoseStamped()
     sec = int(t_s)
     nanosec = int((t_s - sec) * 1e9)
@@ -145,11 +160,6 @@ def _make_pose_msg(t_s: float, x: float, y: float, z: float):
     msg.pose.position.y = y
     msg.pose.position.z = z
     return msg
-
-
-# ---------------------------------------------------------------------------
-# bag2tum
-# ---------------------------------------------------------------------------
 
 
 def test_bag2tum_raises_if_bag_missing(tmp_path: Path) -> None:
@@ -174,9 +184,6 @@ def test_bag2tum_raises_if_output_exists(tmp_path: Path) -> None:
     existing_topic.type = "geometry_msgs/msg/PoseStamped"
 
     reader = _make_reader_mock([existing_topic], [])
-
-    import rosbag2_py
-
     rosbag2_py.SequentialReader = MagicMock(return_value=reader)
 
     with pytest.raises(FileExistsError, match="already exists"):
@@ -189,9 +196,6 @@ def test_bag2tum_raises_if_topic_missing(tmp_path: Path) -> None:
     input_bag.mkdir()
 
     reader = _make_reader_mock([], [])
-
-    import rosbag2_py
-
     rosbag2_py.SequentialReader = MagicMock(return_value=reader)
 
     with pytest.raises(ValueError, match="not found in bag"):
@@ -208,9 +212,6 @@ def test_bag2tum_raises_if_wrong_type(tmp_path: Path) -> None:
     wrong_topic.type = "nav_msgs/msg/Odometry"
 
     reader = _make_reader_mock([wrong_topic], [])
-
-    import rosbag2_py
-
     rosbag2_py.SequentialReader = MagicMock(return_value=reader)
 
     with pytest.raises(ValueError, match="expected 'geometry_msgs/msg/PoseStamped'"):
@@ -227,9 +228,6 @@ def test_bag2tum_raises_if_no_messages(tmp_path: Path) -> None:
     gt_topic.type = "geometry_msgs/msg/PoseStamped"
 
     reader = _make_reader_mock([gt_topic], [])
-
-    import rosbag2_py
-
     rosbag2_py.SequentialReader = MagicMock(return_value=reader)
 
     with pytest.raises(ValueError, match="No messages found"):
@@ -253,9 +251,6 @@ def test_bag2tum_writes_tum_file(tmp_path: Path) -> None:
         [gt_topic],
         [("/gt", b"d1", 1_000_000_000), ("/gt", b"d2", 2_500_000_000)],
     )
-
-    import rclpy.serialization
-    import rosbag2_py
 
     rosbag2_py.SequentialReader = MagicMock(return_value=reader)
     rclpy.serialization.deserialize_message = MagicMock(side_effect=[msg1, msg2])
