@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the input decorator in lambkin.core.decorators."""
+"""Unit tests for the output decorator in lambkin.core.decorators."""
 
 import pytest
 
