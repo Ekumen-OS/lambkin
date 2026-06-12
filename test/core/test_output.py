@@ -102,3 +102,10 @@ def test_register_duplicate_name_raises():
 
     with pytest.raises(ValueError, match="already registered"):
         registry.register(plots)
+
+
+def test_run_with_none_ctx_raises():
+    """run() raises ValueError when ctx is None."""
+    registry = OutputRegistry()
+    with pytest.raises(ValueError, match="context is None"):
+        registry.run(None)
