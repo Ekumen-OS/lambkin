@@ -46,6 +46,7 @@ from lambkin.core.ctx import (
 )
 from lambkin.core.ctx.source import Source
 from lambkin.core.decorators.input import InputRegistry
+from lambkin.core.decorators.output import OutputRegistry
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
 from lambkin.utils import format_elapsed_time
@@ -234,6 +235,7 @@ def benchmark(variants, num_iterations):
 
     def decorator(fn):
         inputs = InputRegistry()
+        outputs = OutputRegistry()
 
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
@@ -336,7 +338,8 @@ def benchmark(variants, num_iterations):
                                 if ctx.skipped:
                                     continue
                                 fn(ctx)
-
+            # Run output hooks once at benchmark scope after all iterations complete.
+            outputs.run(bctx)
             # Calculate and print total elapsed time, useful for user introspection.
             logger.info(
                 "Benchmark finished in %s.",
@@ -346,6 +349,10 @@ def benchmark(variants, num_iterations):
         # Expose the input registration hook so users can decorate input providers
         # with @my_benchmark.input on the returned wrapper.
         wrapper.input = inputs.register
+
+        # Expose the output registration hook so users can decorate output providers
+        # with @my_benchmark.output on the returned wrapper.
+        wrapper.output = outputs.register
         return wrapper
 
     return decorator
