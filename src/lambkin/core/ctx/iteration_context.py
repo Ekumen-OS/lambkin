@@ -65,7 +65,10 @@ class IterationContext:
             iteration.
         iteration: Zero-based repetition index within this variant.
         paths: Output paths for this (variant, iteration) run.
-        inputs: Namespaced input data resolved before the loop (read-only).
+        inputs: Merged benchmark + variant + iteration inputs. ``None`` until
+            set by the registry via ``ctx.inputs = registry.resolve(ctx)``.
+            Read-only after resolution — raises ``AttributeError`` if
+            assigned again.
         shell: ShellProxy configured for this run. Only available after
             ``__enter__`` on a cache miss; raises ``AttributeError`` on a
             cache hit (``ctx.skipped is True``).
@@ -80,24 +83,23 @@ class IterationContext:
     """
 
     METADATA_FILENAME = "lambkin_metadata.yaml"
+    scope = "iteration"
 
     def __init__(
         self,
         variant_ctx: VariantContext,
         iteration: int,
-        inputs: SimpleNamespace | None = None,
     ) -> None:
         """Initialize an IterationContext from its parent VariantContext.
 
         Args:
             variant_ctx: The parent VariantContext for this run.
             iteration: Zero-based repetition index within this variant.
-            inputs: Resolved input namespace (from
-                ``BenchmarkContext.resolve_inputs``). Defaults to ``None``.
         """
         self._variant_ctx = variant_ctx
         self._iteration = iteration
-        self._inputs = inputs
+        self._inputs: SimpleNamespace | None = None
+        self._inputs_locked: bool = False
 
         self._paths = RunPaths.from_indices(
             variant_ctx.base_dir,
@@ -124,7 +126,6 @@ class IterationContext:
         options: dict[str, Any],
         source: Source,
         base_dir: Path | str,
-        inputs: SimpleNamespace | None = None,
     ) -> IterationContext:
         """Construct an IterationContext directly from raw parameters.
 
@@ -140,7 +141,6 @@ class IterationContext:
             options: Parsed options dict.
             source: Source object describing the benchmark script.
             base_dir: Root directory for all benchmark results.
-            inputs: Optional resolved input namespace.
 
         Returns:
             An ``IterationContext`` ready to be used as a
@@ -152,7 +152,7 @@ class IterationContext:
             variant=variant,
             variant_index=variant_index,
         )
-        return cls(variant_ctx=vctx, iteration=iteration, inputs=inputs)
+        return cls(variant_ctx=vctx, iteration=iteration)
 
     @property
     def iteration(self) -> int:
@@ -166,8 +166,29 @@ class IterationContext:
 
     @property
     def inputs(self) -> SimpleNamespace | None:
-        """Resolved input namespace, or ``None`` if no inputs are registered."""
+        """Merged benchmark + variant + iteration inputs.
+
+        ``None`` until set by the registry. Read-only after resolution —
+        raises ``AttributeError`` if assigned again.
+        """
         return self._inputs
+
+    @inputs.setter
+    def inputs(self, value: SimpleNamespace) -> None:
+        """Merge iteration-scoped inputs with benchmark + variant inputs.
+
+        Args:
+            value: Resolved iteration-scoped inputs from
+                ``InputRegistry.resolve``.
+
+        Raises:
+            AttributeError: If called after inputs have already been set.
+        """
+        if self._inputs_locked:
+            raise AttributeError("ctx.inputs is read-only after resolution.")
+        parent = self._variant_ctx.inputs or SimpleNamespace()
+        self._inputs = SimpleNamespace(**vars(parent), **vars(value))
+        self._inputs_locked = True
 
     @property
     def shell(self) -> ShellProxy:

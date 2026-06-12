@@ -45,7 +45,12 @@ class VariantContext:
             (read-only).
         variant_dir: Output directory for this variant, e.g. ``results/var_1/``
             (read-only). Created on ``__enter__``.
+        inputs: Merged benchmark + variant inputs. ``None`` until set by the
+            registry. Read-only after resolution — raises ``AttributeError``
+            if assigned again.
     """
+
+    scope = "variant"
 
     def __init__(
         self,
@@ -68,6 +73,8 @@ class VariantContext:
         self._variant = SimpleNamespace(**variant)
         self._variant_index = variant_index
         self._variant_dir = benchmark_ctx.base_dir / f"var_{variant_index + 1}"
+        self._inputs: SimpleNamespace | None = None
+        self._inputs_locked: bool = False
 
     @classmethod
     def from_params(
@@ -114,6 +121,27 @@ class VariantContext:
         return self._variant_dir
 
     @property
+    def inputs(self) -> SimpleNamespace | None:
+        """Merged benchmark + variant inputs. ``None`` until set by the registry."""
+        return self._inputs
+
+    @inputs.setter
+    def inputs(self, value: SimpleNamespace) -> None:
+        """Merge variant-scoped inputs with benchmark inputs. Read-only after set.
+
+        Args:
+            value: Resolved variant-scoped inputs from ``InputRegistry.resolve``.
+
+        Raises:
+            AttributeError: If called after inputs have already been set.
+        """
+        if self._inputs_locked:
+            raise AttributeError("ctx.inputs is read-only after resolution.")
+        parent = self._benchmark_ctx.inputs or SimpleNamespace()
+        self._inputs = SimpleNamespace(**vars(parent), **vars(value))
+        self._inputs_locked = True
+
+    @property
     def source(self) -> Source:
         """Source object — delegated to BenchmarkContext."""
         return self._benchmark_ctx.source
@@ -142,10 +170,12 @@ class VariantContext:
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the VariantContext state."""
+        inputs = vars(self._inputs) if self._inputs is not None else None
         return (
             f"VariantContext(\n"
             f"  variant       = {vars(self._variant)},\n"
             f"  variant_index = {self._variant_index},\n"
-            f"  variant_dir   = {self._variant_dir}\n"
+            f"  variant_dir   = {self._variant_dir},\n"
+            f"  inputs        = {inputs}\n"
             f")"
         )
