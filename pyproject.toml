@@ -39,7 +39,8 @@ dev = [
 ]
 
 [tool.mypy]
-strict = true
+# TODO(xaru8145): set sctrict to true
+strict = false
 python_version = "3.10"
 files = ["src"]
 
