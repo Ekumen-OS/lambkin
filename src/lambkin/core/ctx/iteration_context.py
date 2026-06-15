@@ -114,7 +114,7 @@ class IterationContext:
 
         self._shell: ShellProxy | None = None
         self._skipped: bool = False
-        self._iteration_cgroup = None
+        self._iteration_cgroup: Path | None = None
         self._started_at: str | None = None
 
     @classmethod
