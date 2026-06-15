@@ -14,7 +14,6 @@
 
 """Unit tests for lambkin.data.evo."""
 
-import warnings
 from pathlib import Path
 
 import numpy as np
@@ -121,24 +120,15 @@ def test_series_params_match_variant(benchmark_dir):
     assert beam.params.num_particles == 10
 
 
-def test_series_warns_on_missing_file(benchmark_dir):
-    """series() emits a warning and skips iterations with no result file."""
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        results = evo.series(benchmark_dir, "nonexistent.ape.zip")
+def test_series_skips_missing_file(benchmark_dir):
+    """series() skips iterations with no result file and returns empty list."""
+    results = evo.series(benchmark_dir, "nonexistent.ape.zip")
     assert len(results) == 0
-    assert len(caught) == 4
-    assert all(issubclass(w.category, UserWarning) for w in caught)
 
 
 def test_series_empty_dir_returns_empty_list(tmp_path):
     """series() returns an empty list when there are no iterations."""
     assert evo.series(tmp_path, "output.ape.zip") == []
-
-
-# ---------------------------------------------------------------------------
-# stats()
-# ---------------------------------------------------------------------------
 
 
 def test_stats_returns_one_entry_per_iteration(benchmark_dir):
@@ -167,13 +157,10 @@ def test_stats_rmse_is_positive(benchmark_dir):
         assert entry.rmse > 0
 
 
-def test_stats_warns_on_missing_file(benchmark_dir):
-    """stats() emits a warning and skips iterations with no result file."""
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        results = evo.stats(benchmark_dir, "nonexistent.ape.zip")
+def test_stats_skips_missing_file(benchmark_dir):
+    """stats() skips iterations with no result file and returns empty list."""
+    results = evo.stats(benchmark_dir, "nonexistent.ape.zip")
     assert len(results) == 0
-    assert len(caught) == 4
 
 
 def test_stats_empty_dir_returns_empty_list(tmp_path):

@@ -24,6 +24,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import overload
 
+from evo.tools import file_interface
+
 from lambkin.data import access
 
 logger = logging.getLogger(__name__)
@@ -60,7 +62,6 @@ def series(ctx_or_path, filename):
         - ``ape``: array of APE error values in meters.
         - ``distance``: array of distances from start in meters (may be None).
     """
-    file_interface = import_module("evo.tools.file_interface")
     results = []
     for entry in access.iterations(ctx_or_path):
         result_path = entry.iter_dir / filename
