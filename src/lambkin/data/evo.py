@@ -19,7 +19,6 @@ produced by benchmark runs.
 """
 
 import logging
-from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -101,7 +100,6 @@ def stats(ctx_or_path: Path | object, filename: str) -> list:
         - ``max``: maximum error.
         - ``sse``: sum of squared errors.
     """
-    file_interface = import_module("evo.tools.file_interface")
     results = []
     for entry in access.iterations(ctx_or_path):
         result_path = entry.iter_dir / filename
@@ -119,3 +117,15 @@ def stats(ctx_or_path: Path | object, filename: str) -> list:
             )
         )
     return results
+
+
+def log_stats(ctx_or_path: Path | object, filename: str) -> None:
+    """Log evo_ape statistics for all iterations at INFO level.
+
+    Args:
+        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
+            benchmark base directory.
+        filename: name of the evo_ape result zip file (e.g. ``"output.ape.zip"``).
+    """
+    for entry in stats(ctx_or_path, filename):
+        logger.info("%s iter %d: rmse=%.4f", entry.variant, entry.iteration, entry.rmse)

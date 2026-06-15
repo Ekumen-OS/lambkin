@@ -78,13 +78,12 @@ def plots(ctx):
             entry.time, entry.ape, label=f"{entry.variant} / iter {entry.iteration}"
         )
 
-    for entry in lambkin.data.evo.stats(ctx, "output.ape.zip"):
-        print(f"{entry.variant} iter {entry.iteration}: rmse={entry.rmse:.4f}")
+    lambkin.data.evo.log_stats(ctx, "output.ape.zip")
 
     plt.xlabel("Time (s)")
     plt.ylabel("APE (m)")
     plt.legend()
-    plt.show()
+    plt.savefig(ctx.base_dir / "plots.png")
 
 
 if __name__ == "__main__":
