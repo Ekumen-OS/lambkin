@@ -27,7 +27,7 @@ import datetime
 import logging
 import shutil
 from pathlib import Path
-from types import SimpleNamespace
+from types import SimpleNamespace, TracebackType
 from typing import Any
 
 import yaml
@@ -279,7 +279,12 @@ class IterationContext:
         self._write_metadata()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Finalize the iteration, writing completion metadata and cleaning up.
 
         If skipped, exits immediately. Otherwise writes ``completed_at`` to
