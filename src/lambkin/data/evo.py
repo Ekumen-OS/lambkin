@@ -22,11 +22,20 @@ import warnings
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
+from typing import overload
 
 from lambkin.data import access
 
 
-def series(ctx_or_path: object | Path, filename: str) -> list:
+@overload
+def series(ctx_or_path: Path, filename: str) -> list: ...
+
+
+@overload
+def series(ctx_or_path: object, filename: str) -> list: ...
+
+
+def series(ctx_or_path, filename):
     """Collect evo_ape timeseries results across all iterations.
 
     Walks all iteration directories and collects the evo_ape result
@@ -71,7 +80,15 @@ def series(ctx_or_path: object | Path, filename: str) -> list:
     return results
 
 
-def stats(ctx_or_path: object | Path, filename: str) -> list:
+@overload
+def stats(ctx_or_path: Path, filename: str) -> list: ...
+
+
+@overload
+def stats(ctx_or_path: object, filename: str) -> list: ...
+
+
+def stats(ctx_or_path, filename):
     """Collect evo_ape statistics across all iterations.
 
     Walks all iteration directories and collects the evo_ape result

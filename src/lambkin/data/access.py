@@ -20,11 +20,20 @@ read iteration metadata produced by the SDK.
 
 from pathlib import Path
 from types import SimpleNamespace
+from typing import overload
 
 import yaml
 
 
-def iterations(ctx_or_path: object | Path) -> list:
+@overload
+def iterations(ctx_or_path: Path) -> list: ...
+
+
+@overload
+def iterations(ctx_or_path: object) -> list: ...
+
+
+def iterations(ctx_or_path):
     """Traverse the benchmark output tree and return all iteration entries.
 
     Accepts either a benchmark context (exposing ``paths.base_dir``) or a
@@ -45,9 +54,7 @@ def iterations(ctx_or_path: object | Path) -> list:
         - ``iteration``: iteration index (int).
         - ``params``: :class:`~types.SimpleNamespace` of variant parameters.
     """
-    root = (
-        ctx_or_path.paths.base_dir if not isinstance(ctx_or_path, Path) else ctx_or_path
-    )
+    root = ctx_or_path.base_dir if not isinstance(ctx_or_path, Path) else ctx_or_path
     results = []
     for meta_path in sorted(root.glob("var_*/iter_*/lambkin_metadata.yaml")):
         iter_dir = meta_path.parent

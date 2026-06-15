@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import matplotlib.pyplot as plt
+
 import lambkin
 
 
@@ -71,7 +73,18 @@ def map(ctx):
 @nominal.output
 def plots(ctx):
     """Generate and save benchmark plots using aggregated evo_ape results."""
-    lambkin.logger.info(f"output called with ctx: {ctx.base_dir}")
+    for entry in lambkin.data.evo.series(ctx, "output.ape.zip"):
+        plt.plot(
+            entry.time, entry.ape, label=f"{entry.variant} / iter {entry.iteration}"
+        )
+
+    for entry in lambkin.data.evo.stats(ctx, "output.ape.zip"):
+        print(f"{entry.variant} iter {entry.iteration}: rmse={entry.rmse:.4f}")
+
+    plt.xlabel("Time (s)")
+    plt.ylabel("APE (m)")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":

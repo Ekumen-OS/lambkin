@@ -85,13 +85,10 @@ def test_iterations_params_are_namespace(benchmark_dir):
 
 
 def test_iterations_accepts_context_object(benchmark_dir):
-    """iterations() accepts a context-like object with paths.base_dir."""
+    """iterations() accepts a context-like object with a base_dir attribute."""
 
     class FakeCtx:
-        class Paths:
-            base_dir = benchmark_dir
-
-        paths = Paths
+        base_dir = benchmark_dir
 
     entries = access.iterations(FakeCtx())
     assert len(entries) == 4
