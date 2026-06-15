@@ -41,7 +41,12 @@ class BenchmarkContext:
         source: Source object describing the benchmark script being executed.
         options: Namespaced runtime options (read-only).
         base_dir: Root directory for all benchmark results (read-only).
+        inputs: Resolved benchmark-scoped inputs. ``None`` until set by the
+            registry. Read-only after resolution — raises ``AttributeError``
+            if assigned again.
     """
+
+    scope = "benchmark"
 
     def __init__(
         self,
@@ -63,6 +68,8 @@ class BenchmarkContext:
         self._source = source
         self._options = SimpleNamespace(**options)
         self._base_dir = Path(base_dir)
+        self._inputs: SimpleNamespace | None = None
+        self._inputs_locked: bool = False
 
     @property
     def source(self) -> Source:
@@ -79,6 +86,27 @@ class BenchmarkContext:
         """Root directory for all benchmark results."""
         return self._base_dir
 
+    @property
+    def inputs(self) -> SimpleNamespace | None:
+        """Resolved benchmark-scoped inputs. ``None`` until set by the registry."""
+        return self._inputs
+
+    @inputs.setter
+    def inputs(self, value: SimpleNamespace) -> None:
+        """Set resolved inputs. Read-only after the first assignment.
+
+        Args:
+            value: Resolved benchmark-scoped inputs from
+                ``InputRegistry.resolve``.
+
+        Raises:
+            AttributeError: If called after inputs have already been set.
+        """
+        if self._inputs_locked:
+            raise AttributeError("ctx.inputs is read-only after resolution.")
+        self._inputs = value
+        self._inputs_locked = True
+
     def __enter__(self) -> BenchmarkContext:
         """Create the base output directory on disk.
 
@@ -93,10 +121,12 @@ class BenchmarkContext:
 
     def __repr__(self) -> str:
         """Return a human-readable summary of the BenchmarkContext state."""
+        inputs = vars(self._inputs) if self._inputs is not None else None
         return (
             f"BenchmarkContext(\n"
             f"  source   = {self._source},\n"
             f"  base_dir = {self._base_dir},\n"
-            f"  options  = {vars(self._options)}\n"
+            f"  options  = {vars(self._options)},\n"
+            f"  inputs   = {inputs}\n"
             f")"
         )

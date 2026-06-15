@@ -182,7 +182,7 @@ class TestIterationContext:
             assert ctx.source is source
 
     def test_inputs_defaults_to_none(self, vctx):
-        """Inputs is None when not provided."""
+        """ctx.inputs is None before registry.resolve is called."""
         with IterationContext(variant_ctx=vctx, iteration=0) as ctx:
             assert ctx.inputs is None
 
