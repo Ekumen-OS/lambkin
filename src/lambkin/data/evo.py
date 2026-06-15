@@ -18,13 +18,15 @@ Provides utilities to collect and aggregate evo_ape result files
 produced by benchmark runs.
 """
 
-import warnings
+import logging
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 from typing import overload
 
 from lambkin.data import access
+
+logger = logging.getLogger(__name__)
 
 
 @overload
@@ -63,7 +65,7 @@ def series(ctx_or_path, filename):
     for entry in access.iterations(ctx_or_path):
         result_path = entry.iter_dir / filename
         if not result_path.exists():
-            warnings.warn(f"{result_path} is missing", stacklevel=2)
+            logger.warning("%s is missing", result_path)
             continue
         result = file_interface.load_res_file(result_path)
         results.append(
@@ -120,7 +122,7 @@ def stats(ctx_or_path, filename):
     for entry in access.iterations(ctx_or_path):
         result_path = entry.iter_dir / filename
         if not result_path.exists():
-            warnings.warn(f"{result_path} is missing", stacklevel=2)
+            logger.warning("%s is missing", result_path)
             continue
         result = file_interface.load_res_file(result_path)
         results.append(
