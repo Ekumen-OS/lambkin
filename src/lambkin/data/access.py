@@ -20,22 +20,13 @@ read iteration metadata produced by the SDK.
 
 from pathlib import Path
 from types import SimpleNamespace
-from typing import overload
 
 import yaml
 
 from lambkin.common import defaults
 
 
-@overload
-def iterations(ctx_or_path: Path) -> list: ...
-
-
-@overload
-def iterations(ctx_or_path: object) -> list: ...
-
-
-def iterations(ctx_or_path):
+def iterations(ctx_or_path: Path | object) -> list:
     """Traverse the benchmark output tree and return all iteration entries.
 
     Accepts either a benchmark context (exposing ``paths.base_dir``) or a

@@ -22,7 +22,6 @@ import logging
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
-from typing import overload
 
 from evo.tools import file_interface
 
@@ -31,15 +30,7 @@ from lambkin.data import access
 logger = logging.getLogger(__name__)
 
 
-@overload
-def series(ctx_or_path: Path, filename: str) -> list: ...
-
-
-@overload
-def series(ctx_or_path: object, filename: str) -> list: ...
-
-
-def series(ctx_or_path, filename):
+def series(ctx_or_path: Path | object, filename: str) -> list:
     """Collect evo_ape timeseries results across all iterations.
 
     Walks all iteration directories and collects the evo_ape result
@@ -83,15 +74,7 @@ def series(ctx_or_path, filename):
     return results
 
 
-@overload
-def stats(ctx_or_path: Path, filename: str) -> list: ...
-
-
-@overload
-def stats(ctx_or_path: object, filename: str) -> list: ...
-
-
-def stats(ctx_or_path, filename):
+def stats(ctx_or_path: Path | object, filename: str) -> list:
     """Collect evo_ape statistics across all iterations.
 
     Walks all iteration directories and collects the evo_ape result
