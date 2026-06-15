@@ -62,8 +62,6 @@ class IterationContext:
     checks the cache and short-circuits entirely on a hit.
 
     Attributes:
-        METADATA_FILENAME: Name of the YAML metadata file written per
-            iteration.
         iteration: Zero-based repetition index within this variant.
         paths: Output paths for this (variant, iteration) run.
         inputs: Merged benchmark + variant + iteration inputs. ``None`` until
@@ -82,6 +80,8 @@ class IterationContext:
         options: Namespaced runtime options — delegated to BenchmarkContext.
         source: Benchmark source info — delegated to BenchmarkContext.
     """
+
+    scope = "iteration"
 
     def __init__(
         self,

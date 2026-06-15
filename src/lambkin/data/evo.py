@@ -22,7 +22,7 @@ import logging
 from pathlib import Path
 from types import SimpleNamespace
 
-from evo.tools import file_interface
+from evo.tools import file_interface  # type: ignore[import-untyped]
 
 from lambkin.data import access
 

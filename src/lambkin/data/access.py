@@ -47,7 +47,11 @@ def iterations(ctx_or_path: Path | object) -> list:
         - ``iteration``: iteration index (int).
         - ``params``: :class:`~types.SimpleNamespace` of variant parameters.
     """
-    root = ctx_or_path.base_dir if not isinstance(ctx_or_path, Path) else ctx_or_path
+    root = (
+        ctx_or_path.base_dir  # type: ignore[attr-defined]
+        if not isinstance(ctx_or_path, Path)
+        else ctx_or_path
+    )
     results = []
     for meta_path in sorted(root.glob(f"var_*/iter_*/{defaults.METADATA_FILENAME}")):
         iter_dir = meta_path.parent
