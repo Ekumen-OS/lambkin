@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from lambkin.cli import main
+from lambkin.cli.cli import main
 
 
 @pytest.fixture
@@ -61,11 +61,11 @@ def test_keyboard_interrupt_exits_130(dummy_script):
         mock_proc = MagicMock()
         mock_proc.wait.side_effect = KeyboardInterrupt
         mock_popen.return_value = mock_proc
-        with patch("lambkin.cli.kill_cgroup_tree") as mock_kill:
-            with patch("lambkin.cli.remove_cgroup_tree") as mock_remove:
-                with patch("lambkin.cli.make_cgroup") as mock_make:
+        with patch("lambkin.cli.cli.kill_cgroup_tree") as mock_kill:
+            with patch("lambkin.cli.cli.remove_cgroup_tree") as mock_remove:
+                with patch("lambkin.cli.cli.make_cgroup") as mock_make:
                     mock_make.return_value = MagicMock()
-                    with patch("lambkin.cli.find_delegated_cgroup"):
+                    with patch("lambkin.cli.cli.find_delegated_cgroup"):
                         result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 130
     mock_kill.assert_called_once_with(mock_make.return_value)

@@ -23,7 +23,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -100,24 +100,9 @@ def _make_ros_stubs() -> None:
 
 _make_ros_stubs()
 
-import rclpy.serialization  # noqa: E402
-import rosbag2_py  # noqa: E402
 from geometry_msgs.msg import PoseStamped  # noqa: E402
 
 from lambkin.utils.bag2tum import bag2tum  # noqa: E402
-
-
-@pytest.fixture(autouse=True)
-def _reset_ros_stubs() -> None:
-    """Reset mutable stub state before each test.
-
-    ``test_tum2bag.py`` runs first and overwrites ``sys.modules["rosbag2_py"]``
-    with its own stub. This fixture ensures ``SequentialReader`` and
-    ``deserialize_message`` are reset to safe defaults before every test so
-    that cross-module stub contamination does not cause false failures.
-    """
-    rosbag2_py.SequentialReader = MagicMock
-    rclpy.serialization.deserialize_message = MagicMock(return_value=None)
 
 
 def _make_reader_mock(topic_types, messages):
@@ -184,10 +169,11 @@ def test_bag2tum_raises_if_output_exists(tmp_path: Path) -> None:
     existing_topic.type = "geometry_msgs/msg/PoseStamped"
 
     reader = _make_reader_mock([existing_topic], [])
-    rosbag2_py.SequentialReader = MagicMock(return_value=reader)
-
-    with pytest.raises(FileExistsError, match="already exists"):
-        bag2tum(input_bag=input_bag, topic="/gt", output_tum=output_tum)
+    with patch(
+        "lambkin.utils.bag2tum.rosbag2_py.SequentialReader", return_value=reader
+    ):
+        with pytest.raises(FileExistsError, match="already exists"):
+            bag2tum(input_bag=input_bag, topic="/gt", output_tum=output_tum)
 
 
 def test_bag2tum_raises_if_topic_missing(tmp_path: Path) -> None:
@@ -196,10 +182,11 @@ def test_bag2tum_raises_if_topic_missing(tmp_path: Path) -> None:
     input_bag.mkdir()
 
     reader = _make_reader_mock([], [])
-    rosbag2_py.SequentialReader = MagicMock(return_value=reader)
-
-    with pytest.raises(ValueError, match="not found in bag"):
-        bag2tum(input_bag=input_bag, topic="/gt", output_tum=tmp_path / "out.tum")
+    with patch(
+        "lambkin.utils.bag2tum.rosbag2_py.SequentialReader", return_value=reader
+    ):
+        with pytest.raises(ValueError, match="not found in bag"):
+            bag2tum(input_bag=input_bag, topic="/gt", output_tum=tmp_path / "out.tum")
 
 
 def test_bag2tum_raises_if_wrong_type(tmp_path: Path) -> None:
@@ -212,10 +199,13 @@ def test_bag2tum_raises_if_wrong_type(tmp_path: Path) -> None:
     wrong_topic.type = "nav_msgs/msg/Odometry"
 
     reader = _make_reader_mock([wrong_topic], [])
-    rosbag2_py.SequentialReader = MagicMock(return_value=reader)
-
-    with pytest.raises(ValueError, match="expected 'geometry_msgs/msg/PoseStamped'"):
-        bag2tum(input_bag=input_bag, topic="/gt", output_tum=tmp_path / "out.tum")
+    with patch(
+        "lambkin.utils.bag2tum.rosbag2_py.SequentialReader", return_value=reader
+    ):
+        with pytest.raises(
+            ValueError, match="expected 'geometry_msgs/msg/PoseStamped'"
+        ):
+            bag2tum(input_bag=input_bag, topic="/gt", output_tum=tmp_path / "out.tum")
 
 
 def test_bag2tum_raises_if_no_messages(tmp_path: Path) -> None:
@@ -228,10 +218,11 @@ def test_bag2tum_raises_if_no_messages(tmp_path: Path) -> None:
     gt_topic.type = "geometry_msgs/msg/PoseStamped"
 
     reader = _make_reader_mock([gt_topic], [])
-    rosbag2_py.SequentialReader = MagicMock(return_value=reader)
-
-    with pytest.raises(ValueError, match="No messages found"):
-        bag2tum(input_bag=input_bag, topic="/gt", output_tum=tmp_path / "out.tum")
+    with patch(
+        "lambkin.utils.bag2tum.rosbag2_py.SequentialReader", return_value=reader
+    ):
+        with pytest.raises(ValueError, match="No messages found"):
+            bag2tum(input_bag=input_bag, topic="/gt", output_tum=tmp_path / "out.tum")
 
 
 def test_bag2tum_writes_tum_file(tmp_path: Path) -> None:
@@ -252,10 +243,14 @@ def test_bag2tum_writes_tum_file(tmp_path: Path) -> None:
         [("/gt", b"d1", 1_000_000_000), ("/gt", b"d2", 2_500_000_000)],
     )
 
-    rosbag2_py.SequentialReader = MagicMock(return_value=reader)
-    rclpy.serialization.deserialize_message = MagicMock(side_effect=[msg1, msg2])
-
-    bag2tum(input_bag=input_bag, topic="/gt", output_tum=output_tum)
+    with patch(
+        "lambkin.utils.bag2tum.rosbag2_py.SequentialReader", return_value=reader
+    ):
+        with patch(
+            "lambkin.utils.bag2tum.rclpy.serialization.deserialize_message",
+            side_effect=[msg1, msg2],
+        ):
+            bag2tum(input_bag=input_bag, topic="/gt", output_tum=output_tum)
 
     lines = [
         line for line in output_tum.read_text().splitlines() if not line.startswith("#")

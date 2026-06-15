@@ -64,6 +64,6 @@ pythonpath = [".",
              "examples", "src"]
 
 [project.scripts]
-lambkin = "lambkin.cli:main"
-lambkin-tum2bag = "lambkin.utils.tum2bag:main"
-lambkin-bag2tum = "lambkin.utils.bag2tum:main"
+lambkin = "lambkin.cli.cli:main"
+lambkin-tum2bag = "lambkin.cli.tum2bag:main"
+lambkin-bag2tum = "lambkin.cli.bag2tum:main"
