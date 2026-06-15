@@ -32,6 +32,7 @@ from typing import Any
 
 import yaml
 
+from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
     find_delegated_cgroup,
     kill_cgroup_tree,
@@ -81,9 +82,6 @@ class IterationContext:
         options: Namespaced runtime options — delegated to BenchmarkContext.
         source: Benchmark source info — delegated to BenchmarkContext.
     """
-
-    METADATA_FILENAME = "lambkin_metadata.yaml"
-    scope = "iteration"
 
     def __init__(
         self,
@@ -235,7 +233,7 @@ class IterationContext:
     @property
     def _metadata_path(self) -> Path:
         """Path to the metadata YAML file for this iteration."""
-        return self._paths.iteration_dir / self.METADATA_FILENAME
+        return self._paths.iteration_dir / defaults.METADATA_FILENAME
 
     def __enter__(self) -> IterationContext:
         """Initialize the iteration, skipping if already cached.
