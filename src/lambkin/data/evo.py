@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Data access module for evo_ape results.
+"""Data access module for evo results.
 
-Provides utilities to collect and aggregate evo_ape result files
-produced by benchmark runs.
+Provides utilities to collect and aggregate result files produced by evo
+tools (e.g. evo_ape, evo_rpe) across benchmark iterations.
 """
 
 import logging
