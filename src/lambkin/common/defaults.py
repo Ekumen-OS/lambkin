@@ -20,7 +20,7 @@ from typing import Final
 BENCHMARKS_DIRNAME: Final[str] = "results"
 
 # Default filename for iteration metadata files written by the SDK.
-METADATA_FILENAME = "lambkin_metadata.yaml"
+METADATA_FILENAME: Final[str] = "lambkin_metadata.yaml"
 
 # If True, commands are logged but not executed.
 DRY_RUN: Final[bool] = False
