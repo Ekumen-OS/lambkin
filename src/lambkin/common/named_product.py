@@ -19,9 +19,10 @@ Used to define benchmark configurations in a readable and structured way.
 """
 
 import itertools
+from typing import Any
 
 
-def named_product(**parameters):
+def named_product(**parameters: list[Any]) -> list[dict[str, Any]]:
     """Generate all combinations of named parameters.
 
     Takes parameters where each value is a list of options

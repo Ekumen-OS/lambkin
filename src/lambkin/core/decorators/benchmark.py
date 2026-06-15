@@ -129,7 +129,7 @@ def _parse_index_list(raw: str, label: str, max_value: int | None = None) -> set
         click.BadParameter: If any token is not a positive integer or a valid
             start:end range, or within the allowed range.
     """
-    result = set()
+    result: set[int] = set()
     for token in raw.split(","):
         token = token.strip()
         # Check if the token is a range (contains ":") or a single number, and parse

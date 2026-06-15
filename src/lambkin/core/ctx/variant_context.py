@@ -25,7 +25,7 @@ inside the variant loop.
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
+from types import SimpleNamespace, TracebackType
 from typing import Any
 
 from .benchmark_context import BenchmarkContext
@@ -165,7 +165,12 @@ class VariantContext:
         self._variant_dir.mkdir(parents=True, exist_ok=True)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """No-op — VariantContext holds no resources that need cleanup."""
 
     def __repr__(self) -> str:

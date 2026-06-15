@@ -298,32 +298,17 @@ class CommandProxy:
         if self._dry_run:
             logger.debug("[DRY RUN] %s", shlex.join(argv))
             return subprocess.CompletedProcess(argv, returncode=0)
+
+        stdout, stderr = None, None
+        proc: subprocess.Popen[bytes] | None = None
+        interrupted = False
+
         try:
             stdout, stderr = self.open_streams(per_call_log_output)
-            proc = None
-            interrupted = False
-            try:
-                proc = self._make_popen(argv, stdout, stderr)
-                proc.wait()
-            except exceptions.LambkinSIGUSR1Interrupt:
-                interrupted = True
-            finally:
-                if proc is not None and proc.poll() is None:
-                    proc.kill()
-                    proc.wait()
-                if stdout:
-                    stdout.close()
-                if stderr:
-                    stderr.close()
-            if not interrupted and proc.returncode != 0:
-                raise CommandError(
-                    argv,
-                    f"Command {shlex.join(argv)!r} failed with return code"
-                    f" {proc.returncode}.",
-                    returncode=proc.returncode,
-                )
-            if not interrupted:
-                return subprocess.CompletedProcess(argv, returncode=proc.returncode)
+            proc = self._make_popen(argv, stdout, stderr)
+            proc.wait()
+        except exceptions.LambkinSIGUSR1Interrupt:
+            interrupted = True
         # FileNotFoundError and PermissionError must come before OSError,
         # as they are subclasses of it. Order matters here.
         except FileNotFoundError:
@@ -343,6 +328,29 @@ class CommandProxy:
                 argv,
                 f"OS error while starting {argv[0]!r}: {e}.",
             ) from e
+        finally:
+            if proc is not None and proc.poll() is None:
+                proc.kill()
+                proc.wait()
+            if stdout:
+                stdout.close()
+            if stderr:
+                stderr.close()
+
+        if interrupted:
+            # dummy return — never observed, background.__exit__ raises
+            # LambkinProcessDiedUnexpectedlyError immediately after
+            return subprocess.CompletedProcess(argv, returncode=-1)
+
+        assert proc is not None
+        if not interrupted and proc.returncode != 0:
+            raise CommandError(
+                argv,
+                f"Command {shlex.join(argv)!r} failed with return code"
+                f" {proc.returncode}.",
+                returncode=proc.returncode,
+            )
+        return subprocess.CompletedProcess(argv, returncode=proc.returncode)
 
 
 class ShellProxy:

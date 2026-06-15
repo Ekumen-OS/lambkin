@@ -32,6 +32,8 @@ import sys
 import termios
 import uuid
 from pathlib import Path
+from types import FrameType
+from typing import Any
 
 import click
 from click.formatting import HelpFormatter
@@ -79,7 +81,7 @@ class LambkinCommand(click.Command):
             formatter.write_text("Run 'lambkin SCRIPT --show-options' to list them.")
 
 
-def _save_terminal_state() -> list | None:
+def _save_terminal_state() -> list[Any] | None:
     """Save the current terminal state for later restoration.
 
     Reads the terminal attributes from stdin using termios. If stdin is not
@@ -95,7 +97,7 @@ def _save_terminal_state() -> list | None:
     return None
 
 
-def _restore_terminal_state(state: list | None) -> None:
+def _restore_terminal_state(state: list[Any] | None) -> None:
     """Restore stdin terminal attributes to a previously saved state.
 
     If state is None or stdin is no longer a terminal, this is a no-op.
@@ -114,7 +116,7 @@ def _restore_terminal_state(state: list | None) -> None:
 )
 @click.argument("script", type=click.Path(exists=True, path_type=Path))
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def main(script: Path, args: tuple, log_level: str) -> None:
+def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
     """Launch a lambkin benchmark script.
 
     Executes ``script`` with the same Python interpreter inside a dedicated
@@ -156,7 +158,7 @@ def main(script: Path, args: tuple, log_level: str) -> None:
     # killed. We restore it after the script exits.
     terminal_state = _save_terminal_state()
 
-    def _handle_sigint(signum, frame):
+    def _handle_sigint(signum: int, frame: FrameType | None) -> None:
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)

@@ -13,13 +13,17 @@ handled there.
 import os
 import signal
 import threading
+from collections.abc import Callable
+from types import FrameType
 
 from lambkin.common.exceptions import LambkinSIGUSR1Interrupt
 
 sigusr1_pending = threading.Event()
 
+SignalHandler = signal.Handlers | Callable[[int, FrameType | None], None] | int | None
 
-def _make_handler(previous):
+
+def _make_handler(previous: SignalHandler) -> Callable[[int, FrameType | None], None]:
     """Create a SIGUSR1 handler that raises LambkinSIGUSR1Interrupt if lambkin sent it.
 
     Args:
@@ -30,7 +34,7 @@ def _make_handler(previous):
         A signal handler function.
     """
 
-    def _handle_sigusr1(signum, frame):
+    def _handle_sigusr1(signum: int, frame: FrameType | None) -> None:
         """Handle SIGUSR1 by interrupting proc.wait() or forwarding the signal.
 
         Raises LambkinSIGUSR1Interrupt if lambkin set the pending flag, which
@@ -58,7 +62,7 @@ def _make_handler(previous):
     return _handle_sigusr1
 
 
-def setup():
+def setup() -> None:
     """Register the SIGUSR1 handler for the benchmark script process.
 
     Must be called once before any BackgroundProcess is started. Registered

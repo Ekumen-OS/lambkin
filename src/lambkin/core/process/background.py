@@ -28,7 +28,8 @@ import signal
 import subprocess
 import threading
 from pathlib import Path
-from typing import Any
+from types import TracebackType
+from typing import IO, Any
 
 from lambkin.common import defaults, exceptions, signals
 from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
@@ -54,9 +55,9 @@ class BackgroundProcess:
         iteration_cgroup: Path,
         cwd: Path | None = None,
         dry_run: bool = False,
-        env: dict | None = None,
-        stdout=None,
-        stderr=None,
+        env: dict[str, str] | None = None,
+        stdout: IO[str] | None = None,
+        stderr: IO[str] | None = None,
     ) -> None:
         """Initialize the BackgroundProcess.
 
@@ -75,7 +76,7 @@ class BackgroundProcess:
         self._iteration_cgroup = iteration_cgroup
         self._dry_run = dry_run
         self._cgroup: Path | None = None
-        self._proc: subprocess.Popen | None = None
+        self._proc: subprocess.Popen[bytes] | None = None
         self._monitor: threading.Thread | None = None
         self._died_unexpectedly: bool = False
         self._exiting: threading.Event = threading.Event()
@@ -89,6 +90,7 @@ class BackgroundProcess:
 
         Runs in the child process after fork() but before exec().
         """
+        assert self._cgroup is not None
         (self._cgroup / "cgroup.procs").write_text(str(os.getpid()))
 
     def _monitor_process(self) -> None:
@@ -99,6 +101,7 @@ class BackgroundProcess:
         any blocking foreground process. BackgroundProcess.__exit__ is
         responsible for raising LambkinProcessDiedUnexpectedlyError.
         """
+        assert self._proc is not None
         self._proc.wait()
         if not self._exiting.is_set():
             self._died_unexpectedly = True
@@ -134,7 +137,12 @@ class BackgroundProcess:
         self._monitor.start()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Stop the background process and clean up its cgroup.
 
         Args:
@@ -154,6 +162,7 @@ class BackgroundProcess:
             self._stderr.close()
         self._exiting.set()
 
+        assert self._cgroup is not None
         kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
 
         if self._monitor is not None:
@@ -161,6 +170,7 @@ class BackgroundProcess:
 
         remove_cgroup(self._cgroup)
 
+        assert self._proc is not None
         if exc_type is None and self._died_unexpectedly:
             returncode = self._proc.poll()
             raise exceptions.LambkinProcessDiedUnexpectedlyError(
@@ -179,6 +189,9 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     Returns:
         BackgroundProcess: A context manager that runs the command in the background.
 
+    Raises:
+        ValueError: If the proxy has no cgroup set.
+
     Example:
         with background(ctx.shell.ros2.bag.record, "-O", "output.mcap", "-a"):
         ...
@@ -187,9 +200,12 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     argv = proxy.build_argv(*args, **kwargs)
     env = proxy.build_env()
     stdout, stderr = proxy.open_streams(per_call_log_output)
+    cgroup = proxy.get_cgroup()
+    if cgroup is None:
+        raise ValueError("background() requires a proxy with a cgroup set.")
     return BackgroundProcess(
         argv=argv,
-        iteration_cgroup=proxy.get_cgroup(),
+        iteration_cgroup=cgroup,
         cwd=proxy.get_cwd(),
         dry_run=proxy.get_dry_run(),
         env=env,
