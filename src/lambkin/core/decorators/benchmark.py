@@ -21,8 +21,8 @@ injects the resulting values into an IterationContext on each
 (variant, iteration) pair.
 
 Input hooks registered via "@nominal.input" are managed by an "InputRegistry"
-instance and resolved once at benchmark scope before the loop starts, injecting
-their return values into ctx.inputs.
+instance and resolved at benchmark, variant, and iteration scope via
+``registry.resolve(ctx)``, injecting their return values into ``ctx.inputs``.
 
 Raises ValueError if variants is empty.
 """
@@ -211,9 +211,12 @@ def benchmark(variants, num_iterations):
 
     Parses CLI options registered by @lambkin.option once before the loop.
     Creates a BenchmarkContext for the entire run, a VariantContext per
-    variant, and an IterationContext per (variant, iteration) pair. Input
-    hooks registered via @nominal.input are resolved once at benchmark scope
-    and injected into each IterationContext as ctx.inputs.
+    variant, and an IterationContext per (variant, iteration) pair.
+
+    Input hooks registered via @nominal.input are managed by an InputRegistry
+    and resolved at three scopes: benchmark (once before the loop), variant
+    (once per variant), and iteration (once per cache-miss iteration).
+    Resolved inputs are merged across scopes and injected into ``ctx.inputs``.
 
     Args:
         variants (list[dict]): Sequence of variant dicts to sweep over. Each
@@ -307,9 +310,9 @@ def benchmark(variants, num_iterations):
                 # always present even if the run is interrupted mid-sweep.
                 _write_variants_yaml(bctx.base_dir, variants)
 
-                # Resolve inputs once at benchmark scope — hooks run before
-                # any variant or iteration context is created.
-                resolved_inputs = inputs.resolve(bctx)
+                # Resolve benchmark-scoped inputs. The registry dispatches on
+                # ctx.scope and the inputs setter handles merging with parent inputs.
+                bctx.inputs = inputs.resolve(bctx)
 
                 # Register the SIGUSR1 handler before any BackgroundProcess
                 # is started inside the benchmark function.
@@ -327,16 +330,19 @@ def benchmark(variants, num_iterations):
                         continue
 
                     with VariantContext(bctx, variant, variant_index) as vctx:
+                        # Resolve variant-scoped inputs, merged with benchmark inputs.
+                        vctx.inputs = inputs.resolve(vctx)
                         for iteration in range(num_iterations):
                             # Log the current run number and
                             # total runs to track progress.
                             current_run += 1
                             logger.info("Benchmark run %d/%d", current_run, total_runs)
-                            with IterationContext(
-                                vctx, iteration, resolved_inputs
-                            ) as ctx:
+                            with IterationContext(vctx, iteration) as ctx:
                                 if ctx.skipped:
                                     continue
+                                # Resolve iteration-scoped inputs, merged with variant
+                                # inputs.
+                                ctx.inputs = inputs.resolve(ctx)
                                 fn(ctx)
             # Run output hooks once at benchmark scope after all iterations complete.
             outputs.run(bctx)
@@ -347,7 +353,8 @@ def benchmark(variants, num_iterations):
             )
 
         # Expose the input registration hook so users can decorate input providers
-        # with @my_benchmark.input on the returned wrapper.
+        # with @my_benchmark.input (benchmark scope, default) or
+        # @my_benchmark.input(scope="variant") / @my_benchmark.input(scope="iteration").
         wrapper.input = inputs.register
 
         # Expose the output registration hook so users can decorate output providers
