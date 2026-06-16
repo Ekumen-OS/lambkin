@@ -1,0 +1,31 @@
+name: stress
+
+on:
+  workflow_dispatch:
+  schedule:
+    # TODO: remove schedule once stress test has been stable for ~2 weeks
+    - cron: '0 3 * * *'  # 3am UTC daily
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install project dependencies
+        run: uv sync --group dev
+
+      - name: Run stress test in podman
+        run: |
+          podman run --rm \
+            --systemd=always \
+            -v ${{ github.workspace }}:/workspace:z \
+            -w /workspace \
+            python:3.12 \
+            bash -c "pip install uv && uv sync --group dev && uv run pytest test/core/test_background.py::test_background_process_raises_if_dies_unexpectedly --count=100 -v"
