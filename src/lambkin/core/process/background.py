@@ -134,7 +134,11 @@ class BackgroundProcess:
             target=self._monitor_process,
             daemon=True,
         )
-        self._monitor.start()
+        old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGUSR1})
+        try:
+            self._monitor.start()
+        finally:
+            signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
         return self
 
     def __exit__(
@@ -171,7 +175,10 @@ class BackgroundProcess:
         remove_cgroup(self._cgroup)
 
         assert self._proc is not None
-        if exc_type is None and self._died_unexpectedly:
+        if self._died_unexpectedly and exc_type in (
+            None,
+            exceptions.LambkinSIGUSR1Interrupt,
+        ):
             returncode = self._proc.poll()
             raise exceptions.LambkinProcessDiedUnexpectedlyError(
                 self._argv, returncode or 1

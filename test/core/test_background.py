@@ -138,7 +138,8 @@ def test_background_process_cgroup_removed_on_exit(tmp_path):
     assert not child_cgroup.exists()
 
 
-def test_background_process_raises_if_dies_unexpectedly(tmp_path):
+@pytest.mark.parametrize("duration", ["0", "0.05"])
+def test_background_process_raises_if_dies_unexpectedly(tmp_path, duration):
     """LambkinProcessDiedUnexpectedlyError is raised if process dies before __exit__."""
     iteration_dir = tmp_path / "var_1" / "iter_1"
     iteration_dir.mkdir(parents=True)
@@ -148,7 +149,7 @@ def test_background_process_raises_if_dies_unexpectedly(tmp_path):
 
     shell = ShellProxy(dry_run=False, cwd=tmp_path, cgroup=cgroup)
     with pytest.raises(LambkinProcessDiedUnexpectedlyError):
-        with background(shell.sleep, "0"):
+        with background(shell.sleep, duration):
             shell.python3("-c", COOPERATIVE)
 
 
