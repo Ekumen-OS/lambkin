@@ -56,7 +56,10 @@ def iterations(ctx_or_path: Path | object) -> list:
         else ctx_or_path
     )
     results = []
-    for meta_path in sorted(root.glob(f"var_*/iter_*/{defaults.METADATA_FILENAME}")):
+    for meta_path in sorted(
+        root.glob(f"var_*/iter_*/{defaults.METADATA_FILENAME}"),
+        key=lambda p: (int(p.parent.parent.name[4:]), int(p.parent.name[5:])),
+    ):
         iter_dir = meta_path.parent
         variant_name = iter_dir.parent.name
         with open(meta_path) as f:
