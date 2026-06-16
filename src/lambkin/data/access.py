@@ -61,7 +61,6 @@ def iterations(ctx_or_path: Path | object) -> list:
         key=lambda p: (int(p.parent.parent.name[4:]), int(p.parent.name[5:])),
     ):
         iter_dir = meta_path.parent
-        variant_name = iter_dir.parent.name
         with open(meta_path) as f:
             meta = yaml.safe_load(f)
         if "completed_at" not in meta:
@@ -72,7 +71,7 @@ def iterations(ctx_or_path: Path | object) -> list:
         results.append(
             SimpleNamespace(
                 iter_dir=iter_dir,
-                variant=variant_name,
+                variant=f"var_{meta['variant_index'] + 1}",
                 iteration=meta["iteration"],
                 params=SimpleNamespace(**meta["variant"]),
             )

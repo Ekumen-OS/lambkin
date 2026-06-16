@@ -66,6 +66,7 @@ def make_iteration(
     metadata = {
         "iteration": iteration,
         "variant": variant,
+        "variant_index": variant_index - 1,
         "completed_at": "2026-01-01T00:00:00",
     }
     with open(iter_dir / "lambkin_metadata.yaml", "w") as f:
