@@ -94,7 +94,7 @@ def test_series_entry_has_expected_attributes(benchmark_dir):
     assert hasattr(entry, "iteration")
     assert hasattr(entry, "params")
     assert hasattr(entry, "time")
-    assert hasattr(entry, "ape")
+    assert hasattr(entry, "error")
     assert hasattr(entry, "distance")
 
 
@@ -102,14 +102,14 @@ def test_series_arrays_are_numpy(benchmark_dir):
     """time, ape, and distance are numpy arrays."""
     entry = evo.series(benchmark_dir, "output.ape.zip")[0]
     assert isinstance(entry.time, np.ndarray)
-    assert isinstance(entry.ape, np.ndarray)
+    assert isinstance(entry.error, np.ndarray)
     assert isinstance(entry.distance, np.ndarray)
 
 
 def test_series_array_lengths_match(benchmark_dir):
     """Time and ape arrays have the same length."""
     entry = evo.series(benchmark_dir, "output.ape.zip")[0]
-    assert len(entry.time) == len(entry.ape)
+    assert len(entry.time) == len(entry.error)
 
 
 def test_series_params_match_variant(benchmark_dir):

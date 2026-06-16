@@ -30,15 +30,15 @@ logger = logging.getLogger(__name__)
 
 
 def series(ctx_or_path: Path | object, filename: str) -> list:
-    """Collect evo_ape timeseries results across all iterations.
+    """Collect evo timeseries results across all iterations.
 
-    Walks all iteration directories and collects the evo_ape result
+    Walks all iteration directories and collects the evo result
     zip file matching ``filename`` from each one.
 
     Args:
         ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
             benchmark base directory.
-        filename: name of the evo_ape result zip file (e.g. ``"output.ape.zip"``).
+        filename: name of the evo result zip file (e.g. ``"output.ape.zip"``).
 
     Returns:
         A list of :class:`~types.SimpleNamespace` objects, one per iteration,
@@ -49,7 +49,7 @@ def series(ctx_or_path: Path | object, filename: str) -> list:
         - ``iteration``: iteration index.
         - ``params``: variant parameters as a :class:`~types.SimpleNamespace`.
         - ``time``: array of timestamps from start in seconds.
-        - ``ape``: array of APE error values in meters.
+        - ``error``: array of error values in meters.
         - ``distance``: array of distances from start in meters (may be None).
     """
     results = []
@@ -66,7 +66,7 @@ def series(ctx_or_path: Path | object, filename: str) -> list:
                 iteration=entry.iteration,
                 params=entry.params,
                 time=result.np_arrays.get("seconds_from_start"),
-                ape=result.np_arrays.get("error_array"),
+                error=result.np_arrays.get("error_array"),
                 distance=result.np_arrays.get("distances_from_start"),
             )
         )
@@ -74,15 +74,15 @@ def series(ctx_or_path: Path | object, filename: str) -> list:
 
 
 def stats(ctx_or_path: Path | object, filename: str) -> list:
-    """Collect evo_ape statistics across all iterations.
+    """Collect evo statistics across all iterations.
 
-    Walks all iteration directories and collects the evo_ape result
+    Walks all iteration directories and collects the evo result
     zip file matching ``filename`` from each one.
 
     Args:
         ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
             benchmark base directory.
-        filename: name of the evo_ape result zip file (e.g. ``"output.ape.zip"``).
+        filename: name of the evo result zip file (e.g. ``"output.ape.zip"``).
 
     Returns:
         A list of :class:`~types.SimpleNamespace` objects, one per iteration,
@@ -120,12 +120,12 @@ def stats(ctx_or_path: Path | object, filename: str) -> list:
 
 
 def log_stats(ctx_or_path: Path | object, filename: str) -> None:
-    """Log evo_ape statistics for all iterations at INFO level.
+    """Log evo statistics for all iterations at INFO level.
 
     Args:
         ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
             benchmark base directory.
-        filename: name of the evo_ape result zip file (e.g. ``"output.ape.zip"``).
+        filename: name of the evo result zip file (e.g. ``"output.ape.zip"``).
     """
     for entry in stats(ctx_or_path, filename):
         logger.info("%s iter %d: rmse=%.4f", entry.variant, entry.iteration, entry.rmse)
