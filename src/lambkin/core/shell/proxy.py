@@ -153,6 +153,24 @@ class CommandProxy:
             return per_call
         return defaults.LOG_OUTPUT
 
+    def _advance_call_count(self) -> None:
+        """Increment the call counter for this command.
+
+        Must be called once at the start of each invocation (__call__ or
+        background()) to lock in the name for that invocation before any
+        other methods read it via _log_base().
+        """
+        base = self._log_name()
+        self._call_counts[base] = self._call_counts.get(base, 0) + 1
+
+    def get_process_name(self) -> str:
+        """Return the process name for this command, with collision suffix.
+
+        Used to derive consistent names for all files produced by a single
+        command invocation (stdout, stderr, resources).
+        """
+        return self._log_base()
+
     def get_cgroup(self) -> Path | None:
         """Return the iteration cgroup directory."""
         return self._cgroup
@@ -224,19 +242,18 @@ class CommandProxy:
         return "_".join(self._parts)
 
     def _log_base(self) -> str:
-        """Return a unique log file base name, appending a suffix on collision.
+        """Return the current log file base name for this invocation.
 
-        Calls _log_name to derive the base from the command parts, then
-        increments the counter for that name and appends a numeric suffix
-        if the same command has been launched more than once in this iteration.
+        Returns the name corresponding to the current call count, without
+        incrementing it. Call _advance_call_count() once per invocation
+        before calling this.
 
         Returns:
             A unique base name string, e.g. 'ros2_launch' or 'ros2_launch_1'.
         """
         base = self._log_name()
         count = self._call_counts.get(base, 0)
-        self._call_counts[base] = count + 1
-        suffix = f"_{count}" if count > 0 else ""
+        suffix = f"_{count - 1}" if count > 1 else ""
         return f"{base}{suffix}"
 
     def build_env(self) -> dict | None:
@@ -302,6 +319,7 @@ class CommandProxy:
         stdout, stderr = None, None
         proc: subprocess.Popen[bytes] | None = None
         interrupted = False
+        self._advance_call_count()
 
         try:
             stdout, stderr = self.open_streams(per_call_log_output)

@@ -21,6 +21,7 @@ cleanup and unexpected exit detection.
 from .background import BackgroundProcess, background
 from .cgroup import (
     find_delegated_cgroup,
+    find_user_slice,
     kill_cgroup,
     kill_cgroup_tree,
     make_cgroup,
@@ -33,6 +34,7 @@ from .cgroup import (
 __all__ = [
     "BackgroundProcess",
     "background",
+    "find_user_slice",
     "find_delegated_cgroup",
     "kill_cgroup",
     "kill_cgroup_tree",
@@ -41,4 +43,5 @@ __all__ = [
     "make_process_cgroup",
     "remove_cgroup",
     "remove_cgroup_tree",
+    "spawn_in_cgroup",
 ]

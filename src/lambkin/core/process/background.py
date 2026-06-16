@@ -32,7 +32,13 @@ from types import TracebackType
 from typing import IO, Any
 
 from lambkin.common import defaults, exceptions, signals
-from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
+from lambkin.core.process.cgroup import (
+    kill_cgroup,
+    make_process_cgroup,
+    remove_cgroup,
+    spawn_in_cgroup,
+)
+from lambkin.core.process.resource_monitor import ResourceMonitor
 from lambkin.core.shell.proxy import CommandProxy
 
 logger = logging.getLogger(__name__)
@@ -53,7 +59,8 @@ class BackgroundProcess:
         self,
         argv: list[str],
         iteration_cgroup: Path,
-        cwd: Path | None = None,
+        process_name: str,
+        cwd: Path,
         dry_run: bool = False,
         env: dict[str, str] | None = None,
         stdout: IO[str] | None = None,
@@ -64,8 +71,10 @@ class BackgroundProcess:
         Args:
             argv (list[str]): The command to run as a list of tokens.
             iteration_cgroup (Path): The cgroup directory for this iteration.
-            cwd (Path | None): Working directory for the process. If None,
-                inherits from the parent.
+            process_name (str): Process name shared across all output files for this
+                process, including stdout, stderr and resource logs.
+            cwd (Path): Working directory for the process and root for all
+                output files.
             dry_run (bool): If True, log the command instead of executing it.
             env (dict | None): Environment variables for the process. If None,
                 inherits from the parent.
@@ -74,24 +83,18 @@ class BackgroundProcess:
         """
         self._argv = argv
         self._iteration_cgroup = iteration_cgroup
+        self._process_name = process_name
         self._dry_run = dry_run
         self._cgroup: Path | None = None
         self._proc: subprocess.Popen[bytes] | None = None
         self._monitor: threading.Thread | None = None
+        self._resource_monitor: ResourceMonitor | None = None
         self._died_unexpectedly: bool = False
         self._exiting: threading.Event = threading.Event()
         self._cwd = cwd
         self._env = env
         self._stdout = stdout
         self._stderr = stderr
-
-    def _enter_cgroup(self) -> None:
-        """Write the current PID to cgroup.procs.
-
-        Runs in the child process after fork() but before exec().
-        """
-        assert self._cgroup is not None
-        (self._cgroup / "cgroup.procs").write_text(str(os.getpid()))
 
     def _monitor_process(self) -> None:
         """Monitor thread that detects if the process dies unexpectedly.
@@ -121,14 +124,21 @@ class BackgroundProcess:
             return self
 
         self._cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)
-        self._proc = subprocess.Popen(
+        self._proc = spawn_in_cgroup(
+            self._cgroup,
             self._argv,
-            preexec_fn=self._enter_cgroup,
             cwd=self._cwd,
             env=self._env,
             stdout=self._stdout,
             stderr=self._stderr,
         )
+
+        self._resource_monitor = ResourceMonitor(
+            process_name=self._process_name,
+            cgroup=self._cgroup,
+            output_path=self._cwd / f"{self._process_name}.resources.jsonl",
+        )
+        self._resource_monitor.start()
 
         self._monitor = threading.Thread(
             target=self._monitor_process,
@@ -162,9 +172,16 @@ class BackgroundProcess:
             self._stderr.close()
         self._exiting.set()
 
+        # Stop the resource monitor before killing the cgroup so the final
+        # samples are flushed while the cgroup files are still readable.
+        if self._resource_monitor is not None:
+            self._resource_monitor.stop()
+
         assert self._cgroup is not None
         kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
 
+        # Join after kill_cgroup — the monitor thread will have unblocked from
+        # proc.wait() by the time the process is dead.
         if self._monitor is not None:
             self._monitor.join()
 
@@ -190,7 +207,7 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
         BackgroundProcess: A context manager that runs the command in the background.
 
     Raises:
-        ValueError: If the proxy has no cgroup set.
+        ValueError: If the proxy has no cgroup or working directory set.
 
     Example:
         with background(ctx.shell.ros2.bag.record, "-O", "output.mcap", "-a"):
@@ -203,10 +220,14 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     cgroup = proxy.get_cgroup()
     if cgroup is None:
         raise ValueError("background() requires a proxy with a cgroup set.")
+    cwd = proxy.get_cwd()
+    if cwd is None:
+        raise ValueError("background() requires a proxy with a working directory set.")
     return BackgroundProcess(
         argv=argv,
         iteration_cgroup=cgroup,
-        cwd=proxy.get_cwd(),
+        process_name=proxy.get_process_name(),
+        cwd=cwd,
         dry_run=proxy.get_dry_run(),
         env=env,
         stdout=stdout,

@@ -31,6 +31,9 @@ SIGKILL_GRACE_PERIOD: Final[float] = 5.0
 # Polling interval in seconds when waiting for cgroup processes to exit.
 CGROUP_POLL_INTERVAL: Final[float] = 0.05
 
+# Sampling interval in seconds for the ResourceMonitor.
+RESOURCE_MONITOR_INTERVAL: Final[float] = 1.0
+
 # Where to route process output. Either 'file' or 'console'.
 LOG_OUTPUT: Final[str] = "file"
 

@@ -33,7 +33,7 @@ from typing import Any
 import yaml
 
 from lambkin.core.process.cgroup import (
-    find_delegated_cgroup,
+    find_run_cgroup,
     kill_cgroup_tree,
     make_iteration_cgroup,
     remove_cgroup_tree,
@@ -263,7 +263,7 @@ class IterationContext:
 
         if not self.options.dry_run:
             self._iteration_cgroup = make_iteration_cgroup(
-                find_delegated_cgroup(),
+                find_run_cgroup(),
                 self._paths.iteration_dir,
             )
 

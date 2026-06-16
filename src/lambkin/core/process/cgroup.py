@@ -19,9 +19,11 @@ import errno
 import logging
 import os
 import signal
+import subprocess
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 
 from lambkin.common import defaults
 
@@ -61,19 +63,39 @@ def find_delegated_cgroup() -> Path:
     )
 
 
-def find_app_slice() -> Path | None:
-    """Return the user app.slice cgroup if writable, else None.
+def find_run_cgroup() -> Path:
+    """Return the lambkin run cgroup for the current process.
+
+    Walks up from the delegated cgroup until it finds a cgroup whose
+    name starts with 'lambkin-', which is the naming convention used
+    by the CLI when creating run cgroups.
+    """
+    cgroup = find_delegated_cgroup()
+    for parent in [cgroup, *cgroup.parents]:
+        if parent.name.startswith("lambkin-"):
+            return parent
+    raise RuntimeError(
+        "No lambkin run cgroup found in cgroup hierarchy. "
+        "Make sure the benchmark is launched via the lambkin CLI."
+    )
+
+
+def find_user_slice() -> Path | None:
+    """Return the user's systemd user manager cgroup if writable, else None.
+
+    The user manager scope (``user@UID.service``) is the cgroup that systemd
+    creates per user session and fully delegates to the user, with
+    ``cpu``, ``memory``, and ``pids`` controllers already enabled in
+    ``subtree_control``. All descendant cgroups automatically inherit them.
 
     Returns:
-        Path | None: The app.slice cgroup path if it exists and is writable,
-            else None.
+        Path | None: The user@UID.service cgroup path if it exists and is
+            writable, else None.
     """
     uid = os.getuid()
-    app_slice = Path(
-        f"/sys/fs/cgroup/user.slice/user-{uid}.slice/user@{uid}.service/app.slice"
-    )
-    if app_slice.exists() and os.access(app_slice, os.W_OK):
-        return app_slice
+    user_slice = Path(f"/sys/fs/cgroup/user.slice/user-{uid}.slice/user@{uid}.service")
+    if user_slice.exists() and os.access(user_slice, os.W_OK):
+        return user_slice
     return None
 
 
@@ -230,6 +252,47 @@ def make_process_cgroup(parent: Path, argv: list[str]) -> Path:
     """
     name = f"{argv[0].split('/')[-1]}-{uuid.uuid4().hex[:8]}"
     return make_cgroup(parent, name)
+
+
+def enter_cgroup(cgroup: Path) -> None:
+    """Write the current PID into a cgroup's cgroup.procs file.
+
+    Intended to be called as a ``preexec_fn`` after fork() but before exec(),
+    so the child process is placed into the cgroup from its very first
+    instruction.
+
+    Args:
+        cgroup: The cgroup directory to enter.
+    """
+    (cgroup / "cgroup.procs").write_text(str(os.getpid()))
+
+
+def spawn_in_cgroup(
+    cgroup: Path,
+    argv: list[str],
+    **popen_kwargs: Any,
+) -> subprocess.Popen:
+    """Spawn a process and place it into an existing cgroup.
+
+    Uses ``enter_cgroup`` as ``preexec_fn`` to write the child PID to
+    ``cgroup.procs`` immediately after fork, before exec. This ensures the
+    process is in the cgroup from the very first instruction.
+
+    Args:
+        cgroup: The cgroup directory to place the process in. Must already
+            exist — call ``make_process_cgroup`` first.
+        argv: The command to run as a list of tokens.
+        **popen_kwargs: Additional keyword arguments forwarded to
+            ``subprocess.Popen`` (e.g. stdout, stderr, cwd, env).
+
+    Returns:
+        The running ``subprocess.Popen`` instance.
+    """
+
+    def _preexec() -> None:
+        enter_cgroup(cgroup)
+
+    return subprocess.Popen(argv, preexec_fn=_preexec, **popen_kwargs)
 
 
 def cgroup_exists(cgroup: Path) -> bool:

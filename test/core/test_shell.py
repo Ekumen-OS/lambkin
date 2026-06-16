@@ -183,7 +183,9 @@ def test_log_output_cli_overrides_per_call(tmp_path):
 def test_log_base_appends_suffix_on_collision(shell):
     """_log_base appends numeric suffix when same command launched twice."""
     proxy = shell.ros2.launch
+    proxy._advance_call_count()
     assert proxy._log_base() == "ros2_launch"
+    proxy._advance_call_count()
     assert proxy._log_base() == "ros2_launch_1"
 
 
@@ -225,3 +227,20 @@ def test_ros_launch_build_env_sets_ros_log_dir(tmp_path):
     proxy = s.ros2.launch
     env = proxy.build_env()
     assert env["ROS_LOG_DIR"] == str(tmp_path)
+
+
+def test_get_process_name_matches_log_base(shell):
+    """get_process_name returns the same value as _log_base for the first call."""
+    proxy = shell.ros2.launch
+    assert proxy.get_process_name() == "ros2_launch"
+
+
+def test_get_process_name_increments_on_collision(shell):
+    """get_process_name shares the collision counter with open_streams."""
+    proxy = shell.ros2.launch
+    proxy._advance_call_count()
+    name1 = proxy.get_process_name()
+    proxy._advance_call_count()
+    name2 = proxy.get_process_name()
+    assert name1 == "ros2_launch"
+    assert name2 == "ros2_launch_1"

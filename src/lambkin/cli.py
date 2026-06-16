@@ -39,8 +39,8 @@ import click
 from click.formatting import HelpFormatter
 
 from lambkin.core.process.cgroup import (
-    find_app_slice,
     find_delegated_cgroup,
+    find_user_slice,
     kill_cgroup_tree,
     make_cgroup,
     remove_cgroup_tree,
@@ -144,13 +144,34 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
     # Prefer app.slice as the parent cgroup for a stable, predictable location
     # in the cgroup hierarchy. Fall back to the current delegated cgroup if
     # app.slice is not available (e.g. inside a container).
-    parent = find_app_slice()
+    parent = find_user_slice()
     if parent is None:
         logger.debug("app.slice not available, falling back to delegated cgroup")
         parent = find_delegated_cgroup()
 
     run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
     logger.debug("run_cgroup: %s", run_cgroup)
+
+    # Enable available controllers so all child cgroups (iteration, process)
+    # inherit memory.current and cpu.stat for resource monitoring.
+    # run_cgroup is empty at this point so subtree_control is writable.
+    try:
+        available = (run_cgroup / "cgroup.controllers").read_text().split()
+        to_enable = " ".join(f"+{c}" for c in ("memory", "cpu", "io") if c in available)
+        if to_enable:
+            (run_cgroup / "cgroup.subtree_control").write_text(to_enable)
+    except OSError as e:
+        logger.warning(
+            "Could not enable controllers in %s: %s. "
+            "Resource metrics may be unavailable.",
+            run_cgroup,
+            e,
+        )
+
+    # Place the script process in a dedicated child cgroup, keeping run_cgroup
+    # process-free so its subtree_control remains writable. Iteration cgroups
+    # are siblings of script/ under run_cgroup, found via find_run_cgroup().
+    script_cgroup = make_cgroup(run_cgroup, "script")
 
     # Save the terminal state before launching the benchmark script.
     # start_new_session=True detaches the script from the terminal's process
@@ -170,7 +191,9 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
     proc = subprocess.Popen(
         [sys.executable, str(script), "--log-level", log_level, *args],
         start_new_session=True,
-        preexec_fn=lambda: (run_cgroup / "cgroup.procs").write_text(str(os.getpid())),
+        preexec_fn=lambda: (script_cgroup / "cgroup.procs").write_text(
+            str(os.getpid())
+        ),
     )
     try:
         proc.wait()

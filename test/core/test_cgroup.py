@@ -25,11 +25,13 @@ from unittest.mock import patch
 import pytest
 
 from lambkin.core.process.cgroup import (
+    enter_cgroup,
     find_delegated_cgroup,
     kill_cgroup,
     make_cgroup,
     make_iteration_cgroup,
     remove_cgroup,
+    spawn_in_cgroup,
 )
 
 
@@ -205,3 +207,42 @@ def test_kill_cgroup_empty_cgroup_does_nothing():
     kill_cgroup(cgroup, grace_period=1.0)
     remove_cgroup(cgroup)
     assert not cgroup.exists()
+
+
+def test_enter_cgroup_writes_pid(tmp_path):
+    """enter_cgroup writes the current PID to cgroup.procs."""
+    cgroup = tmp_path / "test-cgroup"
+    cgroup.mkdir()
+    (cgroup / "cgroup.procs").write_text("")
+    enter_cgroup(cgroup)
+    assert str(os.getpid()) in (cgroup / "cgroup.procs").read_text()
+
+
+def test_spawn_in_cgroup_places_process_in_cgroup():
+    """spawn_in_cgroup starts a process inside the given cgroup."""
+    delegated = find_delegated_cgroup()
+    cgroup = make_cgroup(delegated, "test-spawn")
+    proc = spawn_in_cgroup(
+        cgroup,
+        [sys.executable, "-c", "import time; time.sleep(60)"],
+    )
+    time.sleep(0.1)
+    pids = (cgroup / "cgroup.procs").read_text().split()
+    assert str(proc.pid) in pids
+    proc.terminate()
+    proc.wait()
+    remove_cgroup(cgroup)
+
+
+def test_spawn_in_cgroup_returns_popen():
+    """spawn_in_cgroup returns a Popen instance."""
+    delegated = find_delegated_cgroup()
+    cgroup = make_cgroup(delegated, "test-spawn-type")
+    proc = spawn_in_cgroup(
+        cgroup,
+        [sys.executable, "-c", "import time; time.sleep(60)"],
+    )
+    assert isinstance(proc, subprocess.Popen)
+    proc.terminate()
+    proc.wait()
+    remove_cgroup(cgroup)
