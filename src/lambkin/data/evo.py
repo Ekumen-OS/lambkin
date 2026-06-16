@@ -29,14 +29,14 @@ from lambkin.data import access
 logger = logging.getLogger(__name__)
 
 
-def series(ctx_or_path: Path | object, filename: str) -> list:
+def series(source: Path | str | object, filename: str) -> list:
     """Collect evo timeseries results across all iterations.
 
     Walks all iteration directories and collects the evo result
     zip file matching ``filename`` from each one.
 
     Args:
-        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
+        source: a benchmark context or a :class:`~pathlib.Path` to the
             benchmark base directory.
         filename: name of the evo result zip file (e.g. ``"output.ape.zip"``).
 
@@ -53,7 +53,7 @@ def series(ctx_or_path: Path | object, filename: str) -> list:
         - ``distance``: array of distances from start in meters (may be None).
     """
     results = []
-    for entry in access.iterations(ctx_or_path):
+    for entry in access.iterations(source):
         result_path = entry.iter_dir / filename
         if not result_path.exists():
             logger.warning("%s is missing", result_path)
@@ -73,14 +73,14 @@ def series(ctx_or_path: Path | object, filename: str) -> list:
     return results
 
 
-def stats(ctx_or_path: Path | object, filename: str) -> list:
+def stats(source: Path | str | object, filename: str) -> list:
     """Collect evo statistics across all iterations.
 
     Walks all iteration directories and collects the evo result
     zip file matching ``filename`` from each one.
 
     Args:
-        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
+        source: a benchmark context or a :class:`~pathlib.Path` to the
             benchmark base directory.
         filename: name of the evo result zip file (e.g. ``"output.ape.zip"``).
 
@@ -101,7 +101,7 @@ def stats(ctx_or_path: Path | object, filename: str) -> list:
         - ``sse``: sum of squared errors.
     """
     results = []
-    for entry in access.iterations(ctx_or_path):
+    for entry in access.iterations(source):
         result_path = entry.iter_dir / filename
         if not result_path.exists():
             logger.warning("%s is missing", result_path)

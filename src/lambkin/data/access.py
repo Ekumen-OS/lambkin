@@ -29,7 +29,7 @@ from lambkin.common import defaults
 logger = logging.getLogger(__name__)
 
 
-def iterations(ctx_or_path: Path | object) -> list:
+def iterations(source: Path | str | object) -> list:
     """Traverse the benchmark output tree and return all iteration entries.
 
     Accepts either a benchmark context (exposing ``paths.base_dir``) or a
@@ -38,7 +38,7 @@ def iterations(ctx_or_path: Path | object) -> list:
     needing a live context.
 
     Args:
-        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
+        source: a benchmark context or a :class:`~pathlib.Path` to the
             benchmark base directory.
 
     Returns:
@@ -51,9 +51,7 @@ def iterations(ctx_or_path: Path | object) -> list:
         - ``params``: :class:`~types.SimpleNamespace` of variant parameters.
     """
     root = (
-        ctx_or_path.base_dir  # type: ignore[attr-defined]
-        if not isinstance(ctx_or_path, Path)
-        else ctx_or_path
+        Path(source) if isinstance(source, (Path, str)) else source.base_dir  # type: ignore[attr-defined]
     )
     results = []
     for meta_path in sorted(
