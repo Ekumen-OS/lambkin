@@ -62,8 +62,8 @@ def iterations(ctx_or_path: Path | object) -> list:
             SimpleNamespace(
                 iter_dir=iter_dir,
                 variant=variant_name,
-                iteration=meta.get("iteration", 0),
-                params=SimpleNamespace(**meta.get("variant", {})),
+                iteration=meta["iteration"],
+                params=SimpleNamespace(**meta["variant"]),
             )
         )
     return results
