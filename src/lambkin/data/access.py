@@ -18,12 +18,15 @@ Provides utilities to traverse benchmark output directories and
 read iteration metadata produced by the SDK.
 """
 
+import logging
 from pathlib import Path
 from types import SimpleNamespace
 
 import yaml
 
 from lambkin.common import defaults
+
+logger = logging.getLogger(__name__)
 
 
 def iterations(ctx_or_path: Path | object) -> list:
@@ -58,6 +61,11 @@ def iterations(ctx_or_path: Path | object) -> list:
         variant_name = iter_dir.parent.name
         with open(meta_path) as f:
             meta = yaml.safe_load(f)
+        if "completed_at" not in meta:
+            logger.warning(
+                "%s: iteration did not complete successfully, skipping", iter_dir
+            )
+            continue
         results.append(
             SimpleNamespace(
                 iter_dir=iter_dir,

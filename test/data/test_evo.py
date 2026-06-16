@@ -63,7 +63,11 @@ def make_iteration(
     """Write iteration metadata and an evo_ape result zip under ``base_dir``."""
     iter_dir = base_dir / f"var_{variant_index}" / f"iter_{iteration}"
     iter_dir.mkdir(parents=True)
-    metadata = {"iteration": iteration, "variant": variant}
+    metadata = {
+        "iteration": iteration,
+        "variant": variant,
+        "completed_at": "2026-01-01T00:00:00",
+    }
     with open(iter_dir / "lambkin_metadata.yaml", "w") as f:
         yaml.dump(metadata, f)
     make_ape_zip(iter_dir / "output.ape.zip")
