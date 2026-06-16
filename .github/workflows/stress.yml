@@ -1,10 +1,8 @@
 name: stress
 
 on:
-  workflow_dispatch:
-  schedule:
-    # TODO: remove schedule once stress test has been stable for ~2 weeks
-    - cron: '0 3 * * *'  # 3am UTC daily
+  push:
+    branches: [ next-gen ]
 
 jobs:
   stress:
