@@ -70,15 +70,18 @@ def map(ctx):
     return "/data/maps/map.yaml"
 
 
+def _log_stats(ctx, filename):
+    """Log evo statistics for all iterations at INFO level."""
+    for entry in lambkin.data.evo.stats(ctx, filename):
+        lambkin.logger.info(
+            "%s iter %d: rmse=%.4f", entry.variant, entry.iteration, entry.rmse
+        )
+
+
 @nominal.output
 def plots(ctx):
     """Generate and save benchmark plots using aggregated evo_ape results."""
-    for entry in lambkin.data.evo.series(ctx, "output.ape.zip"):
-        plt.plot(
-            entry.time, entry.error, label=f"{entry.variant} / iter {entry.iteration}"
-        )
-
-    lambkin.data.evo.log_stats(ctx, "output.ape.zip")
+    _log_stats(ctx, "output.ape.zip")
 
     plt.xlabel("Time (s)")
     plt.ylabel("APE (m)")

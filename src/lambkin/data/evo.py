@@ -117,15 +117,3 @@ def stats(ctx_or_path: Path | object, filename: str) -> list:
             )
         )
     return results
-
-
-def log_stats(ctx_or_path: Path | object, filename: str) -> None:
-    """Log evo statistics for all iterations at INFO level.
-
-    Args:
-        ctx_or_path: a benchmark context or a :class:`~pathlib.Path` to the
-            benchmark base directory.
-        filename: name of the evo result zip file (e.g. ``"output.ape.zip"``).
-    """
-    for entry in stats(ctx_or_path, filename):
-        logger.info("%s iter %d: rmse=%.4f", entry.variant, entry.iteration, entry.rmse)
