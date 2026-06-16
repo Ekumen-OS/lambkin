@@ -102,7 +102,9 @@ def test_iterations_empty_dir_returns_empty_list(tmp_path):
 
 
 def test_iterations_are_sorted(benchmark_dir):
-    """iterations() returns entries in sorted path order."""
+    """iterations() returns entries in numerical (variant, iteration) order."""
     entries = access.iterations(benchmark_dir)
-    paths = [e.iter_dir for e in entries]
-    assert paths == sorted(paths)
+    keys = [
+        (int(e.iter_dir.parent.name[4:]), int(e.iter_dir.name[5:])) for e in entries
+    ]
+    assert keys == sorted(keys)
