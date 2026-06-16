@@ -85,10 +85,15 @@ def plots(ctx):
 
 @nominal.output
 def stats(ctx):
-    """Log evo statistics for all iterations."""
+    """Log RMSE, mean, and max APE for all iterations."""
     for entry in lambkin.data.evo.stats(ctx, "output.ape.zip"):
         lambkin.logger.info(
-            "%s iter %d: rmse=%.4f", entry.variant, entry.iteration, entry.rmse
+            "%s iter %d: rmse=%.4f mean=%.4f max=%.4f",
+            entry.variant,
+            entry.iteration,
+            entry.rmse,
+            entry.mean,
+            entry.max,
         )
 
 
