@@ -38,8 +38,8 @@ def iterations(source: Path | str | object) -> list:
     needing a live context.
 
     Args:
-        source: a benchmark context or a :class:`~pathlib.Path` to the
-            benchmark base directory.
+        source: benchmark context, :class:`~pathlib.Path`, or path string
+            pointing to the benchmark base directory.
 
     Returns:
         A list of :class:`~types.SimpleNamespace` objects, one per iteration,
