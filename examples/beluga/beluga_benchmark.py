@@ -56,6 +56,16 @@ def nominal(ctx):
             ctx.shell.ros2.bag.play(
                 ctx.inputs.dataset, "--clock", "-r", ctx.options.clock_rate
             )
+    ctx.shell.evo_traj.bag2(
+        "output/output_0.mcap",
+        "/amcl_pose",
+        save_as_tum="amcl_pose.tum",
+    )
+    ctx.shell.evo_ape.tum(
+        ctx.inputs.ground_truth,
+        "amcl_pose.tum",
+        save_results="output.ape.zip",
+    )
 
 
 @nominal.input
