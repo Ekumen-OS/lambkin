@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import matplotlib.pyplot as plt
+
 import lambkin
 
 
@@ -54,6 +56,15 @@ def nominal(ctx):
             ctx.shell.ros2.bag.play(
                 ctx.inputs.dataset, "--clock", "-r", ctx.options.clock_rate
             )
+    ctx.shell.evo_ape.bag2(
+        "output",
+        "/ground_truth",
+        "/pose",
+        "--t_max_diff",
+        "0.5",
+        "--save_results",
+        "output.ape.zip",
+    )
 
 
 @nominal.input
@@ -70,8 +81,29 @@ def map(ctx):
 
 @nominal.output
 def plots(ctx):
-    """Generate and save benchmark plots using aggregated evo_ape results."""
-    lambkin.logger.info(f"output called with ctx: {ctx.base_dir}")
+    """Save APE timeseries plot for all iterations."""
+    for entry in lambkin.data.evo.series(ctx, "output.ape.zip"):
+        plt.plot(
+            entry.time, entry.error, label=f"{entry.variant} / iter {entry.iteration}"
+        )
+    plt.xlabel("Time (s)")
+    plt.ylabel("Error (m)")
+    plt.legend()
+    plt.savefig(ctx.base_dir / "plots.png")
+
+
+@nominal.output
+def stats(ctx):
+    """Log RMSE, mean, and max APE for all iterations."""
+    for entry in lambkin.data.evo.stats(ctx, "output.ape.zip"):
+        lambkin.logger.info(
+            "%s iter %d: rmse=%.4f mean=%.4f max=%.4f",
+            entry.variant,
+            entry.iteration,
+            entry.rmse,
+            entry.mean,
+            entry.max,
+        )
 
 
 if __name__ == "__main__":

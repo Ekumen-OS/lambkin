@@ -14,6 +14,7 @@
 
 """LAMBKIN: Localization And Mapping BenchmarKINg SDK."""
 
+from lambkin import data
 from lambkin.common import named_product
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core import process
@@ -23,6 +24,7 @@ from lambkin.logger import logger
 
 __all__ = [
     "benchmark",
+    "data",
     "named_product",
     "option",
     "ShellProxy",
