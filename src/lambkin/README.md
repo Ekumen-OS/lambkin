@@ -69,15 +69,15 @@ Registers a function as a callback that runs once, after the entire benchmark lo
 [!WARNING]
 Output hooks receive a BenchmarkContext, not an IterationContext — every iteration's cgroup and shell have already been torn down by the time hooks run. Don't call ctx.shell or launch any process inside an output hook; read artifacts from disk via ctx.base_dir instead (see Reading Results).
 
-**Option**
+### Option
 
 Registers a CLI option on a benchmark. Built on top of [`click`](https://click.palletsprojects.com/en/stable/options/), so any attribute supported by `click.Option` can be passed. Flag names must start with `-` or `--`. Declared options are collected and parsed once before the execution loop, and their values made available through the context. Can be used as a decorator via `@option`.
 
-**Shell**
+### Shell
 
 Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible through the context.
 
-**Background Process**
+### Background Process
 
 Runs a process in the background while the benchmark continues executing. Takes a shell command (without calling it) and manages its full lifecycle — start, monitor, and clean up — as a context manager. When the context exits, it terminates the process and all its descendants; any process spawned outside a `background()` block is not covered.
 
