@@ -19,6 +19,7 @@ LAMBKIN separates the orchestration machinery from the benchmark definition. The
 | **Process lifecycle** | Launch, supervise, and terminate external processes automatically across benchmark iterations. |
 | **Pipeline stages** | Structure your benchmark into ingestion, execution, and egression stages, each independently customizable. |
 | **Context passing** |Carry configuration, paths, and state through the pipeline without coupling stages to each other.|
+| **Result access** |Read structured benchmark outputs (`lambkin.data`) from a notebook or a standalone script, with no live benchmark required.|
 
 To understand how LAMBKIN works under the hood, see the [SDK documentation](src/lambkin/README.md).
 
