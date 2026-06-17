@@ -16,6 +16,9 @@ RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 
 # ── Stage 1: development ───────────────────────────────────
 FROM base AS development
+
+COPY --from=ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/
+
 CMD ["bash"]
 
 # ── Stage 2: production ────────────────────────────────────
