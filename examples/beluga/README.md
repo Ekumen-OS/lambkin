@@ -23,11 +23,11 @@ The launch file accepts the map path, sensor model type, and particle count as p
   `podman-compose` (see note below)
 - The following reference files available on the host:
 
-| Artifact | Description |
-|---|---|
-| Rosbag | Reference sensor data to replay during the benchmark |
-| Map | Static map file in `.yaml` and `.pgm` format |
-| Groundtruth | Reference trajectory in `.tum` format to evaluate against |
+| Artifact | Default location in image | Description |
+| --- | --- | --- |
+| Rosbag | `/data/datasets/input/` | Reference sensor data to replay during the benchmark. Already includes the ground-truth trajectory topic |
+| Map | `/data/maps/map.yaml` | Static map file in `.yaml` and `.pgm` format |
+| Groundtruth | `/data/ground_truth/ground_truth.tum` | Reference trajectory in `.tum` format, provided for convenience if you'd rather use it directly (e.g. `evo_traj tum`) than use it from the rosbag |
 
 > [!NOTE]
 > `podman-compose` installed via `apt` may be version 1.0.6, which does not support `--profile`. Install a recent version via `pipx`:
@@ -42,16 +42,23 @@ The launch file accepts the map path, sensor model type, and particle count as p
 
 If you are running the benchmark as-is, use the Production profile. If you are modifying the benchmark script or the ROS 2 package, use the Development profile.
 
-### **1. Configure volume mounts**
+### **(Optional) Use your own data**
+
+By default, no volume mounts are needed — the example uses the rosbag, map, and groundtruth baked into the image. To benchmark your own data instead, edit the compose file ([docker-compose.yml](docker/docker-compose.yml) or [podman-compose.yml](docker/podman-compose.yml)) and uncomment the input volume mounts, pointing them at your files:
 
 Edit `docker/docker-compose.yml` and set the host paths to your reference files:
 
 ```yaml
 volumes:
-  - /path/to/your/rosbag:/data/rosbag
-  - /path/to/your/map:/data/map
-  - /path/to/your/groundtruth:/data/groundtruth
+  # ── Inputs (uncomment and adjust paths as needed) ─────────
+  - path/to/your/datasets:/data/datasets:ro
+  - path/to/your//maps:/data/maps:ro
+  - path/to/your//ground_truth:/data/ground_truth:ro
+  # ── Output (benchmark results persisted on host) ──────────
+  - ../results:/ws/examples/beluga/results
 ```
+
+Each mount overrides the corresponding default directory inside `/data/`, so you only need to uncomment the ones you're replacing.
 
 ### **2. Build the image**
 
