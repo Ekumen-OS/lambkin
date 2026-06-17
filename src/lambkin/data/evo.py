@@ -80,8 +80,8 @@ def stats(source: Path | str | object, filename: str) -> list:
     zip file matching ``filename`` from each one.
 
     Args:
-        source: a benchmark context or a :class:`~pathlib.Path` to the
-            benchmark base directory.
+        source: benchmark context, :class:`~pathlib.Path`, or path string
+            pointing to the benchmark base directory.
         filename: name of the evo result zip file (e.g. ``"output.ape.zip"``).
 
     Returns:

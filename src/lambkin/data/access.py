@@ -32,10 +32,8 @@ logger = logging.getLogger(__name__)
 def iterations(source: Path | str | object) -> list:
     """Traverse the benchmark output tree and return all iteration entries.
 
-    Accepts either a benchmark context (exposing ``paths.base_dir``) or a
-    plain :class:`~pathlib.Path` to the benchmark base directory, so that
-    users writing custom reports can call this function directly without
-    needing a live context.
+    Works without a live context, so it can be called from notebooks or
+    standalone reporting scripts.
 
     Args:
         source: benchmark context, :class:`~pathlib.Path`, or path string
