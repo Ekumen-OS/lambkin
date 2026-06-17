@@ -50,12 +50,9 @@ Once the bag finishes playing back, the benchmark runs `evo_ape bag2` comparing 
 
 If you are running the benchmark as-is, use the **Production** profile. If you are modifying the benchmark script or the ROS 2 package, use the **Development** profile.
 
-<<<<<<< HEAD
 ### **(Optional) Use your own data**
 
 By default, no volume mounts are needed — the example uses the rosbag, map, and groundtruth baked into the image. To benchmark your own data instead, edit the compose file ([docker-compose.yml](docker/docker-compose.yml) or [podman-compose.yml](docker/podman-compose.yml)) and uncomment the input volume mounts, pointing them at your files:
-=======
->>>>>>> 9148ff5 (Update beluga README)
 
 ### 1. (Optional) Use your own data
 
@@ -71,7 +68,7 @@ volumes:
   - ../results:/ws/examples/beluga/results
 ```
 
-Each mount overrides the corresponding default directory inside `/data/`, so you only need to uncomment the ones you're replacing. 
+Each mount overrides the corresponding default directory inside `/data/`, so you only need to uncomment the ones you're replacing.
 
 ### 2. Build the image
 
@@ -126,6 +123,9 @@ colcon build --base-paths /ws/examples/beluga
 source install/setup.bash
 ```
 
+> [!TIP]
+> The repository volume mount (`../../..:/ws`) does not shadow `/data/` — the bundled dataset was copied in at build time, outside `/ws`. Confirm it's there with `ls /data`.
+
 #### Production
 
 Builds a fully self-contained image with all dependencies pre-installed. No manual steps needed inside the container.
@@ -141,6 +141,13 @@ docker compose --profile production run --rm lambkin_prod bash
 ```bash
 podman-compose --profile production run --podman-run-args="--systemd=always" --rm lambkin_prod bash
 ```
+
+> [!TIP]
+> Same bundled dataset as Development, copied into the image at the same `/data/` path during build. Confirm it before running the benchmark with `ls -R /data`, or check it from the host without entering an interactive shell:
+> ```bash
+> docker compose --profile production run --rm lambkin_prod ls -R /data     # Docker
+> podman-compose --profile production run --rm lambkin_prod ls -R /data    # Podman
+> ```
 
 > [!WARNING]
 > Both runtimes require elevated privileges to support background process management. Docker runs with `--privileged`, granting the container broad access to host devices and kernel interfaces. Podman uses `--systemd=always`, which allows the container to interact with the host's cgroup v2 hierarchy.
