@@ -56,13 +56,15 @@ def nominal(ctx):
             ctx.shell.ros2.bag.play(
                 ctx.inputs.dataset, "--clock", "-r", ctx.options.clock_rate
             )
-        ctx.shell.evo_ape.bag2(
-            "output.mcap",
-            "/ground_truth",
-            "/pose",
-            "--save_results",
-            "output.ape.zip",
-        )
+    ctx.shell.evo_ape.bag2(
+        "output",
+        "/ground_truth",
+        "/pose",
+        "--t_max_diff",
+        "0.5",
+        "--save_results",
+        "output.ape.zip",
+    )
 
 
 @nominal.input
