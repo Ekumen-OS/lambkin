@@ -152,6 +152,26 @@ podman-compose --profile production run --podman-run-args="--systemd=always" --r
 > [!WARNING]
 > Both runtimes require elevated privileges to support background process management. Docker runs with `--privileged`, granting the container broad access to host devices and kernel interfaces. Podman uses `--systemd=always`, which allows the container to interact with the host's cgroup v2 hierarchy.
 
+
+
+## Running on the Host (No Container)
+
+If you'd rather run the example directly on the host — e.g. you already have ROS 2 Jazzy and `evo` installed locally — you can extract the bundled reference dataset from the dataset image without starting it:
+
+```bash
+docker create --name lambkin_data_extract ekumenlabs/lambkin-beluga-datasets:jazzy true
+docker cp lambkin_data_extract:/data/. ./data
+docker rm lambkin_data_extract
+```
+
+`docker create` only registers the container without running it, so this never executes anything inside the image — it just makes its filesystem layers available so `docker cp` can pull `/data/` out, then `docker rm` discards the unused container.
+
+> [!WARNING]
+> `beluga_benchmark.py`'s input hooks return the hardcoded paths `/data/datasets/input` and `/data/maps/map.yaml`. To run the example unmodified, extract to `/data` at the filesystem root (`sudo mkdir -p /data && sudo chown "$USER" /data` first if you don't already have write access there) rather than `./data` as in the example above. If you'd rather keep the dataset elsewhere, edit those two `@nominal.input` hooks in [`beluga_benchmark.py`](beluga_benchmark.py) to point at your chosen path instead.
+
+Everything the Dockerfile would otherwise set up — ROS 2 Jazzy, `rosdep`-installed dependencies for `beluga_ros2`, `uv sync`, `colcon build` — is then your own responsibility; see the commands under [Development](#development) above for reference.
+
+
 ## Usage
 
 Inside the Docker container or environment, run:
