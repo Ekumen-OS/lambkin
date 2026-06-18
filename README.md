@@ -95,14 +95,9 @@ if __name__ == "__main__":
 Run it with the CLI:
 
 ```bash
-lambkin my_benchmark.py --clock-rate 50.0
+lambkin my_benchmark.py
 ```
-
-Validate the benchmark pipeline without executing any process:
-
-```bash
-lambkin my_benchmark.py --dry-run
-```
+Run `lambkin my_benchmark.py --help` to see all available options.
 
 For a complete, working example using the Beluga algorithm, see [`examples/beluga/beluga_benchmark.py`](examples/beluga/beluga_benchmark.py). For the full CLI reference, see the [SDK documentation](src/lambkin/README.md#cli).
 
