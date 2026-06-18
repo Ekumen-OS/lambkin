@@ -11,11 +11,7 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 - [CLI](#cli)
 - [Partial Restarts](#partial-restarts)
 - [Logging](#logging)
-- [Reading Results](#reading-results)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Use Cases](#use-cases)
+- [Results](#results)
 - [Expected Output](#expected-output)
 
 ## Architecture
@@ -332,3 +328,23 @@ if __name__ == "__main__":
 ```
 
 This is the same code as in an `@output` hook, just pointed at a path string instead of `ctx`. Useful for generating a new report from an old run, comparing two separate `results/` directories, or trying out a plot before committing it to the benchmark script itself.
+
+## Expected Output
+
+LAMBKIN writes all artifacts under a consistent directory tree:
+
+```bash
+results/
+├── variants.yaml
+└── <variant_n>/
+    └── iter_<n>/
+        ├── lambkin_metadata.yaml
+        ├── output.mcap
+        ├── out.zip
+        ├── my_algorithm.stdout.log
+        ├── my_algorithm.stderr.log
+        ├── my_recorder.stdout.log
+        └── my_recorder.stderr.log
+```
+
+`lambkin_metadata.yaml` is always written by the SDK itself. Everything else under `iter_<n>/` is whatever your benchmark function's commands wrote to the current working directory — the exact names and shapes depend entirely on the tools you call (e.g. `ros2 bag record -o output` creates an `output/` *directory* with its own internal files, not a single `output.mcap`). Any artifact written by an `@output` hook (e.g. an aggregated plot) lives one level up, directly under `results/`, since output hooks run at benchmark scope after every iteration has finished.
