@@ -24,6 +24,8 @@ CMD ["bash"]
 # ── Stage 2: production ────────────────────────────────────
 FROM base AS production
 
+COPY --from=ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/
+
 COPY pyproject.toml README.md LICENSE /tmp/lambkin/
 COPY src/ /tmp/lambkin/src/
 RUN uv pip install /tmp/lambkin --system --break-system-packages \
