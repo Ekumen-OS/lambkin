@@ -32,15 +32,15 @@ Each stage is a plain Python function that receives a context object carrying co
 
 LAMBKIN exposes a small set of composable primitives. Together they cover the full lifecycle of a benchmark — from declaring inputs and sweeping parameters, to launching processes and reading results back.
 
-**Named Product**
+### Named Product
 
 Takes named parameter lists and returns every possible combination as a list of dictionaries, one per benchmark run configuration. Pass the result to `Benchmark` via `variants=` to sweep all combinations automatically.
 
-**Benchmark**
+### Benchmark
 
 Drives the benchmark execution loop, handling iteration, parameter expansion, and context setup. It parses options registered via `Option` once before the loop, then creates a context for every combination of variant and iteration and calls the decorated function with it. Can be used as a decorator via `@benchmark`.
 
-**Context**
+### Context
 
 Carries all namespaced information for a benchmark run, split into three nested scopes that mirror the execution loop:
 
@@ -50,11 +50,11 @@ Carries all namespaced information for a benchmark run, split into three nested 
 
 Each level is a context manager: entering it creates the corresponding output directory on disk, and exiting it tears down anything it owns — the iteration's cgroup, in the innermost case. `ctx.inputs` is read-only once resolved; assigning to it a second time raises `AttributeError`.
 
-**Source**
+### Source
 
-Describes the benchmark script being executed. Exposed through the context as `ctx.source`, it gives benchmark stages access to the script's own location (`ctx.source.path`) without hardcoding paths or relying on `__file__`, which would point at the SDK rather than the user's script.
+Describes the benchmark script being executed. Exposed through the context as `ctx.source`, it gives benchmark stages access to the script's own location (`ctx.source.path`) without hardcoding paths.
 
-**Input**
+### Input
 
 Registers a data resolution hook on a benchmark function. Each hook must be a callable that accepts a single `Context` object as its argument and must return a non-empty value. Hook names must be unique across the entire benchmark — registering two hooks with the same name, even under different scopes, raises an error. Can be used as a decorator via `@input`.
 
@@ -75,22 +75,22 @@ def calibration(ctx): ...  # variant scope
 
 Resolved inputs are merged down the hierarchy, so a variant-scoped hook can rely on benchmark-scoped inputs already being available on `ctx.inputs`, and so on for iteration scope.
 
-**Output**
+### Output
 
 Registers a function as a callback that runs once, after the entire benchmark loop completes, receiving the benchmark-scoped context. Hook names must be unique. Can be used as a decorator via `@output`.
 
 > [!WARNING]
 > Output hooks receive a `BenchmarkContext`, not an `IterationContext` — every iteration's cgroup and shell have already been torn down by the time hooks run. Don't call `ctx.shell` or launch any process inside an output hook; read artifacts from disk via `ctx.base_dir` instead (see [Reading Results](#reading-results)).
 
-**Option**
+### Option
 
 Registers a CLI option on a benchmark. Built on top of [`click`](https://click.palletsprojects.com/en/stable/options/), so any attribute supported by `click.Option` can be passed. Flag names must start with `-` or `--`. Declared options are collected and parsed once before the execution loop, and their values made available through the context. Can be used as a decorator via `@option`.
 
-**Shell**
+### Shell
 
 Abstracts shell command dispatch. Exposes the host environment's executables as Python attributes — accessing `shell.my_tool` returns a callable that runs `my_tool` with the given arguments, letting benchmark scripts invoke external processes without hardcoding paths or constructing subprocess calls manually. Accessible through the context.
 
-**Background Process**
+### Background Process
 
 Runs a process in the background while the benchmark continues executing. Takes a shell command (without calling it) and manages its full lifecycle — start, monitor, and clean up — as a context manager. When the context exits, it terminates the process and all its descendants; any process spawned outside a `background()` block is not covered.
 
@@ -180,18 +180,23 @@ Variant numbers always refer to the full, original sweep — they don't shift wh
 
 ## Partial Restarts
 
-LAMBKIN can skip iterations that already completed successfully in a previous run, so an interrupted or partially failed benchmark can be resumed without redoing finished work.
+LAMBKIN doesn't need to be told which iterations of an interrupted benchmark already finished and which didn't — it can tell on its own, from `lambkin_metadata.yaml`, written to each iteration's own output folder.
 
-Each `(variant, iteration)` pair is identified by a stable hash derived from the variant parameters, the iteration index, and the script's custom options. SDK-level flags (such as `--log-level` or `--dry-run`) are excluded from the hash, since they don't affect benchmark outputs. Right before entering an iteration, LAMBKIN reads `lambkin_metadata.yaml` from the expected output folder: if `completed_at` is present and the stored hash matches the one just computed, the iteration is skipped entirely — no folders, cgroup, or shell are touched — and a log line reports the cache hit. Changing any variant parameter or custom option invalidates only the affected iterations; everything else is left alone.
+This file is written twice. Right before your benchmark function runs, LAMBKIN writes an initial version recording `started_at`, the variant parameters, the custom options, the source script, and a stable `run_hash` — everything needed to know exactly what was about to run. If the iteration finishes without raising, and only then, LAMBKIN rewrites the file once more, adding a `completed_at` timestamp. An iteration that crashes, gets killed, or is interrupted partway leaves its metadata exactly as written at the start: `started_at` present, `completed_at` missing.
 
-Pass `--no-cache` to bypass this check and force a full rerun of every iteration, regardless of prior completion.
+That gap is what makes a restart precise. On the next run, before touching anything, LAMBKIN reads each expected iteration's metadata: a missing `completed_at`, or one whose stored `run_hash` no longer matches the current parameters, means that iteration didn't finish — for whatever reason — and it reruns from scratch; a `completed_at` with a matching hash means it's safe to skip entirely. This is how a benchmark that failed at, say, `var_3/iter_7` out of a hundred runs can be restarted and pick up exactly there: every other iteration is skipped — no folders, cgroup, or shell touched — with a log line reporting each cache hit, and only the ones that actually failed get redone.
+
+`run_hash` is derived from the variant parameters, the iteration index, and the script's custom options. SDK-level flags (`--log-level`, `--dry-run`, and similarly inconsequential ones) are excluded, since they don't affect benchmark outputs. Changing any variant parameter or custom option invalidates only the affected iterations' hashes — and therefore only reruns those — leaving everything else alone.
+
+Pass `--no-cache` to bypass this check entirely and force a full rerun of every iteration, regardless of prior completion.
 
 > [!NOTE]
-> Iterations run with `--dry-run` are never marked as completed, since no real work happens. Re-running a dry-run script will show no cache hits every time — that's expected, not a bug.
+> Iterations run with `--dry-run` still write the initial `lambkin_metadata.yaml`, but never get `completed_at` — dry-run iterations don't do real work, so they're never considered complete. Re-running a dry-run script will show no cache hits every time, and will keep overwriting the same incomplete metadata file — that's expected, not a bug.
 
 ## Logging
 
 LAMBKIN has two independent logging systems: one for its own internal messages and one for subprocess output.
+
 
 ### SDK Logging
 
@@ -202,7 +207,27 @@ lambkin my_benchmark.py --log-level debug
 lambkin my_benchmark.py --log-level DEBUG  # equivalent
 ```
 
-The LAMBKIN logger is fully isolated from the root logger — user scripts can configure their own logging without any interference.
+The LAMBKIN logger is fully isolated from the root logger — user scripts can configure their own logging without any interference. `configure_logging` attaches a dedicated `StreamHandler` to the `"lambkin"` logger and sets `propagate = False`, so its messages never reach the root logger or any handler your script may have configured there. Most scripts don't need to touch this.
+
+To route LAMBKIN's log lines through your own logging setup as well — e.g. to also write them to a file via a root-level handler — re-enable propagation inside your benchmark function. `configure_logging` runs once, before your benchmark function is ever called, and resets `propagate` to `False` unconditionally — so setting it any earlier (e.g. at module level) gets overwritten and doesn't stick:
+
+```python
+import logging
+
+
+def nominal(ctx):
+    logging.getLogger("lambkin").propagate = True
+    ...
+```
+
+This runs on every iteration, but the assignment is idempotent, so the repetition is harmless. It also adds your handlers on top of LAMBKIN's own `StreamHandler`, not instead of it — if you don't want LAMBKIN printing to stdout twice, remove it explicitly:
+
+```python
+logging.getLogger("lambkin").handlers.clear()
+```
+
+See Python's [Logging Cookbook](https://docs.python.org/3/howto/logging-cookbook.html) for handler, formatter, and routing patterns beyond this.
+
 
 ### Process Logging
 
@@ -233,13 +258,17 @@ Precedence (highest to lowest):
 2. **Per-call** — `log_output` keyword at the call site
 3. **ShellProxy default** — `ShellProxy(log_output="file")`
 
-## Reading Results
+## Results
 
-After the benchmark loop finishes, `@my_benchmark.output` hooks run once against the full results tree, so they're the natural place to aggregate and report on the data every iteration wrote to disk. `lambkin.data` provides the primitives for that, and works equally well from a Jupyter notebook with no live benchmark running — all it needs is a path.
+`lambkin.data` provides structured access to whatever a benchmark already wrote to disk:
 
 - **`lambkin.data.access.iterations(source)`** — walks `results/var_*/iter_*/`, skips any iteration that didn't complete, and returns one entry per completed iteration with `iter_dir`, `variant` (e.g. `"var_1"`), `iteration`, and `params` (the variant's parameters as a `SimpleNamespace`). Accepts either a context-like object exposing `.base_dir`, or a plain path/string.
 - **`lambkin.data.evo.series(source, filename)`** — same traversal, plus loads the `evo` result file (e.g. `"output.ape.zip"`) from each iteration directory and exposes `time`, `error`, and `distance` arrays, ready to plot.
 - **`lambkin.data.evo.stats(source, filename)`** — same traversal, but exposes the aggregate statistics `evo` computes for each result: `rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`.
+
+### Output Hooks
+
+`@my_benchmark.output` hooks run once, after the entire benchmark loop finishes, against the full results tree — the natural place to call `lambkin.data` and turn it into plots or logged statistics:
 
 ```python
 import matplotlib.pyplot as plt
@@ -271,240 +300,35 @@ def stats(ctx):
         )
 ```
 
-## Requirements
+### Reprocessing
 
-- Python 3.10+
-- [`uv`](https://github.com/astral-sh/uv)
-- Linux with cgroups v2 and systemd (required for background process management)
-
-## Installation
-
-```bash
-git clone -b next-gen git@github.com:Ekumen-OS/lambkin.git
-uv sync
-```
-
-## Usage
-
-A minimal example composing the SDK primitives described above into a working benchmark.
+None of `lambkin.data`'s functions need a live benchmark — `access.iterations()`, `evo.series()`, and `evo.stats()` accept a plain path just as well as a context. That means a `results/` directory can be revisited later, from a notebook or a standalone script, and reprocessed into a different plot or report without re-running anything:
 
 ```python
 import lambkin
 
 
-@lambkin.benchmark(
-    variants=lambkin.common.named_product(
-        param_a=["x", "y"],
-        param_b=[1, 10, 100],
-    ),
-    num_iterations=5,
-)
-@lambkin.option("--clock-rate", default=1.0)
-def my_benchmark(ctx):
-    with lambkin.process.background(ctx.shell.my_recorder, "-o", "output.mcap"):
-        with lambkin.process.background(
-            ctx.shell.my_algorithm,
-            f"param_a:={ctx.variant.param_a}",
-            f"param_b:={ctx.variant.param_b}",
-            f"input:={ctx.inputs.dataset}",
-        ):
-            ctx.shell.my_player(ctx.inputs.dataset, "-r", ctx.options.clock_rate)
-
-
-@my_benchmark.input
-def dataset(ctx):
-    return ctx.source.path.parent / "datasets" / "my_dataset.mcap"
+def reprocess():
+    for it in lambkin.data.access.iterations(
+        "/home/xaru/ekumen/lambkin/examples/beluga/results"
+    ):
+        sh = lambkin.ShellProxy(
+            dry_run=False,
+            cwd=it.iter_dir,
+            cgroup=None,
+            log_output="console",
+        )
+        sh.evo_ape.bag2(
+            "output",
+            "/ground_truth",
+            "/pose",
+            "--save_results",
+            "output2.ape.zip",
+        )
 
 
 if __name__ == "__main__":
-    my_benchmark()
+    reprocess()
 ```
 
-Run it with the CLI:
-
-```bash
-lambkin my_benchmark.py --clock-rate 50.0
-```
-
-Inspect all available options without running:
-
-```bash
-lambkin my_benchmark.py --show-options
-```
-
-Validate the benchmark pipeline without executing any process:
-
-```bash
-lambkin my_benchmark.py --dry-run
-```
-
-For a complete, working example using the Beluga algorithm, see [`Beluga Example`](../../examples/beluga/beluga_benchmark.py).
-
-## Use Cases
-
-[Core Concepts](#core-concepts) describes what each primitive does in isolation. This section composes them into complete, working patterns for common benchmarking needs.
-
-### Shared dataset across all variants
-
-The default case: one dataset, reused by every variant and iteration. Resolve it once, at benchmark scope, so it isn't re-fetched on every run.
-
-```python
-@lambkin.benchmark(
-    variants=lambkin.common.named_product(num_particles=[10, 100, 1000]),
-    num_iterations=10,
-)
-def nominal(ctx):
-    ctx.shell.my_algorithm(
-        f"num_particles:={ctx.variant.num_particles}", f"input:={ctx.inputs.dataset}"
-    )
-
-
-@nominal.input
-def dataset(ctx):
-    return ctx.source.path.parent / "datasets" / "magazino.mcap"
-```
-
-### A different dataset per variant
-
-When the input itself depends on the variant — e.g. a different sensor model needs a different recording — scope the hook to `"variant"`, so it only re-resolves when the variant changes, not on every iteration.
-
-```python
-@lambkin.benchmark(
-    variants=lambkin.common.named_product(sensor_model=["beam", "likelihood_field"]),
-    num_iterations=5,
-)
-def nominal(ctx):
-    ctx.shell.my_algorithm(
-        f"sensor_model:={ctx.variant.sensor_model}", f"input:={ctx.inputs.dataset}"
-    )
-
-
-@nominal.input(scope="variant")
-def dataset(ctx):
-    return ctx.source.path.parent / "datasets" / f"{ctx.variant.sensor_model}.mcap"
-```
-
-### A per-iteration input, e.g. a random seed
-
-When the input must change on every single run — not just every variant — scope it to `"iteration"`. It's only re-resolved on a cache miss, so a completed iteration won't recompute it on a later restart.
-
-```python
-@nominal.input(scope="iteration")
-def seed(ctx):
-    return ctx.variant_index * 1000 + ctx.iteration
-
-
-def nominal(ctx):
-    ctx.shell.my_algorithm(f"seed:={ctx.inputs.seed}")
-```
-
-### Comparing algorithms or datasets as separate dimensions
-
-`named_product` doesn't care whether a parameter is a tuning knob or a completely different code path — both end up as a value on `ctx.variant`. Branch inside the benchmark function on whichever values mean "different algorithm" or "different dataset":
-
-```python
-@lambkin.benchmark(
-    variants=lambkin.common.named_product(
-        algorithm=["beluga_amcl", "my_other_localizer"],
-        dataset=["magazino", "warehouse_b"],
-    ),
-    num_iterations=10,
-)
-def nominal(ctx):
-    ctx.shell.ros2.launch(
-        "my_package",
-        f"{ctx.variant.algorithm}.launch.py",
-        f"input:={getattr(ctx.inputs, ctx.variant.dataset)}",
-    )
-
-
-@nominal.input
-def magazino(ctx):
-    return ctx.source.path.parent / "datasets" / "magazino.mcap"
-
-
-@nominal.input
-def warehouse_b(ctx):
-    return ctx.source.path.parent / "datasets" / "warehouse_b.mcap"
-```
-
-`ctx.inputs` is a plain namespace, not a dict — use `getattr` to look it up dynamically by a variant value, as above, rather than `ctx.inputs[...]`.
-
-### Converting trajectory formats with evo
-
-For ROS 2 bags, `evo` extracts and converts trajectories natively — no custom conversion utility is needed. This is the same workflow [`beluga_benchmark.py`](../../examples/beluga/beluga_benchmark.py) uses, with `evo_ape` reading both topics straight from the recorded bag:
-
-```python
-ctx.shell.evo_ape.bag2(
-    "output",
-    "/ground_truth",
-    "/pose",
-    "--t_max_diff",
-    "0.5",
-    "--save_results",
-    "output.ape.zip",
-)
-```
-
-`--t_max_diff` is necessary here because the estimated and ground-truth topics are rarely published with the exact same timestamp; without it, `evo_ape` may fail to associate poses at all.
-
-If you'd rather work with a `.tum` trajectory file directly — e.g. to inspect it with `evo_traj` before computing any metric — extract it from the bag first, then feed both `.tum` files to `evo_ape`:
-
-```python
-ctx.shell.evo_traj.bag2("output", "/pose", "--save_as_tum")
-ctx.shell.evo_ape.tum(
-    "ground_truth.tum",
-    "pose.tum",
-    "--t_max_diff",
-    "0.5",
-    "--save_results",
-    "output.ape.zip",
-)
-```
-
-> [!NOTE]
-> An earlier design considered a custom `Bag2TUM`/`TUM2Bag` conversion utility for this. It was dropped: `evo` already supports both directions natively through its `bag2` reader, so a custom converter would only duplicate it.
-
-### Aggregating results after the run
-
-Already its own section — see [Reading Results](#reading-results) for the `@output` + `lambkin.data.evo` pattern used to plot and log statistics once the full sweep finishes.
-
-### Reprocessing results from disk, without re-running
-
-`lambkin.data.access.iterations()`, `evo.series()`, and `evo.stats()` don't need a live benchmark — they accept a plain path just as well as a context. That means you can revisit a `results/` directory later, from a notebook or a standalone script, and regenerate a different plot or report without re-running anything:
-
-```python
-import matplotlib.pyplot as plt
-import lambkin
-
-for entry in lambkin.data.evo.stats("results/", "output.ape.zip"):
-    print(f"{entry.variant} iter {entry.iteration}: rmse={entry.rmse:.4f}")
-
-plt.figure()
-for entry in lambkin.data.evo.series("results/", "output.ape.zip"):
-    plt.plot(entry.time, entry.error, label=f"{entry.variant}/iter_{entry.iteration}")
-plt.legend()
-plt.savefig("results/replot.png")
-```
-
-This is the same code you'd put in an `@output` hook, just pointed at a path string instead of `ctx`. Useful for generating a new report from an old run, comparing two separate `results/` directories, or trying out a plot before committing it to the benchmark script itself.
-
-## Expected Output
-
-LAMBKIN writes all artifacts under a consistent directory tree:
-
-```bash
-results/
-├── variants.yaml
-└── <variant_n>/
-    └── iter_<n>/
-        ├── lambkin_metadata.yaml
-        ├── output.mcap
-        ├── out.zip
-        ├── my_algorithm.stdout.log
-        ├── my_algorithm.stderr.log
-        ├── my_recorder.stdout.log
-        └── my_recorder.stderr.log
-```
-
-`lambkin_metadata.yaml` is always written by the SDK itself. Everything else under `iter_<n>/` is whatever your benchmark function's commands wrote to the current working directory — the exact names and shapes depend entirely on the tools you call (e.g. `ros2 bag record -o output` creates an `output/` *directory* with its own internal files, not a single `output.mcap`). Any artifact written by an `@output` hook (e.g. an aggregated plot) lives one level up, directly under `results/`, since output hooks run at benchmark scope after every iteration has finished.
+This is the same code as in an `@output` hook, just pointed at a path string instead of `ctx`. Useful for generating a new report from an old run, comparing two separate `results/` directories, or trying out a plot before committing it to the benchmark script itself.
