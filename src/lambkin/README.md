@@ -56,8 +56,8 @@ Registers a data resolution hook on a benchmark function. Each hook must be a ca
 
 Hooks can be scoped to one of three lifecycle levels via `scope=`:
 
-- `"benchmark"` (default) — resolved once before the variant loop. Use for inputs that don't depend on the current variant or iteration, e.g. a shared dataset.
-- `"variant"` — resolved once per variant. Use for inputs that depend on `ctx.variant` but not `ctx.iteration`, e.g. selecting a dataset file by sensor model.
+- `"benchmark"` (default) — resolved once before the variant loop. Use for inputs that don't depend on the current variant or iteration, e.g. a single dataset for the entire benchmark.
+- `"variant"` — resolved once per variant. Use for inputs that depend on `ctx.variant` but not `ctx.iteration`, e.g. selecting a dataset registered as a variant parameter.
 - `"iteration"` — resolved once per iteration, only on a cache miss. Use for inputs that depend on both `ctx.variant` and `ctx.iteration`, e.g. a per-iteration random seed.
 
 ```python
