@@ -151,8 +151,6 @@ def dataset(ctx):
     ),
     num_iterations=30,
 )
-@lambkin.option("--clock-rate", default=100.0)
-@lambkin.option("--clock", default=True)
 def nominal(ctx):
     match ctx.variant.algorithm:
         case "nav2_amcl":
