@@ -11,8 +11,6 @@ Most benchmarking systems are built around a specific algorithm, dataset format,
 
 LAMBKIN separates the orchestration machinery from the benchmark definition. The algorithm runs as an external process — LAMBKIN does not need to know what is inside it. Parameter sweeps, process lifecycle, I/O, and metric collection are all handled by the SDK, so your script stays focused on the benchmark logic.
 
-SLAM algorithms are rarely deterministic — particle filters resample randomly, sensor noise varies run to run, and timing jitter between processes can shift outcomes on its own. A single run's accuracy metric is one sample from a noisy distribution, not a reliable estimate of how an algorithm actually performs. LAMBKIN treats `num_iterations` as a first-class part of every benchmark definition, not an afterthought, so a variant is always evaluated as a population of runs you can summarize — with a mean, a standard deviation, an RMSE — instead of a single number taken on faith.
-
 The same reasoning extends to where results land on disk. A benchmark only stays reproducible and reportable if its output follows a structure you didn't have to invent for that particular run: `results/var_<n>/iter_<n>/`, with metadata recorded alongside whatever artifacts your commands produced. That predictability is what lets `lambkin.data` walk any benchmark's results without being told their shape in advance, and what lets a notebook, a report generator, or a teammate's script reuse the same data months later without reverse-engineering a one-off layout.
 
 ## Capabilities
@@ -20,6 +18,7 @@ The same reasoning extends to where results land on disk. A benchmark only stays
 | Feature | Description |
 |---|---|
 | **Parameter sweeps** | Declare combinations of algorithms, datasets, and parameters. LAMBKIN runs each combination as an independent iteration. |
+| **Iterations** | Run each variant across multiple iterations, giving results statistical significance instead of relying on a single noisy sample. |
 | **Scoped inputs** | Resolve data dependencies once at the benchmark, variant, or iteration level — not on every single run. |
 | **Process lifecycle** | Launch, supervise, and terminate external processes automatically across benchmark iterations, with cgroup-based cleanup. |
 | **Partial restarts** | Skip iterations that already completed successfully in a previous run, based on a hash of their inputs. |
