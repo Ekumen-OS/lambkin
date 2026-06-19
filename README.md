@@ -11,7 +11,7 @@ Most benchmarking systems are built around a specific algorithm, dataset format,
 
 LAMBKIN separates the orchestration machinery from the benchmark definition. The algorithm runs as an external process — LAMBKIN does not need to know what is inside it. Parameter sweeps, process lifecycle, I/O, and metric collection are all handled by the SDK, so your script stays focused on the benchmark logic.
 
-The same reasoning extends to where results land on disk. A benchmark only stays reproducible and reportable if its output follows a structure you didn't have to invent for that particular run: `results/var_<n>/iter_<n>/`, with metadata recorded alongside whatever artifacts your commands produced. That predictability is what lets `lambkin.data` walk any benchmark's results without being told their shape in advance, and what lets a notebook, a report generator, or a teammate's script reuse the same data months later without reverse-engineering a one-off layout.
+A benchmark's output deserves the same discipline as its execution: a structured, predictable layout, with metadata recorded alongside whatever artifacts your commands produce. That predictability is what lets a notebook, a report generator, or a teammate's script revisit any benchmark's output months later without reverse-engineering its shape.
 
 ## Capabilities
 
