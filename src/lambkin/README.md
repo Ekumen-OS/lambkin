@@ -135,7 +135,8 @@ app.slice/                               ← user's systemd app slice
         └── my_recorder-e3f4a5b6/        ← ros2 bag record process
 ```
 
-When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with s`--systemd=always`:
+When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with `--systemd=always`:
+
 ```
 <delegated cgroup root>/  ← whatever /proc/self/cgroup reports inside the container
 └── lambkin-my_benchmark-a1b2c3d4/
