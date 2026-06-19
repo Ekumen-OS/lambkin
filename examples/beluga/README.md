@@ -46,9 +46,6 @@ If you are running the benchmark as-is, use the **Production** profile. If you a
 
 By default, no volume mounts are needed in either runtime — the development image bakes in the rosbag, map, and groundtruth via `COPY --from=ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/` in [`docker/Dockerfile`](docker/Dockerfile), and both [`docker-compose.yml`](docker/docker-compose.yml) and [`podman-compose.yml`](docker/podman-compose.yml) build from that same Dockerfile.
 
-> [!NOTE]
-> That `COPY --from=...` line only exists in the `development` stage of the Dockerfile, not `production`. If you rely on the bundled dataset, use the Development profile, or check with the team before assuming it's also available in Production.
-
 To benchmark your own data instead, edit [`docker/docker-compose.yml`](docker/docker-compose.yml) and uncomment the input volume mounts, pointing them at your files:
 
 ```yaml
