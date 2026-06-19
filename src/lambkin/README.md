@@ -176,18 +176,17 @@ Variant numbers always refer to the full, original sweep — they don't shift wh
 
 ## Partial Restarts
 
-LAMBKIN doesn't need to be told which iterations of an interrupted benchmark already finished and which didn't — it can tell on its own, from `lambkin_metadata.yaml`, written to each iteration's own output folder.
+LAMBKIN supports partial restarts by writing a metadata file to each iteration's own output folder. It records whether the iteration completed, along with a hash encoding the variant's parameters, the iteration index, and any custom options you've declared — SDK flags like `--log-level` are excluded, since they don't affect what the benchmark actually produces.
 
-This file is written twice. Right before your benchmark function runs, LAMBKIN writes an initial version recording `started_at`, the variant parameters, the custom options, the source script, and a stable `run_hash` — everything needed to know exactly what was about to run. If the iteration finishes without raising, and only then, LAMBKIN rewrites the file once more, adding a `completed_at` timestamp. An iteration that crashes, gets killed, or is interrupted partway leaves its metadata exactly as written at the start: `started_at` present, `completed_at` missing.
+> [!WARNING]
+> Currently the hash doesn't account for changes to the benchmark function's own source code, or to the contents of a file an input hook resolves (e.g. swapping in a different dataset without changing any variant or option). Edit either of those and the cache will still report a hit.
 
-That gap is what makes a restart precise. On the next run, before touching anything, LAMBKIN reads each expected iteration's metadata: a missing `completed_at`, or one whose stored `run_hash` no longer matches the current parameters, means that iteration didn't finish — for whatever reason — and it reruns from scratch; a `completed_at` with a matching hash means it's safe to skip entirely. This is how a benchmark that failed at, say, `var_3/iter_7` out of a hundred runs can be restarted and pick up exactly there: every other iteration is skipped — no folders, cgroup, or shell touched — with a log line reporting each cache hit, and only the ones that actually failed get redone.
-
-`run_hash` is derived from the variant parameters, the iteration index, and the script's custom options. SDK-level flags (`--log-level`, `--dry-run`, and similarly inconsequential ones) are excluded, since they don't affect benchmark outputs. Changing any variant parameter or custom option invalidates only the affected iterations' hashes — and therefore only reruns those — leaving everything else alone.
+On the next run, before touching anything, LAMBKIN checks each iteration's metadata against the current hash: a match with a recorded completion means it's safe to skip; a mismatch — because a parameter or option changed — or no completion at all means it reruns. That's what lets an interrupted hundred-run sweep resume exactly where it left off, and lets changing one parameter invalidate only the iterations it actually affects.
 
 Pass `--no-cache` to bypass this check entirely and force a full rerun of every iteration, regardless of prior completion.
 
 > [!NOTE]
-> Dry runs write the initial metadata but never get `completed_at`, so they always show as cache misses — that's expected, not a bug.
+> Iterations run with `--dry-run` still write the initial `lambkin_metadata.yaml`, but never get `completed_at` — dry-run iterations don't do real work, so they're never considered complete. Re-running a dry-run script will show no cache hits every time, and will keep overwriting the same incomplete metadata file — that's expected, not a bug.
 
 ## Logging
 
