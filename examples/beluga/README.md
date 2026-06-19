@@ -44,9 +44,7 @@ If you are running the benchmark as-is, use the **Production** profile. If you a
 
 #### 1. (Optional) Use your own data
 
-By default, no volume mounts are needed in either runtime — the development image bakes in the rosbag, map, and groundtruth via `COPY --from=ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/` in [`docker/Dockerfile`](docker/Dockerfile), and both [`docker-compose.yml`](docker/docker-compose.yml) and [`podman-compose.yml`](docker/podman-compose.yml) build from that same Dockerfile.
-
-To benchmark your own data instead, edit [`docker/docker-compose.yml`](docker/docker-compose.yml) and uncomment the input volume mounts, pointing them at your files:
+By default, no volume mounts are needed — the example uses the rosbag, map, and groundtruth baked into the image. To benchmark your own data instead, edit the compose file ([docker-compose.yml](docker/docker-compose.yml) or [podman-compose.yml](docker/podman-compose.yml)) and uncomment the input volume mounts, pointing them at your files:
 
 ```yaml
 volumes:
