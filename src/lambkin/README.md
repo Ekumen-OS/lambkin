@@ -6,6 +6,7 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 ## Table of Contents
 
 - [Architecture](#architecture)
+- [Expected Output](#expected-output)
 - [Core Concepts](#core-concepts)
 - [Process Management with cgroups v2](#process-management-with-cgroups-v2)
 - [CLI](#cli)
@@ -14,10 +15,8 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 - [Results](#results)
   - [Metrics](#metrics)
   - [Output Hooks](#output-hooks)
-  - [Report](#report)
   - [Reprocessing](#reprocessing)
 - [Cookbook](#cookbook)
-- [Expected Output](#expected-output)
 
 ## Architecture
 
@@ -136,7 +135,7 @@ app.slice/                               ← user's systemd app slice
         └── my_recorder-e3f4a5b6/        ← ros2 bag record process
 ```
 
-When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with `--systemd=always`:
+When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with s`--systemd=always`:
 ```
 <delegated cgroup root>/  ← whatever /proc/self/cgroup reports inside the container
 └── lambkin-my_benchmark-a1b2c3d4/
@@ -185,11 +184,11 @@ Custom Options (script-defined):
   Options registered in your benchmark script via @lambkin.option.
   Run 'lambkin SCRIPT --show-options' to list them.
 ```
+`--show-options` and `--show-variants` behave like `--help`: they print information and exit immediately, never reaching the benchmark body.
+
 
 > [!NOTE]
 > The SDK option names above are reserved. Declaring any of them via `@lambkin.option` in your script raises a Click error at parse time due to duplicate parameter names.
-
-`--show-options` and `--show-variants` behave like `--help`: they print information and exit immediately, never reaching the benchmark body.
 
 ### Selecting a subset of variants
 
