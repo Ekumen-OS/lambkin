@@ -8,7 +8,7 @@ A worked example of a LAMBKIN benchmark pipeline applied to [Beluga AMCL](https:
   [Docker Compose](https://docs.docker.com/compose/), or
   [Podman](https://podman.io/getting-started/installation) and
   `podman-compose` (see note below) — only needed for [running in a container](#run-in-a-container).
-- Reference data — already bundled in the image by default, see below.
+- Reference data is bundled in [`ekumenlabs/lambkin-beluga-datasets`](https://hub.docker.com/r/ekumenlabs/lambkin-beluga-datasets) and copied into the image at build time.
 
 | Artifact | Default location in image | Description |
 | --- | --- | --- |
