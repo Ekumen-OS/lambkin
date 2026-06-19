@@ -305,9 +305,7 @@ import lambkin
 
 
 def reprocess():
-    for it in lambkin.data.access.iterations(
-        "/home/xaru/ekumen/lambkin/examples/beluga/results"
-    ):
+    for it in lambkin.data.access.iterations("$HOME/lambkin/examples/beluga/results"):
         sh = lambkin.ShellProxy(
             dry_run=False,
             cwd=it.iter_dir,
@@ -328,6 +326,38 @@ if __name__ == "__main__":
 ```
 
 This is the same code as in an `@output` hook, just pointed at a path string instead of `ctx`. Useful for generating a new report from an old run, comparing two separate `results/` directories, or trying out a plot before committing it to the benchmark script itself.
+
+
+## Cookbook
+
+### Converting trajectory formats with evo
+
+`evo` supports multiple trajectory file formats natively — `bag2`, `tum`, `kitti`, `euroc` — and can export between them via `evo_traj --save_as_<format>`. See the [evo Formats documentation](https://github.com/MichaelGrupp/evo/wiki/Formats#saving--exporting-to-other-formats) for the full conversion matrix.
+
+This belongs inside `nominal()`, not in an output hook — it uses `ctx.shell`, which is only available during iteration execution (see the warning under [Output](#output) in Core Concepts).
+
+A typical pattern: extract a topic from the recorded bag as TUM, then score it with `evo_ape`:
+
+```python
+def nominal(ctx):
+    # ... ros2 bag record / ros2 launch / ros2 bag play ...
+
+    ctx.shell.evo_traj.bag2(
+        "output",
+        "/amcl_pose",
+        "--save_as_tum",
+        "amcl_pose.tum",
+    )
+    ctx.shell.evo_ape.tum(
+        ctx.inputs.ground_truth,
+        "amcl_pose.tum",
+        "--save_results",
+        "output.ape.zip",
+    )
+```
+
+> [!NOTE]
+> `ShellProxy` converts keyword argument underscores to dashes (`save_as_tum=` → `--save-as-tum`), which `evo` won't recognize. Always pass `evo` flags that contain underscores as positional strings, as shown above.
 
 ## Expected Output
 

@@ -118,26 +118,53 @@ def dataset(ctx):
     return ctx.source.path.parent / "datasets" / f"{ctx.variant.dataset}.mcap"
 ```
 
+### Benchmarking different algorithms
+
+`named_product` doesn't care whether a parameter is a tuning knob or a completely different code path. Adding an `algorithm` dimension to the sweep is enough to compare two localizers under identical conditions — same dataset, same number of iterations, same evaluation pipeline — with no extra orchestration:
+```python
+@lambkin.benchmark(
+    variants=lambkin.common.named_product(
+        algorithm=["beluga_amcl", "nav2_amcl"],
+        num_particles=[100, 1000],
+    ),
+    num_iterations=10,
+)
+def nominal(ctx):
+    with lambkin.process.background(ctx.shell.ros2.bag.record, "-o", "output", "-a"):
+        with lambkin.process.background(
+            ctx.shell.ros2.launch,
+            f"{ctx.variant.algorithm}.launch.py",
+            f"num_particles:={ctx.variant.num_particles}",
+        ):
+            ctx.shell.ros2.bag.play(ctx.inputs.dataset, "--clock")
+```
+Each `(algorithm, num_particles, iteration)` combination gets its own isolated output directory, so `lambkin.data` can aggregate and compare results across all of them after the sweep.
+
+
 ## Cookbook
 
 ### Converting trajectory formats with evo
 
-For ROS 2 bags, `evo` extracts and converts trajectories natively, so there's no custom conversion utility to write or maintain.
+`evo` supports multiple trajectory file formats natively — `bag2`, `tum`, `kitti`, `euroc` — and can export between them. This snippet belongs inside `nominal()`, called once the bag has finished playing back:
 
 ```python
-ctx.shell.evo_traj.bag2(
-    "output",
-    "/amcl_pose",
-    "--save_as_tum",
-    "amcl_pose.tum",
-)
-ctx.shell.evo_ape.tum(
-    ctx.inputs.ground_truth,
-    "amcl_pose.tum",
-    "--save_results",
-    "output.ape.zip",
-)
+def nominal(ctx):
+    # ... ros2 bag record / ros2 launch / ros2 bag play ...
+
+    ctx.shell.evo_traj.bag2(
+        "output",
+        "/amcl_pose",
+        "--save_as_tum",
+        "amcl_pose.tum",
+    )
+    ctx.shell.evo_ape.tum(
+        ctx.inputs.ground_truth,
+        "amcl_pose.tum",
+        "--save_results",
+        "output.ape.zip",
+    )
 ```
+See the [evo Formats documentation](https://github.com/MichaelGrupp/evo/wiki/Formats#saving--exporting-to-other-formats) for the full conversion matrix. For a more detailed explanation and an important caveat about passing `evo` flags through `ShellProxy`, see the [SDK Cookbook](src/lambkin/README.md#cookbook).
 
 ## Project Layout
 
