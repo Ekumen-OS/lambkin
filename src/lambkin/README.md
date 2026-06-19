@@ -271,8 +271,6 @@ Precedence (highest to lowest):
 
 ### Output Hooks
 
-`@my_benchmark.output` hooks run once, after the entire benchmark loop finishes, against the full results tree — the natural place to call `lambkin.data` and turn it into plots or logged statistics:
-
 ```python
 import matplotlib.pyplot as plt
 import lambkin
