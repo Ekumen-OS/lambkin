@@ -12,6 +12,11 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 - [Partial Restarts](#partial-restarts)
 - [Logging](#logging)
 - [Results](#results)
+  - [Metrics](#metrics)
+  - [Output Hooks](#output-hooks)
+  - [Report](#report)
+  - [Reprocessing](#reprocessing)
+- [Cookbook](#cookbook)
 - [Expected Output](#expected-output)
 
 ## Architecture
@@ -261,13 +266,16 @@ Precedence (highest to lowest):
 2. **Per-call** — `log_output` keyword at the call site
 3. **ShellProxy default** — `ShellProxy(log_output="file")`
 
-## Results
 
-`lambkin.data` provides structured access to whatever a benchmark already wrote to disk:
+### Metrics
 
-- **`lambkin.data.access.iterations(source)`** — walks `results/var_*/iter_*/`, skips any iteration that didn't complete, and returns one entry per completed iteration with `iter_dir`, `variant` (e.g. `"var_1"`), `iteration`, and `params` (the variant's parameters as a `SimpleNamespace`). Accepts either a context-like object exposing `.base_dir`, or a plain path/string.
-- **`lambkin.data.evo.series(source, filename)`** — same traversal, plus loads the `evo` result file (e.g. `"output.ape.zip"`) from each iteration directory and exposes `time`, `error`, and `distance` arrays, ready to plot.
-- **`lambkin.data.evo.stats(source, filename)`** — same traversal, but exposes the aggregate statistics `evo` computes for each result: `rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`.
+LAMBKIN doesn't compute trajectory metrics itself — it invokes `evo` through `ctx.shell`, the same way it invokes any other external process, and reads back whatever `evo` writes to disk. The field names exposed by `lambkin.data.evo` (`rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`) are `evo`'s own, not LAMBKIN's.
+
+`evo` provides two metrics for trajectory evaluation (see the [evo Metrics documentation](https://github.com/MichaelGrupp/evo/wiki/Metrics) for full details):
+
+- **APE** (`evo_ape`) — Absolute Pose Error. Directly compares corresponding poses between the estimate and the reference. Measures global consistency, i.e. how close the full trajectory is to ground truth.
+- **RPE** (`evo_rpe`) — Relative Pose Error. Compares pose deltas (motions) instead of absolute poses. Measures local accuracy and drift, e.g. translational or rotational error per meter traveled.
+
 
 ### Output Hooks
 
