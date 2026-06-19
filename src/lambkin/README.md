@@ -95,6 +95,8 @@ Abstracts shell command dispatch. Exposes the host environment's executables as 
 
 Runs a process in the background while the benchmark continues executing. Takes a shell command (without calling it) and manages its full lifecycle — start, monitor, and clean up — as a context manager. When the context exits, it terminates the process and all its descendants; any process spawned outside a `background()` block is not covered.
 
+If a background process dies unexpectedly before the context exits, any foreground call currently blocked waiting on it is unblocked immediately instead of hanging, and the iteration fails with `LambkinProcessDiedUnexpectedlyError`.
+
 > [!WARNING]
 > Pass the command proxy to background() without calling it — `ctx.shell.my_tool`, not `ctx.shell.my_tool()`. Calling it with () runs the process immediately as a foreground blocking call and background() will raise an error.
 
