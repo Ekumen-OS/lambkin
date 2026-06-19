@@ -13,6 +13,7 @@ LAMBKIN separates the orchestration machinery from the benchmark definition. The
 
 A benchmark's output deserves the same discipline as its execution: a structured, predictable layout, with metadata recorded alongside whatever artifacts your commands produce. That predictability is what lets a notebook, a report generator, or a teammate's script revisit any benchmark's output months later without reverse-engineering its shape.
 
+
 ## Capabilities
 
 | Feature | Description |
