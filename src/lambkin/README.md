@@ -29,6 +29,28 @@ A benchmark is structured around three stages that LAMBKIN sequences and keeps o
 
 Each stage is a plain Python function that receives a context object carrying configuration, paths, and state. You implement the logic; LAMBKIN handles the rest.
 
+
+## Expected Output
+
+LAMBKIN writes all artifacts under a consistent directory tree:
+
+```bash
+results/
+├── variants.yaml
+└── <variant_n>/
+    └── iter_<n>/
+        ├── lambkin_metadata.yaml
+        ├── output.mcap
+        ├── out.zip
+        ├── my_algorithm.stdout.log
+        ├── my_algorithm.stderr.log
+        ├── my_recorder.stdout.log
+        └── my_recorder.stderr.log
+```
+
+`lambkin_metadata.yaml` is always written by the SDK itself. Everything else under `iter_<n>/` is whatever your benchmark function's commands wrote to the current working directory — the exact names and shapes depend entirely on the tools you call (e.g. `ros2 bag record -o output` creates an `output/` *directory* with its own internal files, not a single `output.mcap`). Artifacts written by `@output` hooks are not placed anywhere automatically — it's up to the hook to decide where to write them (e.g. `ctx.base_dir / "plots.png"` to put them under `results/`).
+
+
 ## Core Concepts
 
 LAMBKIN exposes a small set of composable primitives. Together they cover the full lifecycle of a benchmark — from declaring inputs and sweeping parameters, to launching processes and reading results back.
@@ -330,9 +352,6 @@ def stats(ctx):
 None of `lambkin.data`'s functions need a live benchmark — `access.iterations()`, `evo.series()`, and `evo.stats()` accept a plain path just as well as a context. That means a `results/` directory can be revisited later, from a notebook or a standalone script, and reprocessed into a different plot or report without re-running anything:
 
 ```python
-import lambkin
-
-
 def reprocess():
     for it in lambkin.data.access.iterations("/path/to/results"):
         sh = lambkin.ShellProxy(
@@ -348,13 +367,9 @@ def reprocess():
             "--save_results",
             "output2.ape.zip",
         )
-
-
-if __name__ == "__main__":
-    reprocess()
 ```
 
-This is the same code as in an `@output` hook, just pointed at a path string instead of `ctx`. Useful for generating a new report from an old run, comparing two separate `results/` directories, or trying out a plot before committing it to the benchmark script itself.
+This is the same code as in an `@output` hook, just pointed at a path string instead of `ctx`. Useful for generating a new metrics from an old run, comparing two separate `results/` directories, or trying out a plot before committing it to the benchmark script itself.
 
 If your reprocessing script also needs to invoke external processes (e.g. re-running `evo_ape` with different parameters on already-recorded bags), be aware of two limitations that apply outside the benchmark loop:
 
@@ -393,23 +408,3 @@ def nominal(ctx):
 
 > [!NOTE]
 > `ShellProxy` converts keyword argument underscores to dashes (`save_as_tum=` → `--save-as-tum`), which `evo` won't recognize. Always pass `evo` flags that contain underscores as positional strings, as shown above.
-
-## Expected Output
-
-LAMBKIN writes all artifacts under a consistent directory tree:
-
-```bash
-results/
-├── variants.yaml
-└── <variant_n>/
-    └── iter_<n>/
-        ├── lambkin_metadata.yaml
-        ├── output.mcap
-        ├── out.zip
-        ├── my_algorithm.stdout.log
-        ├── my_algorithm.stderr.log
-        ├── my_recorder.stdout.log
-        └── my_recorder.stderr.log
-```
-
-`lambkin_metadata.yaml` is always written by the SDK itself. Everything else under `iter_<n>/` is whatever your benchmark function's commands wrote to the current working directory — the exact names and shapes depend entirely on the tools you call (e.g. `ros2 bag record -o output` creates an `output/` *directory* with its own internal files, not a single `output.mcap`). Any artifact written by an `@output` hook (e.g. an aggregated plot) lives one level up, directly under `results/`, since output hooks run at benchmark scope after every iteration has finished.

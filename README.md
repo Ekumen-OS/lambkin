@@ -121,6 +121,8 @@ When the input itself depends on the variant — e.g. a different sensor model n
     num_iterations=2,
 )
 def nominal(ctx): ...
+
+
 @nominal.input(scope="variant")
 def dataset(ctx):
     return ctx.source.path.parent / "datasets" / f"{ctx.variant.dataset}.mcap"
@@ -132,47 +134,21 @@ def dataset(ctx):
 ```python
 @lambkin.benchmark(
     variants=lambkin.common.named_product(
-        algorithm=["beluga_amcl", "nav2_amcl"],
-        num_particles=[100, 1000],
+        algorithm=["beluga", "nav2_amcl"],
+        sensor_model=["likelihood", "beam"],
+        num_particles=[1, 10, 100, 1000, 10000],
     ),
-    num_iterations=10,
+    num_iterations=30,
 )
+@lambkin.option("--clock-rate", default=100.0)
+@lambkin.option("--clock", default=True)
 def nominal(ctx):
-    with lambkin.process.background(ctx.shell.ros2.bag.record, "-o", "output", "-a"):
-        with lambkin.process.background(
-            ctx.shell.ros2.launch,
-            f"{ctx.variant.algorithm}.launch.py",
-            f"num_particles:={ctx.variant.num_particles}",
-        ):
-            ctx.shell.ros2.bag.play(ctx.inputs.dataset, "--clock")
+    match ctx.variant.algorithm:
+        case "nav2_amcl":
+            nominal_nav2_amcl(ctx)
+        case "beluga":
+            nominal_beluga(ctx)
 ```
-Each `(algorithm, num_particles, iteration)` combination gets its own isolated output directory, so `lambkin.data` can aggregate and compare results across all of them after the sweep.
-
-
-## Cookbook
-
-### Converting trajectory formats with evo
-
-`evo` supports multiple trajectory file formats natively — `bag2`, `tum`, `kitti`, `euroc` — and can export between them. This snippet belongs inside `nominal()`, called once the bag has finished playing back:
-
-```python
-def nominal(ctx):
-    # ... ros2 bag record / ros2 launch / ros2 bag play ...
-
-    ctx.shell.evo_traj.bag2(
-        "output",
-        "/amcl_pose",
-        "--save_as_tum",
-        "amcl_pose.tum",
-    )
-    ctx.shell.evo_ape.tum(
-        ctx.inputs.ground_truth,
-        "amcl_pose.tum",
-        "--save_results",
-        "output.ape.zip",
-    )
-```
-See the [evo Formats documentation](https://github.com/MichaelGrupp/evo/wiki/Formats#saving--exporting-to-other-formats) for the full conversion matrix. For a more detailed explanation and an important caveat about passing `evo` flags through `ShellProxy`, see the [SDK Cookbook](src/lambkin/README.md#cookbook).
 
 ## Project Layout
 
