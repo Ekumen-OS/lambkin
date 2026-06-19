@@ -51,6 +51,8 @@ Alternatively, install into a `uv`-managed virtual environment:
 uv sync
 ```
 
+Then run benchmarks via `uv run lambkin my_benchmark.py`.
+
 ## Usage
 
 A minimal example composing LAMBKIN's primitives into a working benchmark.
