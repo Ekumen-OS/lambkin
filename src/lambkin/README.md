@@ -191,7 +191,7 @@ On the next run, before touching anything, LAMBKIN checks each iteration's metad
 Pass `--no-cache` to bypass this check entirely and force a full rerun of every iteration, regardless of prior completion.
 
 > [!NOTE]
-> Iterations run with `--dry-run` still write the initial `lambkin_metadata.yaml`, but never get `completed_at` — dry-run iterations don't do real work, so they're never considered complete. Re-running a dry-run script will show no cache hits every time, and will keep overwriting the same incomplete metadata file — that's expected, not a bug.
+> Dry runs write the initial metadata but never get `completed_at`, so they always show as cache misses — that's expected, not a bug.
 
 ## Logging
 
