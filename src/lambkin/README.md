@@ -191,7 +191,9 @@ On the next run, before touching anything, LAMBKIN checks each iteration's metad
 Pass `--no-cache` to bypass this check entirely and force a full rerun of every iteration, regardless of prior completion.
 
 > [!NOTE]
-> Dry runs write the initial metadata but never get `completed_at`, so they always show as cache misses — that's expected, not a bug.
+> Dry runs write the initial metadata but never get `completed_at`, so they always show as cache misses — that's expected, not a bug. Two simultaneous `lambkin` invocations against the same `results/` directory are not guarded against — there is no file locking, so concurrent runs may corrupt each other's output. To run two benchmarks in parallel, place them in separate source directories or rename the existing `results/` folder first.
+
+`results/` being tied to the benchmark script's location is a deliberate design choice: it means the cache always works without requiring the user to pass an explicit output path, and keeps each benchmark script bound to a fixed, reproducible setup.
 
 ## Logging
 
