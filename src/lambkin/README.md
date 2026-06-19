@@ -16,11 +16,11 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 
 ## Architecture
 
-A benchmark is structured around three moments that LAMBKIN sequences and keeps organized:
+A benchmark is structured around three stages that LAMBKIN sequences and keeps organized:
 
-1. **Setup** — input hooks resolve datasets, maps, or any other dependency your benchmark needs, at the scope where they belong (once for the whole run, once per variant, or once per iteration).
+1. **Ingestion** — input hooks resolve datasets, maps, or any other dependency your benchmark needs, at the scope where they belong (once for the whole run, once per variant, or once per iteration).
 2. **Execution** — your benchmark function runs once per `(variant, iteration)` pair, with a dedicated context, cgroup, and shell to launch and supervise external processes.
-3. **Result access** — once every iteration finishes, output hooks run once against the full results tree, free to aggregate, plot, or log metrics using `lambkin.data`.
+3. **Egression** — once every iteration finishes, output hooks run once against the full results tree, free to aggregate, plot, or log metrics using `lambkin.data`.
 
 Each stage is a plain Python function that receives a context object carrying configuration, paths, and state. You implement the logic; LAMBKIN handles the rest.
 
