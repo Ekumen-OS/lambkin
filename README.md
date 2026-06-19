@@ -139,6 +139,7 @@ def dataset(ctx):
 ### Benchmarking different algorithms
 
 `named_product` doesn't care whether a parameter is a tuning knob or a completely different code path. Adding an `algorithm` dimension to the sweep is enough to compare two localizers under identical conditions — same dataset, same number of iterations, same evaluation pipeline — with no extra orchestration:
+
 ```python
 @lambkin.benchmark(
     variants=lambkin.common.named_product(
