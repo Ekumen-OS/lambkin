@@ -326,7 +326,7 @@ import lambkin
 
 
 def reprocess():
-    for it in lambkin.data.access.iterations("$HOME/lambkin/examples/beluga/results"):
+    for it in lambkin.data.access.iterations("/path/to/results"):
         sh = lambkin.ShellProxy(
             dry_run=False,
             cwd=it.iter_dir,
@@ -348,6 +348,12 @@ if __name__ == "__main__":
 
 This is the same code as in an `@output` hook, just pointed at a path string instead of `ctx`. Useful for generating a new report from an old run, comparing two separate `results/` directories, or trying out a plot before committing it to the benchmark script itself.
 
+If your reprocessing script also needs to invoke external processes (e.g. re-running `evo_ape` with different parameters on already-recorded bags), be aware of two limitations that apply outside the benchmark loop:
+
+
+* **Log files are overwritten**. `ShellProxy` tracks call counts per command name to give each invocation a unique log file suffix, but that counter resets on every new `ShellProxy` instance. If you call the same command twice in a reprocessing script, the second run's log silently overwrites the first. Set `--log-output console` (or `log_output="console"` at the call site) to avoid this.
+
+* **No cgroup containment**. The iteration cgroup is managed exclusively by `IterationContext`. Outside of it, `ShellProxy` runs with `cgroup=None` — processes are launched directly without any cgroup, so there's no kernel-enforced cleanup if the script is interrupted.
 
 ## Cookbook
 
