@@ -120,8 +120,8 @@ When the input itself depends on the variant — e.g. a different sensor model n
     variants=lambkin.common.named_product(dataset=["warehouse", "office"]),
     num_iterations=2,
 )
-def nominal(ctx): ...
-
+def nominal(ctx):
+    ...
 
 @nominal.input(scope="variant")
 def dataset(ctx):
