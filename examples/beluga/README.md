@@ -140,7 +140,7 @@ podman-compose --profile production run --podman-run-args="--systemd=always" --r
 
 ### Run on the Host
 
-If you'd rather run the example directly on the host — e.g. you already have ROS 2 Jazzy and `evo` installed locally — you can extract the bundled reference dataset from the dataset image without starting it:
+If you'd rather run the example directly on the host — e.g. you already have ROS 2 Jazzy installed locally — you can extract the bundled reference dataset from the dataset image without starting it:
 
 ```bash
 docker create --name lambkin_data_extract ekumenlabs/lambkin-beluga-datasets:jazzy true

@@ -93,7 +93,15 @@ def dataset(ctx):
 
 @my_benchmark.output
 def plot(ctx):
-    data = lambkin.data.evo.series(ctx)
+     for entry in lambkin.data.evo.series(ctx, "output.ape.zip"):
+        plt.plot(
+            entry.time, entry.error, label=f"{entry.variant} / iter {entry.iteration}"
+        )
+    plt.xlabel("Time (s)")
+    plt.ylabel("Error (m)")
+    plt.legend()
+    plt.savefig(ctx.base_dir / "plots.png")
+
 
 
 if __name__ == "__main__":
