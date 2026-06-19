@@ -39,6 +39,15 @@ To understand how LAMBKIN works under the hood, see the [SDK documentation](src/
 
 ```bash
 git clone -b next-gen git@github.com:Ekumen-OS/lambkin.git
+cd lambkin
+uv tool install .
+```
+
+This installs `lambkin` onto your `PATH`. You can delete the cloned directory afterward — to pick up updates, re-clone and re-run the command. Use `--editable` instead if you want changes in the clone to apply immediately, but keep the directory in place for as long as you need updates.
+
+Alternatively, install into a `uv`-managed virtual environment:
+
+```bash
 uv sync
 ```
 
