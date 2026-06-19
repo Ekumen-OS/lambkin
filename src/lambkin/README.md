@@ -116,7 +116,7 @@ app.slice/                               ← user's systemd app slice
 
 When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with `--systemd=always`:
 ```
-user.slice/user-1000.slice/user@1000.service/  ← delegated cgroup root
+<delegated cgroup root>/  ← whatever /proc/self/cgroup reports inside the container
 └── lambkin-my_benchmark-a1b2c3d4/
     └── iter-var_1-iter_1-e5f6a7b8/
         ├── my_algorithm-a9b0c1d2/
