@@ -33,7 +33,7 @@ To understand how LAMBKIN works under the hood, see the [SDK documentation](src/
 
 - Python 3.10+
 - [`uv`](https://github.com/astral-sh/uv)
-- Linux with cgroups v2 (required for background process management)
+- [Linux with cgroups v2](https://docs.kernel.org/admin-guide/cgroup-v2.html)
 
 ## Installation
 
