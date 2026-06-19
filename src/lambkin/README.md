@@ -266,6 +266,14 @@ Precedence (highest to lowest):
 2. **Per-call** — `log_output` keyword at the call site
 3. **ShellProxy default** — `ShellProxy(log_output="file")`
 
+## Results
+
+`lambkin.data` provides structured access to whatever a benchmark already wrote to disk:
+
+- **`lambkin.data.access.iterations(source)`** — walks `results/var_*/iter_*/`, skips any iteration that didn't complete, and returns one entry per completed iteration with `iter_dir`, `variant` (e.g. `"var_1"`), `iteration`, and `params` (the variant's parameters as a `SimpleNamespace`). Accepts either a context-like object exposing `.base_dir`, or a plain path/string.
+- **`lambkin.data.evo.series(source, filename)`** — same traversal, plus loads the `evo` result file (e.g. `"output.ape.zip"`) from each iteration directory and exposes `time`, `error`, and `distance` arrays, ready to plot.
+- **`lambkin.data.evo.stats(source, filename)`** — same traversal, but exposes the aggregate statistics `evo` computes for each result: `rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`.
+
 
 ### Metrics
 
