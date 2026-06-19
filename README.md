@@ -34,7 +34,7 @@ To understand how LAMBKIN works under the hood, see the [SDK documentation](src/
 
 - Python 3.10+
 - [`uv`](https://github.com/astral-sh/uv)
-- Linux with cgroups v2 and systemd (required for background process management)
+- Linux with cgroups v2 (required for background process management)
 
 ## Installation
 
@@ -83,7 +83,7 @@ def dataset(ctx):
     return ctx.source.path.parent / "datasets" / "my_dataset.mcap"
 
 
-@my_benchmark.ouput
+@my_benchmark.output
 def plot(ctx):
     data = lambkin.data.evo.series(ctx)
 
@@ -97,7 +97,7 @@ Run it with the CLI:
 ```bash
 lambkin my_benchmark.py
 ```
-Run `lambkin my_benchmark.py --help` to see all available options.
+Run `lambkin --help` to see all available options.
 
 For a complete, working example using the Beluga algorithm, see [`examples/beluga/beluga_benchmark.py`](examples/beluga/beluga_benchmark.py). For the full CLI reference, see the [SDK documentation](src/lambkin/README.md#cli).
 
@@ -108,9 +108,14 @@ For a complete, working example using the Beluga algorithm, see [`examples/belug
 When the input itself depends on the variant — e.g. a different sensor model needs a different recording — scoping the hook to `"variant"` means it's only resolved when the variant changes, not on every iteration. This keeps a multi-dataset sweep just as cheap as a single-dataset one.
 
 ```python
+@lambkin.benchmark(
+    variants=lambkin.common.named_product(dataset=["warehouse", "office"]),
+    num_iterations=2,
+)
+def nominal(ctx): ...
 @nominal.input(scope="variant")
 def dataset(ctx):
-    return ctx.source.path.parent / "datasets" / f"{ctx.variant.sensor_model}.mcap"
+    return ctx.source.path.parent / "datasets" / f"{ctx.variant.dataset}.mcap"
 ```
 
 ## Cookbook
