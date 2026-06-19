@@ -102,8 +102,8 @@ Resolved inputs are merged down the hierarchy, so a variant-scoped hook can rely
 
 Registers a function as a callback that runs once, after the entire benchmark loop completes, receiving the benchmark-scoped context. Hook names must be unique. Can be used as a decorator via `@output`.
 
-> [!WARNING]
-> Output hooks receive a `BenchmarkContext`, not an `IterationContext` — every iteration's cgroup and shell have already been torn down by the time hooks run. Don't call `ctx.shell` or launch any process inside an output hook; read artifacts from disk via `ctx.base_dir` instead (see [Reading Results](#reading-results)).
+> [!NOTE]
+> Output hooks receive a `BenchmarkContext`, not an `IterationContext` — every iteration's cgroup and shell have already been torn down by the time hooks run. Don't call `ctx.shell` or launch any process inside an output hook; read artifacts from disk via `ctx.base_dir` instead (see [Results](#Results)).
 
 ### Option
 
@@ -186,7 +186,7 @@ Custom Options (script-defined):
   Run 'lambkin SCRIPT --show-options' to list them.
 ```
 
-> [!WARNING]
+> [!NOTE]
 > The SDK option names above are reserved. Declaring any of them via `@lambkin.option` in your script raises a Click error at parse time due to duplicate parameter names.
 
 `--show-options` and `--show-variants` behave like `--help`: they print information and exit immediately, never reaching the benchmark body.
