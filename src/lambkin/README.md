@@ -130,6 +130,8 @@ When running on the host, a user systemd app slice (app.slice) is always availab
 
 When an iteration completes, LAMBKIN tears down the iteration cgroup by sending `SIGTERM` to all remaining processes, waiting for a grace period, then sending `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire iteration cgroup.
 
+Your benchmark function's process never receives SIGINT directly — the CLI deliberately launches it in its own session to shield it. A `try/except` `KeyboardInterrupt` inside your benchmark function will silently never fire on `Ctrl-C.`
+
 ## CLI
 
 LAMBKIN exposes a `lambkin` command that runs your benchmark script inside a transient systemd cgroup scope, ensuring all child processes are tracked and cleaned up automatically.
