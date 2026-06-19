@@ -192,7 +192,6 @@ Pass `--no-cache` to bypass this check entirely and force a full rerun of every 
 
 LAMBKIN has two independent logging systems: one for its own internal messages and one for subprocess output.
 
-
 ### SDK Logging
 
 Controls the verbosity of LAMBKIN's own internal messages via the `--log-level` SDK option. Accepts any level supported by [Python's logging](https://docs.python.org/3/library/logging.html#logging-levels) module, case-insensitive:
@@ -204,25 +203,34 @@ lambkin my_benchmark.py --log-level DEBUG  # equivalent
 
 The LAMBKIN logger is fully isolated from the root logger — user scripts can configure their own logging without any interference. `configure_logging` attaches a dedicated `StreamHandler` to the `"lambkin"` logger and sets `propagate = False`, so its messages never reach the root logger or any handler your script may have configured there. Most scripts don't need to touch this.
 
-To route LAMBKIN's log lines through your own logging setup as well — e.g. to also write them to a file via a root-level handler — re-enable propagation inside your benchmark function. `configure_logging` runs once, before your benchmark function is ever called, and resets `propagate` to `False` unconditionally — so setting it any earlier (e.g. at module level) gets overwritten and doesn't stick:
+**Adding a handler directly to the LAMBKIN logger**
+
+The simplest way to route LAMBKIN's output somewhere extra — a file, a custom formatter, a remote sink — is to attach a handler directly to `"lambkin"`. A logger's own handlers always fire regardless of `propagate`, so this works without touching root at all:
 
 ```python
 import logging
 
 
 def nominal(ctx):
+    logging.getLogger("lambkin").addHandler(logging.FileHandler("lambkin.log"))
+    ...
+```
+
+**Folding LAMBKIN output into an existing root-level setup**
+
+If you're already configuring the root logger (e.g. with `logging.basicConfig`) and want LAMBKIN's messages to flow through it as well, re-enable propagation inside your benchmark function. `configure_logging` resets `propagate` to `False` unconditionally before your function is ever called, so setting it any earlier gets overwritten and doesn't stick. Note that `propagate = True` on its own is a no-op if the root logger has no handlers configured:
+
+```python
+import logging
+
+
+def nominal(ctx):
+    logging.basicConfig(level=logging.DEBUG)  # or configure root elsewhere
     logging.getLogger("lambkin").propagate = True
     ...
 ```
 
-This runs on every iteration, but the assignment is idempotent, so the repetition is harmless. It also adds your handlers on top of LAMBKIN's own `StreamHandler`, not instead of it — if you don't want LAMBKIN printing to stdout twice, remove it explicitly:
-
-```python
-logging.getLogger("lambkin").handlers.clear()
-```
-
 See Python's [Logging Cookbook](https://docs.python.org/3/howto/logging-cookbook.html) for handler, formatter, and routing patterns beyond this.
-
 
 ### Process Logging
 
