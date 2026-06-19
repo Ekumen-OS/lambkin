@@ -293,6 +293,8 @@ LAMBKIN doesn't compute trajectory metrics itself — it invokes `evo` through `
 
 ### Output Hooks
 
+Use `lambkin.data` inside an output hook to turn results into plots or statistics:
+
 ```python
 import matplotlib.pyplot as plt
 import lambkin
