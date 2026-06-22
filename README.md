@@ -33,7 +33,7 @@ To understand how LAMBKIN works under the hood, see the [SDK documentation](src/
 
 - Python 3.10+
 - [`uv`](https://github.com/astral-sh/uv)
-- [Linux with cgroups v2](https://docs.kernel.org/admin-guide/cgroup-v2.html)
+- Linux with [cgroups v2](https://docs.kernel.org/admin-guide/cgroup-v2.html)
 
 ## Installation
 
@@ -123,7 +123,7 @@ For a complete, working example using the Beluga algorithm, see [`examples/belug
 
 ### Parameter sweeps
 
-The most basic use case: sweep a single parameter across a range of values, running every value under identical conditions. This is the basis for programmatic tuning — searching for the setting that optimizes a metric — and for regression testing, where re-running a fixed sweep over time surfaces any change that degrades performance.
+The most basic use case: sweep one or more parameters across a range of values, running every combination under identical conditions. This is the basis for programmatic tuning — searching for the setting that optimizes a metric — and for regression testing, where re-running a fixed sweep over time surfaces any change that degrades performance.
 
 ```python
 @lambkin.benchmark(
@@ -131,7 +131,7 @@ The most basic use case: sweep a single parameter across a range of values, runn
     num_iterations=30,
 )
 def nominal(ctx):
-    # run the algorithm configured with ctx.variant.num_particles
+    ctx.shell.my_algorithm(f"num_particles:={ctx.variant.num_particles}")
     ...
 ```
 

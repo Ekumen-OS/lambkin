@@ -49,10 +49,10 @@ results/
 
 `lambkin_metadata.yaml` is always written by the SDK itself. Everything else under `iter_<n>/` is whatever your benchmark function's commands wrote to the current working directory — the exact names and shapes depend entirely on the tools you call (e.g. `ros2 bag record -o output` creates an `output/` *directory* with its own internal files, not a single `output.mcap`). Artifacts written by `@output` hooks are not placed anywhere automatically — it's up to the hook to decide where to write them (e.g. `ctx.base_dir / "plots.png"` to put them under `results/`).
 
-> [!NOTE]
-> Two simultaneous `lambkin` invocations against the same `results/` directory are not guarded against — there is no file locking, so concurrent runs may corrupt each other's output. To run two benchmarks in parallel, place them in separate source directories or rename the existing `results/` folder first.
-
 `results/` being tied to the benchmark script's location is a deliberate design choice: it means the cache always works without requiring the user to pass an explicit output path, and keeps each benchmark script bound to a fixed, reproducible setup.
+
+> [!NOTE]
+> Avoid running two benchmarks against the same `results/` directory at once — place them in separate source directories, or rename the existing `results/` folder first, so the cache stays trustworthy and outputs don't get corrupted.
 
 ## Core Concepts
 
