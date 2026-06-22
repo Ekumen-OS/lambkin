@@ -97,7 +97,7 @@ docker compose --profile development exec lambkin_dev bash
 **Podman**
 
 ```bash
-podman-compose --profile development run --podman-run-args="--systemd=always" --rm lambkin_dev bash
+podman-compose --profile development --podman-run-args=--systemd=always run --rm lambkin_dev bash
 ```
 
 > [!NOTE]
@@ -127,7 +127,7 @@ docker compose --profile production run --rm lambkin_prod bash
 **Podman**
 
 ```bash
-podman-compose --profile production run --podman-run-args="--systemd=always" --rm lambkin_prod bash
+podman-compose --profile production --podman-run-args=--systemd=always run --rm lambkin_prod bash
 ```
 
 > [!WARNING]
