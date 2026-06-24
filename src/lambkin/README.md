@@ -14,7 +14,7 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 - [Logging](#logging)
 - [Results](#results)
   - [Metrics](#metrics)
-  - [Output Hooks](#output-hooks)
+  - [Report Generation](#report-generation)
   - [Reprocessing](#reprocessing)
 - [Cookbook](#cookbook)
 
@@ -303,7 +303,7 @@ Precedence (highest to lowest):
 - **`lambkin.data.access.iterations(source)`** — walks `results/var_*/iter_*/`, skips any iteration that didn't complete, and returns one entry per completed iteration with `iter_dir`, `variant` (e.g. `"var_1"`), `iteration`, and `params` (the variant's parameters as a `SimpleNamespace`). Accepts either a context-like object exposing `.base_dir`, or a plain path/string.
 - **`lambkin.data.evo.series(source, filename)`** — same traversal, plus loads the `evo` result file (e.g. `"output.ape.zip"`) from each iteration directory and exposes `time`, `error`, and `distance` arrays, ready to plot.
 - **`lambkin.data.evo.stats(source, filename)`** — same traversal, but exposes the aggregate statistics `evo` computes for each result: `rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`.
-
+- **`lambkin.data.report.generate(source, filename, output_dir)`** — builds on the two functions above to write a ready-to-run `report.ipynb` notebook summarizing a benchmark run. See [Report Generation](#report-generation) below.
 
 ### Metrics
 
@@ -348,6 +348,38 @@ def stats(ctx):
             entry.max,
         )
 ```
+### Report Generation
+
+`lambkin.data.report.generate()` builds a ready-to-run Jupyter notebook (`report.ipynb`) summarizing a benchmark run, on top of `lambkin.data.evo`. Generating it doesn't require Jupyter to be installed — it just writes the `.ipynb` file to disk; opening and running it does.
+
+```python
+lambkin.data.report.generate(Path("results"), "output.ape.zip")
+```
+
+| Argument | Default | Description |
+|---|---|---|
+| `source` | — | Benchmark context, `Path`, or path string pointing to the benchmark base directory (same kind of source accepted by `access.iterations()` and `evo.*`). |
+| `filename` | `"output.ape.zip"` | Name of the `evo` result file to read from each completed iteration. |
+| `output_dir` | `source`'s directory | Where `report.ipynb` is written. Defaults to writing alongside the results it summarizes. |
+
+Call it from a script after a run, or from an `@output` hook with `ctx` as the source:
+
+```python
+@my_benchmark.output
+def report_notebook(ctx):
+    lambkin.data.report.generate(ctx)
+```
+
+The generated notebook contains three cells of analysis, each saving its own figure under `output_dir`:
+
+1. **APE timeseries by variant** — every iteration's error curve in light color, the per-variant mean overlaid in bold. Saved to `report_ape_series.png`.
+2. **Stats summary** — a printed table of RMSE mean/std, mean, and max APE per variant, aggregated across iterations.
+3. **RMSE comparison** — a bar chart of RMSE per variant, with error bars showing mean ± std across iterations. Saved to `report_rmse_bars.png`.
+
+The notebook is self-contained: its first code cell hardcodes `RESULTS_DIR` and `APE_FILENAME` to the values passed at generation time, so it can be re-opened and re-run later without any setup, and reused on a different `results/` directory by editing that one cell.
+
+> [!NOTE]
+> If `source` has no completed iterations, `generate()` still writes a notebook — it logs a warning and the resulting cells produce empty plots and an empty stats table when run.
 
 ### Reprocessing
 
