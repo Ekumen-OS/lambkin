@@ -106,11 +106,5 @@ def stats(ctx):
         )
 
 
-@nominal.output
-def benchmark_report(ctx):
-    """Generate a Jupyter notebook report with APE results across all variants."""
-    lambkin.data.report.generate(ctx)
-
-
 if __name__ == "__main__":
     nominal()
