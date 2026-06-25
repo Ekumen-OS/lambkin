@@ -15,21 +15,20 @@
 """Report generation for evo benchmark results.
 
 Provides :func:`generate` to produce a self-contained Jupyter notebook
-summarising APE results across all variants and iterations of a benchmark run.
+summarising evo results across all variants and iterations of a benchmark run.
 The notebook is written to disk with code cells ready to execute; no Jupyter
 installation is required to generate it.
 """
 
 import json
 import logging
-from collections import defaultdict
 from pathlib import Path
-
-from lambkin.data import evo as evo_data
 
 logger = logging.getLogger(__name__)
 
 _NOTEBOOK_VERSION = (4, 5)
+
+SECTIONS = ("timeseries", "stats", "rmse_bars")
 
 
 def _resolve_paths(
@@ -76,155 +75,206 @@ def _markdown_cell(source: str) -> dict:
     }
 
 
-def _variant_label(params: object) -> str:
-    """Build a human-readable label from variant params."""
-    return ", ".join(f"{k}={v}" for k, v in sorted(vars(params).items()))
+def _stem(filename: str) -> str:
+    """Return a short uppercase label from a filename.
+
+    E.g. ``'output.ape.zip'`` -> ``'APE'``.
+    """
+    parts = Path(filename).suffixes
+    # e.g. ['.ape', '.zip'] -> 'APE'
+    for part in parts:
+        label = part.lstrip(".").upper()
+        if label not in ("ZIP", "JSON"):
+            return label
+    return Path(filename).stem.upper()
+
+
+def _timeseries_cells(results_dir: Path, filename: str) -> list[dict]:
+    """Return cells for an error timeseries section."""
+    label = _stem(filename)
+    var = filename.replace(".", "_").replace("-", "_")
+    return [
+        _markdown_cell(
+            f"## {label} timeseries by variant\n\n"
+            "Individual iterations in light color, mean per variant in bold."
+        ),
+        _code_cell(
+            f"_series_{var} = evo_data.series(RESULTS_DIR, {filename!r})\n\n"
+            f"_by_variant_{var} = defaultdict(list)\n"
+            f"for _entry in _series_{var}:\n"
+            f"    _by_variant_{var}[_entry.variant].append(_entry)\n\n"
+            "fig, ax = plt.subplots(figsize=(12, 5))\n"
+            "colors = plt.rcParams['axes.prop_cycle'].by_key()['color']\n\n"
+            f"for (_variant, _entries), _color in zip(\n"
+            f"    sorted(_by_variant_{var}.items()), colors\n"
+            "):\n"
+            "    _label = ', '.join(\n"
+            "        f'{k}={v}' for k, v"
+            " in sorted(vars(_entries[0].params).items())\n"
+            "    )\n"
+            "    for _entry in _entries:\n"
+            "        ax.plot(\n"
+            "            _entry.time, _entry.error,\n"
+            "            color=_color, alpha=0.3, linewidth=0.8\n"
+            "        )\n"
+            "    _t_min = max(e.time[0] for e in _entries)\n"
+            "    _t_max = min(e.time[-1] for e in _entries)\n"
+            "    _t_grid = np.linspace(_t_min, _t_max, 300)\n"
+            "    _mean_error = np.mean(\n"
+            "        [np.interp(_t_grid, e.time, e.error)"
+            " for e in _entries], axis=0\n"
+            "    )\n"
+            "    ax.plot(\n"
+            "        _t_grid, _mean_error,"
+            " color=_color, linewidth=2, label=_label\n"
+            "    )\n\n"
+            f"ax.set_xlabel('Time (s)')\n"
+            f"ax.set_ylabel('Error (m)')\n"
+            f"ax.set_title('{label} — timeseries by variant')\n"
+            "ax.legend(loc='upper left', fontsize=8)\n"
+            "fig.tight_layout()\n"
+            f"plt.savefig(RESULTS_DIR / 'report_{label.lower()}_series.png',"
+            " dpi=150)\n"
+            "plt.show()"
+        ),
+    ]
+
+
+def _stats_cells(filename: str) -> list[dict]:
+    """Return cells for a stats summary section."""
+    label = _stem(filename)
+    var = filename.replace(".", "_").replace("-", "_")
+    return [
+        _markdown_cell(
+            f"## {label} stats summary\n\n"
+            "RMSE, mean, and max aggregated across iterations per variant."
+        ),
+        _code_cell(
+            f"_stats_{var} = evo_data.stats(RESULTS_DIR, {filename!r})\n\n"
+            f"_by_variant_stats_{var} = defaultdict(list)\n"
+            f"for _entry in _stats_{var}:\n"
+            "    _label = ', '.join(\n"
+            "        f'{k}={v}' for k, v"
+            " in sorted(vars(_entry.params).items())\n"
+            "    )\n"
+            f"    _by_variant_stats_{var}[_label].append(_entry)\n\n"
+            "_header = (\n"
+            "    f\"{'Variant':<40} {'N':>4}\"\n"
+            "    f\" {'RMSE mean':>10} {'RMSE std':>10}"
+            " {'Mean':>10} {'Max':>10}\"\n"
+            ")\n"
+            "print(_header)\n"
+            "print('-' * len(_header))\n"
+            f"for _label in sorted(_by_variant_stats_{var}):\n"
+            f"    _entries = _by_variant_stats_{var}[_label]\n"
+            "    _rmse = [e.rmse for e in _entries]\n"
+            "    print(\n"
+            "        f'{_label:<40} {len(_entries):>4}'\n"
+            "        f' {np.mean(_rmse):>10.4f} {np.std(_rmse):>10.4f}'\n"
+            "        f' {np.mean([e.mean for e in _entries]):>10.4f}'\n"
+            "        f' {np.mean([e.max for e in _entries]):>10.4f}'\n"
+            "    )"
+        ),
+    ]
+
+
+def _rmse_bars_cells(filename: str) -> list[dict]:
+    """Return cells for an RMSE bar chart section."""
+    label = _stem(filename)
+    var = filename.replace(".", "_").replace("-", "_")
+    return [
+        _markdown_cell(f"## {label} RMSE comparison across variants"),
+        _code_cell(
+            f"_labels_{var} = sorted(_by_variant_stats_{var}.keys())\n"
+            f"_rmse_means_{var} = [\n"
+            f"    np.mean([e.rmse for e in _by_variant_stats_{var}[l]])\n"
+            f"    for l in _labels_{var}\n"
+            "]\n"
+            f"_rmse_stds_{var} = [\n"
+            f"    np.std([e.rmse for e in _by_variant_stats_{var}[l]])\n"
+            f"    for l in _labels_{var}\n"
+            "]\n\n"
+            "fig, ax = plt.subplots(\n"
+            f"    figsize=(max(6, len(_labels_{var}) * 1.2), 4)\n"
+            ")\n"
+            f"_x_{var} = np.arange(len(_labels_{var}))\n"
+            f"ax.bar(_x_{var}, _rmse_means_{var},"
+            f" yerr=_rmse_stds_{var}, capsize=4)\n"
+            f"ax.set_xticks(_x_{var})\n"
+            f"ax.set_xticklabels(_labels_{var},"
+            " rotation=25, ha='right', fontsize=8)\n"
+            "ax.set_ylabel('RMSE (m)')\n"
+            f"ax.set_title('{label} RMSE by variant (mean ± std)')\n"
+            "fig.tight_layout()\n"
+            f"plt.savefig(RESULTS_DIR / 'report_{label.lower()}_rmse_bars.png',"
+            " dpi=150)\n"
+            "plt.show()"
+        ),
+    ]
 
 
 def generate(
     source: Path | str | object,
-    filename: str = "output.ape.zip",
+    filenames: tuple[str, ...] = ("output.ape.zip",),
+    sections: tuple[str, ...] = SECTIONS,
     output_dir: Path | str | None = None,
 ) -> Path:
-    """Generate a Jupyter notebook report from evo APE benchmark results.
+    """Generate a Jupyter notebook report from evo benchmark results.
 
     Reads all completed iterations under ``source`` and writes a
     ``report.ipynb`` notebook to ``output_dir`` (or ``source`` if not
-    specified). The notebook contains:
-
-    - An APE timeseries plot per variant (individual iterations + mean).
-    - A stats summary table (RMSE, mean, max aggregated across iterations).
-    - An RMSE comparison bar chart across variants.
-
-    No Jupyter installation is required to generate the notebook.
-    Open it with ``jupyter notebook`` or ``jupyter lab`` to execute it.
+    specified).
 
     Args:
         source: benchmark context, :class:`~pathlib.Path`, or path string
             pointing to the benchmark base directory.
-        filename: name of the evo result zip file to read from each iteration.
-            Defaults to ``"output.ape.zip"``.
+        filenames: evo result zip files to include in the report, one section
+            group per file. Defaults to ``["output.ape.zip"]``.
+        sections: sections to include in the notebook. Any subset of
+            ``("timeseries", "stats", "rmse_bars")``. Defaults to all three.
         output_dir: directory where ``report.ipynb`` will be written.
             Defaults to the benchmark base directory derived from ``source``.
 
     Returns:
         :class:`~pathlib.Path` to the generated notebook.
+
+    Raises:
+        ValueError: if an unknown section name is provided.
     """
+    unknown = set(sections) - set(SECTIONS)
+    if unknown:
+        raise ValueError(f"Unknown sections: {unknown!r}. Valid sections: {SECTIONS!r}")
+
     results_dir, out = _resolve_paths(source, output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    # Collect variant labels from real data to populate the notebook
-    stats = evo_data.stats(results_dir, filename)
-    if not stats:
-        logger.warning(
-            "No completed iterations found under %s, report will be empty",
-            results_dir,
-        )
-
-    by_variant: dict[str, list] = defaultdict(list)
-    for entry in stats:
-        by_variant[_variant_label(entry.params)].append(entry)
-
-    cells = [
+    cells: list[dict] = [
         _markdown_cell(
-            "# LAMBKIN Benchmark Report\n\n"
-            "APE results across all variants and iterations."
+            "# LAMBKIN Benchmark Report\n\nResults across all variants and iterations."
         ),
         _code_cell(
             "from pathlib import Path\n"
             "from collections import defaultdict\n\n"
             "import matplotlib.pyplot as plt\n"
             "import numpy as np\n\n"
-            "import lambkin.data.evo as evo_data\n\n"
-            f"RESULTS_DIR = Path({str(results_dir)!r})\n"
-            f"APE_FILENAME = {filename!r}"
-        ),
-        _markdown_cell(
-            "## APE timeseries by variant\n\n"
-            "Individual iterations in light color, mean per variant in bold."
-        ),
-        _code_cell(
-            "series = evo_data.series(RESULTS_DIR, APE_FILENAME)\n\n"
-            "by_variant_series = defaultdict(list)\n"
-            "for entry in series:\n"
-            "    by_variant_series[entry.variant].append(entry)\n\n"
-            "fig, ax = plt.subplots(figsize=(12, 5))\n"
-            "colors = plt.rcParams['axes.prop_cycle'].by_key()['color']\n\n"
-            "for (variant, entries), color in zip(\n"
-            "    sorted(by_variant_series.items()), colors\n"
-            "):\n"
-            "    label = ', '.join(\n"
-            "        f'{k}={v}' for k, v in sorted(vars(entries[0].params).items())\n"
-            "    )\n"
-            "    for entry in entries:\n"
-            "        ax.plot(\n"
-            "            entry.time, entry.error,\n"
-            "            color=color, alpha=0.3, linewidth=0.8\n"
-            "        )\n"
-            "    t_min = max(e.time[0] for e in entries)\n"
-            "    t_max = min(e.time[-1] for e in entries)\n"
-            "    t_grid = np.linspace(t_min, t_max, 300)\n"
-            "    mean_error = np.mean(\n"
-            "        [np.interp(t_grid, e.time, e.error) for e in entries], axis=0\n"
-            "    )\n"
-            "    ax.plot(t_grid, mean_error, color=color, linewidth=2, label=label)\n\n"
-            "ax.set_xlabel('Time (s)')\n"
-            "ax.set_ylabel('APE (m)')\n"
-            "ax.set_title('Absolute Pose Error — timeseries by variant')\n"
-            "ax.legend(loc='upper left', fontsize=8)\n"
-            "fig.tight_layout()\n"
-            "plt.savefig(RESULTS_DIR / 'report_ape_series.png', dpi=150)\n"
-            "plt.show()"
-        ),
-        _markdown_cell(
-            "## Stats summary\n\n"
-            "RMSE, mean, and max APE aggregated across iterations per variant."
-        ),
-        _code_cell(
-            "stats = evo_data.stats(RESULTS_DIR, APE_FILENAME)\n\n"
-            "by_variant_stats = defaultdict(list)\n"
-            "for entry in stats:\n"
-            "    label = ', '.join(\n"
-            "        f'{k}={v}' for k, v in sorted(vars(entry.params).items())\n"
-            "    )\n"
-            "    by_variant_stats[label].append(entry)\n\n"
-            "header = (\n"
-            "    f\"{'Variant':<40} {'N':>4}\"\n"
-            "    f\" {'RMSE mean':>10} {'RMSE std':>10} {'Mean':>10} {'Max':>10}\"\n"
-            ")\n"
-            "print(header)\n"
-            "print('-' * len(header))\n"
-            "for label in sorted(by_variant_stats):\n"
-            "    entries = by_variant_stats[label]\n"
-            "    rmse = [e.rmse for e in entries]\n"
-            "    print(\n"
-            "        f'{label:<40} {len(entries):>4}'\n"
-            "        f' {np.mean(rmse):>10.4f} {np.std(rmse):>10.4f}'\n"
-            "        f' {np.mean([e.mean for e in entries]):>10.4f}'\n"
-            "        f' {np.mean([e.max for e in entries]):>10.4f}'\n"
-            "    )"
-        ),
-        _markdown_cell("## RMSE comparison across variants"),
-        _code_cell(
-            "labels = sorted(by_variant_stats.keys())\n"
-            "rmse_means = [\n"
-            "    np.mean([e.rmse for e in by_variant_stats[l]]) for l in labels\n"
-            "]\n"
-            "rmse_stds = [\n"
-            "    np.std([e.rmse for e in by_variant_stats[l]]) for l in labels\n"
-            "]\n\n"
-            "fig, ax = plt.subplots(figsize=(max(6, len(labels) * 1.2), 4))\n"
-            "x = np.arange(len(labels))\n"
-            "ax.bar(x, rmse_means, yerr=rmse_stds, capsize=4)\n"
-            "ax.set_xticks(x)\n"
-            "ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=8)\n"
-            "ax.set_ylabel('RMSE (m)')\n"
-            "ax.set_title('APE RMSE by variant (mean ± std across iterations)')\n"
-            "fig.tight_layout()\n"
-            "plt.savefig(RESULTS_DIR / 'report_rmse_bars.png', dpi=150)\n"
-            "plt.show()"
+            "from lambkin.data import evo as evo_data\n\n"
+            f"RESULTS_DIR = Path({str(results_dir)!r})"
         ),
     ]
+
+    for filename in filenames:
+        if not any((results_dir / f"var_1/iter_1/{filename}").exists() for _ in [None]):
+            logger.warning(
+                "No results found for %s under %s, skipping",
+                filename,
+                results_dir,
+            )
+        if "timeseries" in sections:
+            cells.extend(_timeseries_cells(results_dir, filename))
+        if "stats" in sections:
+            cells.extend(_stats_cells(filename))
+        if "rmse_bars" in sections:
+            cells.extend(_rmse_bars_cells(filename))
 
     notebook = {
         "nbformat": _NOTEBOOK_VERSION[0],
