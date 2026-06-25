@@ -1,5 +1,5 @@
 # ── Stage 0: base ─────────────────────────────────────────
-FROM ros:jazzy-ros-base AS base
+FROM docker.io/ros:jazzy-ros-base AS base
 RUN apt-get update && apt-get install -y \
     curl \
     python3-pip \
@@ -29,7 +29,7 @@ COPY --from=ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/
 COPY pyproject.toml README.md LICENSE /tmp/lambkin/
 COPY src/ /tmp/lambkin/src/
 RUN uv pip install /tmp/lambkin --system --break-system-packages \
-&& rm -rf /tmp/lambkin
+    && rm -rf /tmp/lambkin
 
 COPY examples/beluga /ws/examples/beluga
 
