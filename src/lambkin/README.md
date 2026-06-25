@@ -347,27 +347,6 @@ def stats(ctx):
             entry.max,
         )
 ```
-### Report Generation
-
-`lambkin.data` provides the building blocks to generate reports from benchmark
-results. The Beluga example includes a ready-to-use Jupyter cookbook at
-`examples/beluga/report.ipynb` that demonstrates the full workflow using
-`lambkin.data.access` and `lambkin.data.evo`.
-
-The cookbook covers:
-
-1. Listing available variants and iterations with `access.iterations()`.
-2. APE timeseries by variant — individual iterations + per-variant mean.
-3. Stats summary table — RMSE, mean, and max aggregated across iterations.
-4. RMSE comparison bar chart across variants.
-5. Converting results to a pandas DataFrame for advanced analysis with seaborn.
-6. Exporting the notebook to HTML with `jupyter nbconvert`.
-
-Open it after a benchmark run:
-
-```bash
-jupyter notebook examples/beluga/report.ipynb
-```
 
 ### Reprocessing
 
@@ -430,3 +409,46 @@ def nominal(ctx):
 
 > [!NOTE]
 > `ShellProxy` converts keyword argument underscores to dashes (`save_as_tum=` → `--save-as-tum`), which `evo` won't recognize. Always pass `evo` flags that contain underscores as positional strings, as shown above.
+
+### Analysing results in a notebook
+
+`lambkin.data` functions accept a plain path, so results can be explored
+from a Jupyter notebook without re-running the benchmark:
+
+```python
+from collections import defaultdict
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from lambkin.data import access, evo as evo_data
+
+RESULTS_DIR = "path/to/results"
+
+# List completed iterations
+for entry in access.iterations(RESULTS_DIR):
+    print(entry.variant, entry.iteration, vars(entry.params))
+
+# Plot APE timeseries per variant
+series = evo_data.series(RESULTS_DIR, "output.ape.zip")
+for entry in series:
+    plt.plot(entry.time, entry.error, label=entry.variant, alpha=0.5)
+plt.legend()
+plt.show()
+
+# Convert to a long-format DataFrame for seaborn
+rows = []
+for entry in evo_data.stats(RESULTS_DIR, "output.ape.zip"):
+    row = vars(entry.params).copy()
+    row.update({"variant": entry.variant, "iteration": entry.iteration,
+                "rmse": entry.rmse, "mean": entry.mean, "max": entry.max})
+    rows.append(row)
+df = pd.DataFrame(rows)
+```
+
+Export a notebook to HTML to share it without requiring Jupyter:
+
+```bash
+jupyter nbconvert --to html report.ipynb
+```
