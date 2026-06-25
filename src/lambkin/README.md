@@ -353,13 +353,14 @@ def stats(ctx):
 `lambkin.data.report.generate()` builds a ready-to-run Jupyter notebook (`report.ipynb`) summarizing a benchmark run, on top of `lambkin.data.evo`. Generating it doesn't require Jupyter to be installed — it just writes the `.ipynb` file to disk; opening and running it does.
 
 ```python
-lambkin.data.report.generate(Path("results"), "output.ape.zip")
+lambkin.data.report.generate(Path("results"))
 ```
 
 | Argument | Default | Description |
 |---|---|---|
 | `source` | — | Benchmark context, `Path`, or path string pointing to the benchmark base directory (same kind of source accepted by `access.iterations()` and `evo.*`). |
-| `filename` | `"output.ape.zip"` | Name of the `evo` result file to read from each completed iteration. |
+| `filenames` | `("output.ape.zip",)` | Sequence of `evo` result files to include. One section group is generated per file. |
+| `sections` | `("timeseries", "stats", "rmse_bars")` | Sections to include in the notebook. Any subset of the three available sections. |
 | `output_dir` | `source`'s directory | Where `report.ipynb` is written. Defaults to writing alongside the results it summarizes. |
 
 Call it from a script after a run, or from an `@output` hook with `ctx` as the source:
@@ -370,13 +371,23 @@ def report_notebook(ctx):
     lambkin.data.report.generate(ctx)
 ```
 
-The generated notebook contains three cells of analysis, each saving its own figure under `output_dir`:
+To include multiple metrics or only specific sections:
 
-1. **APE timeseries by variant** — every iteration's error curve in light color, the per-variant mean overlaid in bold. Saved to `report_ape_series.png`.
-2. **Stats summary** — a printed table of RMSE mean/std, mean, and max APE per variant, aggregated across iterations.
-3. **RMSE comparison** — a bar chart of RMSE per variant, with error bars showing mean ± std across iterations. Saved to `report_rmse_bars.png`.
+```python
+# APE + RPE in the same notebook
+lambkin.data.report.generate(ctx, filenames=("output.ape.zip", "output.rpe.zip"))
 
-The notebook is self-contained: its first code cell hardcodes `RESULTS_DIR` and `APE_FILENAME` to the values passed at generation time, so it can be re-opened and re-run later without any setup, and reused on a different `results/` directory by editing that one cell.
+# Only the stats table
+lambkin.data.report.generate(ctx, sections=("stats"))
+```
+
+The generated notebook contains three section types, each saving its own figure under `output_dir`:
+
+1. **Timeseries by variant** — every iteration's error curve in light color, the per-variant mean overlaid in bold. Saved to `report_{metric}_series.png`.
+2. **Stats summary** — a printed table of RMSE mean/std, mean, and max per variant, aggregated across iterations.
+3. **RMSE comparison** — a bar chart of RMSE per variant, with error bars showing mean ± std across iterations. Saved to `report_{metric}_rmse_bars.png`.
+
+The notebook is self-contained: its first code cell hardcodes `RESULTS_DIR` to the value passed at generation time, so it can be re-opened and re-run later without any setup, and reused on a different `results/` directory by editing that one cell.
 
 > [!NOTE]
 > If `source` has no completed iterations, `generate()` still writes a notebook — it logs a warning and the resulting cells produce empty plots and an empty stats table when run.
