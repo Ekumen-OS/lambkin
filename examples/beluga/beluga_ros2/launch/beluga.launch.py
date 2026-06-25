@@ -31,7 +31,7 @@ def generate_launch_description():
     """Generates the launch description for the Beluga AMCL benchmarking environment.
 
     Declares launch arguments for the map path, laser model type,
-    and maximum particles,and configures the required ROS 2 nodes:
+    and maximum particles, and configures the required ROS 2 nodes:
     beluga_amcl, map_server, and lifecycle_manager.
 
     Returns:

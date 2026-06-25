@@ -237,12 +237,13 @@ def benchmark(variants, num_iterations):
         )
 
     def decorator(fn):
+        """Wrap fn with the full benchmark execution loop."""
         inputs = InputRegistry()
         outputs = OutputRegistry()
 
         @functools.wraps(fn)
         def wrapper(args=None, base_dir=None):
-            # Parse CLI arguments, falling back to sys.argv if no args are provided.
+            """Execute the benchmark: parse options, loop variants and iterations."""
             cli_args = sys.argv[1:] if args is None else args
             options = _parse_options(fn, cli_args)
 
