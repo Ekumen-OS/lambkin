@@ -17,14 +17,14 @@ RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 # ── Stage 1: development ───────────────────────────────────
 FROM base AS development
 
-COPY --from=ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/
+COPY --from=docker.io/ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/
 
 CMD ["bash"]
 
 # ── Stage 2: production ────────────────────────────────────
 FROM base AS production
 
-COPY --from=ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/
+COPY --from=docker.io/ekumenlabs/lambkin-beluga-datasets:jazzy /data/ /data/
 
 COPY pyproject.toml README.md LICENSE /tmp/lambkin/
 COPY src/ /tmp/lambkin/src/
