@@ -25,8 +25,8 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
-    "Teresa Ortega <teresa.ortega0903@gmail.com>",
-    "Xavier Ruiz <xavier.ruiz@ekumenlabs.com>"
+    {name = "Teresa Ortega", email = "teresa.ortega0903@gmail.com>"},
+    {name = "Xavier Ruiz", email = "xavier.ruiz@ekumenlabs.com>"}
 ]
 keywords = ["robotics", "benchmarking", "SLAM", "localization", "ROS 2"]
 dependencies = [
