@@ -1,4 +1,11 @@
-# LAMBKIN
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/logo_white.png">
+  <source media="(prefers-color-scheme: light)" srcset="doc/logo_black.png">
+  <img alt="Shows the LAMBKIN logo." srcset="docs/logo_black.png">
+</picture>
+
+---
+
 **L**ocalization **A**nd **M**apping **B**enchmar**KIN**g
 
 > *The user brings the algorithm. LAMBKIN handles the rest.*
