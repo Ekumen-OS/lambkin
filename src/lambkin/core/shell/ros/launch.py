@@ -19,8 +19,6 @@ ensuring that ROS node logs are written to the iteration directory
 alongside all other benchmark artefacts.
 """
 
-from __future__ import annotations
-
 import os
 import subprocess
 
@@ -69,14 +67,10 @@ class RosLaunchCommand(CommandProxy):
         )
 
     def build_env(self) -> dict:
-        """Build the environment for the child process.
-
-        Returns a copy of the current environment with ROS_LOG_DIR set to
-        the iteration directory, so that ROS node logs land alongside all
-        other benchmark artefacts rather than in the default ~/.ros/log.
+        """Override of CommandProxy.build_env.
 
         Returns:
-            A copy of the current environment with ROS_LOG_DIR set.
+            A copy of os.environ with ROS_LOG_DIR set to the working directory.
         """
         return self._make_env()
 

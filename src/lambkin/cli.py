@@ -159,6 +159,7 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
     terminal_state = _save_terminal_state()
 
     def _handle_sigint(signum: int, frame: FrameType | None) -> None:
+        """Raise KeyboardInterrupt on SIGINT to unblock proc.wait()."""
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)

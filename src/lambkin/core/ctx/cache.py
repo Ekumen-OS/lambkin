@@ -23,8 +23,6 @@ SDK options are excluded from the hash automatically to avoid invalidating
 cached results on changes that do not affect benchmark outputs.
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import logging
@@ -67,7 +65,7 @@ def compute_run_hash(
     # that don't affect the benchmark function (e.g. logs, comments, etc.).
     # If so, we could try to extract just the benchmark function's source code using
     # the inspect module, but this is non-trivial and may not be robust to all valid
-    # Python syntax. For now, we take the simpler approach of not accouting for changes
+    # Python syntax. For now, we take the simpler approach of not accounting for changes
     # in the source file, so that we do not invalidate the cache.
     # source_contents = source_path.read_bytes()
     payload = json.dumps(

@@ -13,8 +13,6 @@
 # limitations under the License.
 """cgroup v2 utilities for process lifecycle management in lambkin benchmarks."""
 
-from __future__ import annotations
-
 import errno
 import logging
 import os
