@@ -15,9 +15,10 @@ services:
     volumes:
       - ../../..:/ws
       # ── Inputs (uncomment and adjust paths as needed) ─────────
-      # - ../rosbags:/ws/examples/beluga/rosbags:ro
-      # - ../maps:/ws/examples/beluga/maps:ro
-      # - ../groundtruth:/ws/examples/beluga/groundtruth:ro
+      # optionally override datasets:
+      # - ../datasets:/data/datasets:ro
+      # - ../maps:/data/maps:ro
+      # - ../ground_truth:/data/ground_truth:ro
       # ── Output (benchmark results persisted on host) ──────────
       - ../results:/ws/examples/beluga/results
 
@@ -35,8 +36,9 @@ services:
     profiles: ["production"]
     volumes:
       # ── Inputs (uncomment and adjust paths as needed) ─────────
-      # - ../rosbags:/ws/examples/beluga/rosbags:ro
-      # - ../maps:/ws/examples/beluga/maps:ro
-      # - ../groundtruth:/ws/examples/beluga/groundtruth:ro
+      # optionally override datasets:
+      # - ../datasets:/data/datasets:ro
+      # - ../maps:/data/maps:ro
+      # - ../ground_truth:/data/ground_truth:ro
       # ── Output (benchmark results persisted on host) ──────────
       - ../results:/ws/examples/beluga/results
