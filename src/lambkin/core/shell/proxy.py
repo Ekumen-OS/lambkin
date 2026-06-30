@@ -277,8 +277,8 @@ class CommandProxy:
         """Finalise the command and dispatch it to the operating system.
 
         In dry-run mode, logs the command and returns a dummy CompletedProcess.
-        In real mode,runs the command as a foreground process, blocking until
-        it completes.The process inherits stdout and stderr from the parent, so
+        Otherwise, it runs the command as a foreground process, blocking until
+        it completes. The process inherits stdout and stderr from the parent, so
         its output goes directly to the terminal.
 
         Args:
