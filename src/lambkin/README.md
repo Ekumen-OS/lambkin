@@ -14,7 +14,7 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 - [Logging](#logging)
 - [Results](#results)
   - [Metrics](#metrics)
-  - [Output Hooks](#output-hooks)
+  - [Report Generation](#report-generation)
   - [Reprocessing](#reprocessing)
 - [Cookbook](#cookbook)
 
@@ -304,7 +304,6 @@ Precedence (highest to lowest):
 - **`lambkin.data.evo.series(source, filename)`** — same traversal, plus loads the `evo` result file (e.g. `"output.ape.zip"`) from each iteration directory and exposes `time`, `error`, and `distance` arrays, ready to plot.
 - **`lambkin.data.evo.stats(source, filename)`** — same traversal, but exposes the aggregate statistics `evo` computes for each result: `rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`.
 
-
 ### Metrics
 
 LAMBKIN doesn't compute trajectory metrics itself — it invokes `evo` through `ctx.shell`, the same way it invokes any other external process, and reads back whatever `evo` writes to disk. The field names exposed by `lambkin.data.evo` (`rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`) are `evo`'s own, not LAMBKIN's.
@@ -410,3 +409,46 @@ def nominal(ctx):
 
 > [!NOTE]
 > `ShellProxy` converts keyword argument underscores to dashes (`save_as_tum=` → `--save-as-tum`), which `evo` won't recognize. Always pass `evo` flags that contain underscores as positional strings, as shown above.
+
+### Analysing results in a notebook
+
+`lambkin.data` functions accept a plain path, so results can be explored
+from a Jupyter notebook without re-running the benchmark:
+
+```python
+from collections import defaultdict
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from lambkin.data import access, evo as evo_data
+
+RESULTS_DIR = "path/to/results"
+
+# List completed iterations
+for entry in access.iterations(RESULTS_DIR):
+    print(entry.variant, entry.iteration, vars(entry.params))
+
+# Plot APE timeseries per variant
+series = evo_data.series(RESULTS_DIR, "output.ape.zip")
+for entry in series:
+    plt.plot(entry.time, entry.error, label=entry.variant, alpha=0.5)
+plt.legend()
+plt.show()
+
+# Convert to a long-format DataFrame for seaborn
+rows = []
+for entry in evo_data.stats(RESULTS_DIR, "output.ape.zip"):
+    row = vars(entry.params).copy()
+    row.update({"variant": entry.variant, "iteration": entry.iteration,
+                "rmse": entry.rmse, "mean": entry.mean, "max": entry.max})
+    rows.append(row)
+df = pd.DataFrame(rows)
+```
+
+Export a notebook to HTML to share it without requiring Jupyter:
+
+```bash
+jupyter nbconvert --to html report.ipynb
+```

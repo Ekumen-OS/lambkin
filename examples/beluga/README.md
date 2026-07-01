@@ -166,3 +166,13 @@ On top of the [SDK-wide options](../../src/lambkin/README.md#cli), this benchmar
 | `--sensor-topic` | `/scan` | Declared as an option, but not currently read inside `nominal()` — check [`beluga_benchmark.py`](beluga_benchmark.py) before relying on it. |
 
 For everything else — listing options, selecting a subset of variants, dry-running, reading results back with `lambkin.data` — see the [SDK documentation](../../src/lambkin/README.md), which applies the same way to this example as to any other benchmark.
+
+### Explore Results
+
+After the benchmark completes, open the report notebook to visualise APE results across all variants and iterations:
+
+```bash
+jupyter notebook examples/beluga/report.ipynb
+```
+
+The notebook plots APE timeseries by variant, prints a stats summary table, and generates an RMSE comparison bar chart. All figures are saved under `results/`.
