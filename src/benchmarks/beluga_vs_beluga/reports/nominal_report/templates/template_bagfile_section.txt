@@ -1,0 +1,10 @@
+{bagfile_name}
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Bagfile metadata::
+
+{metadata}
+
+Evaluation results:
+
