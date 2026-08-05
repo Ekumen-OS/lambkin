@@ -1,2 +1,8 @@
-**/.mypy_cache
-**/.tox
+build/
+install/
+log/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.git/

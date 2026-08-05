@@ -1,12 +1,28 @@
-# catkin / colcon
-build
-install
-devel
-logs
-log
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
 
-# python
-**/__pycache__
+# Virtual environments
+.venv
 
-# suggested logs/playground
-**/playground
+# Ruff
+.ruff_cache/
+
+# ROS
+log/
+install/
+build/
+
+
+# Mypy cache
+.mypy_cache
+
+# Benchmark inputs/outputs (mounted from docker-compose)
+examples/beluga/results/
+examples/beluga/rosbags/
+examples/beluga/maps/
+examples/beluga/groundtruth/

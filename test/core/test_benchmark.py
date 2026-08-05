@@ -1,0 +1,525 @@
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Unit tests for the benchmark decorator in lambkin.core.decorators."""
+
+from pathlib import Path
+from unittest.mock import patch
+
+import click
+import pytest
+import yaml
+
+from lambkin.common import defaults
+from lambkin.core.ctx.source import Source
+from lambkin.core.decorators.benchmark import (
+    _parse_index_list,
+    _parse_options,
+    benchmark,
+)
+from lambkin.core.decorators.option import option
+
+
+@pytest.fixture
+def variants():
+    """Base variants for testing."""
+    return [
+        {"sensor_model": "beam", "num_particles": 10},
+        {"sensor_model": "likelihood", "num_particles": 100},
+    ]
+
+
+def test_parse_options_returns_empty_dict_when_no_options():
+    """_parse_options returns empty dict when fn has no __lambkin_options__."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert result == {
+        "dry_run": defaults.DRY_RUN,
+        "show_options": False,
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
+        "show_variants": False,
+        "variants": None,
+        "no_cache": False,
+    }
+
+
+def test_parse_options_returns_defaults_when_no_args():
+    """_parse_options returns default values when no CLI args are provided."""
+
+    @option("--clock-rate", default=100.0)
+    @option("--sensor-topic", default="/scan")
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert result == {
+        "dry_run": defaults.DRY_RUN,
+        "show_options": False,
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
+        "show_variants": False,
+        "variants": None,
+        "no_cache": False,
+        "clock_rate": 100.0,
+        "sensor_topic": "/scan",
+    }
+
+
+def test_parse_options_returns_cli_values_when_provided():
+    """_parse_options returns CLI values when args are provided."""
+
+    @option("--clock-rate", default=100.0)
+    @option("--sensor-topic", default="/scan")
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--clock-rate", "50.0"])
+    assert result == {
+        "dry_run": defaults.DRY_RUN,
+        "show_options": False,
+        "log_output": defaults.LOG_OUTPUT,
+        "log_level": defaults.LOG_LEVEL,
+        "show_variants": False,
+        "variants": None,
+        "no_cache": False,
+        "clock_rate": 50.0,
+        "sensor_topic": "/scan",
+    }
+
+
+def test_benchmark_preserves_metadata(variants, tmp_path):
+    """@benchmark preserves the decorated function's name and docstring."""
+
+    @benchmark(variants=variants, num_iterations=1)
+    def my_cool_benchmark(ctx):
+        """Standard docstring."""
+        pass
+
+    assert my_cool_benchmark.__name__ == "my_cool_benchmark"
+    assert my_cool_benchmark.__doc__ == "Standard docstring."
+
+
+def test_benchmark_loops_over_variants_and_iterations(variants, tmp_path):
+    """Benchmark calls fn once per (variant, iteration) pair."""
+    calls = []
+
+    @benchmark(variants=variants, num_iterations=3)
+    def fn(ctx):
+        calls.append(ctx)
+
+    fn(args=[], base_dir=tmp_path)
+    assert len(calls) == 6
+
+
+def test_benchmark_variant_attributes_are_correct(variants, tmp_path):
+    """ctx.variant exposes the variant dict as attributes."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(base_dir=tmp_path)
+    assert contexts[0].variant.sensor_model == "beam"
+    assert contexts[0].variant.num_particles == 10
+    assert contexts[1].variant.sensor_model == "likelihood"
+    assert contexts[1].variant.num_particles == 100
+
+
+def test_benchmark_options_defaults_injected(variants, tmp_path):
+    """Default option values are injected into ctx.options."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    @option("--clock-rate", default=100.0)
+    @option("--sensor-topic", default="/scan")
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(base_dir=tmp_path)
+    assert contexts[0].options.clock_rate == 100.0
+    assert contexts[0].options.sensor_topic == "/scan"
+
+
+def test_benchmark_options_injected_via_args(variants, tmp_path):
+    """CLI args passed explicitly to wrapper() override decorator defaults."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    @option("--clock-rate", default=100.0)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(args=["--clock-rate", "50.0"], base_dir=tmp_path)
+    assert contexts[0].options.clock_rate == 50.0
+
+
+def test_benchmark_source_path_points_to_benchmark_script(variants, tmp_path):
+    """Source.path points to the file where the benchmark function is defined."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(base_dir=tmp_path)
+    assert contexts[0].source.path == Path(__file__)
+
+
+def test_benchmark_default_base_dir_uses_source_path(variants, tmp_path):
+    """When base_dir=None, output is resolved relative to the source path."""
+    contexts = []
+    fake_script = tmp_path / "my_benchmark.py"
+    fake_script.touch()
+    fake_source = Source(path=fake_script)
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    with patch("lambkin.core.decorators.benchmark.Source", return_value=fake_source):
+        fn()
+
+    assert contexts[0].paths.base_dir == tmp_path / defaults.BENCHMARKS_DIRNAME
+    assert contexts[0].source.path == fake_script
+
+
+def test_benchmark_empty_variants_raises_error(tmp_path):
+    """Calling a benchmark with an empty variants list raises an exception."""
+    expected_message = (
+        "You have provided an empty variants list; therefore, no "
+        "benchmarking iterations will be executed."
+    )
+
+    with pytest.raises(ValueError, match=expected_message):
+
+        @benchmark(variants=[], num_iterations=1)
+        def fn(ctx):
+            pass
+
+
+def test_parse_options_includes_dry_run_by_default():
+    """_parse_options always includes dry_run even when no user options are declared."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert "dry_run" in result
+    assert result["dry_run"] is defaults.DRY_RUN
+
+
+def test_parse_options_dry_run_can_be_set_via_cli():
+    """_parse_options returns dry_run=True when --dry-run is passed."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--dry-run"])
+    assert result["dry_run"] is True
+
+
+def test_show_options_no_options_registered(capsys):
+    """No @lambkin.option shows a 'no options' message."""
+
+    @benchmark(variants=[{}], num_iterations=1)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit) as exc:
+        fn(args=["--show-options"])
+
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "No options registered in this script." in captured.out
+
+
+def test_show_options_displays_registered_options(capsys):
+    """@lambkin.option entries are shown with name and default."""
+
+    @benchmark(variants=[{}], num_iterations=1)
+    @option("--clock-rate", default=100.0)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit) as exc:
+        fn(args=["--show-options"])
+
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "--clock-rate" in captured.out
+    assert "100.0" in captured.out
+
+
+def test_parse_options_respects_log_level():
+    """_parse_options returns the correct log_level when provided."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, ["--log-level", "debug"])
+    assert result["log_level"] == "debug"
+
+
+def test_parse_options_log_level_has_a_default():
+    """_parse_options returns a default log_level when not provided."""
+
+    def fn(ctx):
+        pass
+
+    result = _parse_options(fn, [])
+    assert "log_level" in result
+    assert result["log_level"] == defaults.LOG_LEVEL
+
+
+def test_benchmark_writes_variants_yaml(variants, tmp_path):
+    """Benchmark writes a variants.yaml file mapping var_N to variant dicts."""
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        pass
+
+    fn(base_dir=tmp_path)
+
+    variants_file = tmp_path / "variants.yaml"
+    assert variants_file.exists()
+
+    content = yaml.safe_load(variants_file.read_text())
+    expected = {f"var_{i + 1}": variant for i, variant in enumerate(variants)}
+    assert content == expected
+
+
+@pytest.mark.parametrize(
+    "input,max_value,expected",
+    [
+        ("3", None, {3}),
+        ("1,3,5", None, {1, 3, 5}),
+        ("2:5", None, {2, 3, 4, 5}),
+        ("1:3,5", None, {1, 2, 3, 5}),
+        ("3", 3, {3}),
+    ],
+)
+def test_parse_index_list_valid(input, max_value, expected):
+    """_parse_index_list correctly parses valid inputs."""
+    assert _parse_index_list(input, "variant", max_value=max_value) == expected
+
+
+@pytest.mark.parametrize(
+    "raw,max_value",
+    [
+        ("0", None),
+        ("-1", None),
+        ("abc", None),
+        ("5:2", None),
+        ("5", 3),
+        ("2:5", 4),
+    ],
+)
+def test_parse_index_list_invalid(raw, max_value):
+    """_parse_index_list raises BadParameter for invalid inputs."""
+    with pytest.raises(click.exceptions.BadParameter):
+        _parse_index_list(raw, "variant", max_value=max_value)
+
+
+def test_show_variants_exits_with_zero(capsys):
+    """--show-variants exits with code 0."""
+
+    @benchmark(variants=[{"a": 1}], num_iterations=1)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit) as exc:
+        fn(args=["--show-variants"])
+
+    assert exc.value.code == 0
+
+
+@pytest.mark.parametrize(
+    "variants,expected_output",
+    [
+        (
+            [{"sensor_model": "beam", "num_particles": 10}],
+            ["[1]", "sensor_model=beam", "num_particles=10"],
+        ),
+        (
+            [{"sensor_model": "beam"}, {"sensor_model": "likelihood"}],
+            ["[1]", "[2]", "sensor_model=beam", "sensor_model=likelihood"],
+        ),
+    ],
+)
+def test_show_variants_output(capsys, variants, expected_output):
+    """--show-variants prints each variant's number and key=value pairs."""
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        pass
+
+    with pytest.raises(SystemExit):
+        fn(args=["--show-variants"])
+
+    captured = capsys.readouterr()
+    for expected in expected_output:
+        assert expected in captured.out
+
+
+def test_benchmark_variants_flag_filters_runs(variants, tmp_path):
+    """--variants only runs the selected variants."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(args=["--variants", "1"], base_dir=tmp_path)
+    assert len(contexts) == 1
+    assert contexts[0].variant.sensor_model == variants[0]["sensor_model"]
+    assert contexts[0].variant.num_particles == variants[0]["num_particles"]
+
+
+def test_benchmark_variants_flag_preserves_folder_numbering(variants, tmp_path):
+    """--variants keeps var_N folder names stable relative to the full sweep."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(args=["--variants", "2"], base_dir=tmp_path)
+    assert contexts[0].paths.variant_dir.name == "var_2"
+
+
+def test_benchmark_skips_completed_iterations_on_rerun(variants, tmp_path):
+    """Benchmark does not call fn for iterations already completed."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append(ctx)
+
+    fn(base_dir=tmp_path)
+    assert len(contexts) == len(variants)
+    assert all(not ctx.skipped for ctx in contexts)
+
+    contexts.clear()
+    fn(base_dir=tmp_path)
+    assert len(contexts) == 0
+
+
+def test_benchmark_no_cache_forces_full_rerun(variants, tmp_path):
+    """--no-cache reruns all iterations even if already completed."""
+    contexts = []
+
+    @benchmark(variants=variants, num_iterations=1)
+    def fn(ctx):
+        contexts.append((ctx.variant_index, ctx.iteration))
+
+    fn(base_dir=tmp_path)
+    assert len(contexts) == len(variants)
+
+    contexts.clear()
+    fn(args=["--no-cache"], base_dir=tmp_path)
+    assert len(contexts) == len(variants)
+
+
+def test_benchmark_scoped_hook_called_once_before_loop(variants, tmp_path):
+    """Benchmark-scoped input hooks are resolved once before any variant runs."""
+    call_count = 0
+    seen_inputs = []
+
+    @benchmark(variants=variants, num_iterations=2)
+    def fn(ctx):
+        seen_inputs.append(ctx.inputs.shared)
+
+    @fn.input(scope="benchmark")
+    def shared(ctx):
+        nonlocal call_count
+        call_count += 1
+        return "shared.mcap"
+
+    fn(base_dir=tmp_path)
+
+    # Hook called exactly once regardless of variants and iterations
+    assert call_count == 1
+
+    # All iterations see the same benchmark-scoped input
+    assert all(v == "shared.mcap" for v in seen_inputs)
+    assert len(seen_inputs) == len(variants) * 2
+
+
+def test_benchmark_variant_scoped_hook_called_once_per_variant(variants, tmp_path):
+    """Variant-scoped input hooks are resolved once per variant."""
+    call_count = 0
+
+    @benchmark(variants=variants, num_iterations=3)
+    def fn(ctx):
+        pass
+
+    @fn.input(scope="variant")
+    def dataset(ctx):
+        nonlocal call_count
+        call_count += 1
+        return f"{ctx.variant.sensor_model}.mcap"
+
+    fn(base_dir=tmp_path)
+    assert call_count == len(variants)
+
+
+def test_benchmark_iteration_scoped_hook_not_called_on_cache_hit(tmp_path):
+    """Iteration-scoped hooks are not resolved when iteration is a cache hit."""
+    call_count = 0
+
+    @benchmark(variants=[{"x": 1}], num_iterations=1)
+    def fn(ctx):
+        pass
+
+    @fn.input(scope="iteration")
+    def seed(ctx):
+        nonlocal call_count
+        call_count += 1
+        return f"seed_{ctx.iteration}"
+
+    # First run — cache miss, hook is called
+    fn(base_dir=tmp_path)
+    assert call_count == 1
+
+    # Second run — cache hit, iteration-scoped hook not called
+    call_count = 0
+    fn(base_dir=tmp_path)
+    assert call_count == 0
+
+
+def test_benchmark_partial_restart_only_reruns_failed_iterations(tmp_path):
+    """Only failed iterations rerun on a partial restart."""
+    calls = []
+    should_fail = [True]
+
+    @benchmark(variants=[{"x": 1}, {"x": 2}], num_iterations=1)
+    def fn(ctx):
+        calls.append(ctx.variant_index)
+        if ctx.variant_index == 1 and should_fail[0]:
+            raise RuntimeError("simulated failure")
+
+    with pytest.raises(RuntimeError):
+        fn(base_dir=tmp_path)
+
+    assert calls == [0, 1]
+
+    calls.clear()
+    should_fail[0] = False
+    fn(base_dir=tmp_path)
+    assert calls == [1]

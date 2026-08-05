@@ -1,0 +1,44 @@
+services:
+
+  lambkin_dev:
+    build:
+      context: ../../..
+      dockerfile: examples/beluga/docker/Dockerfile
+      target: development
+    image: lambkin_ros_dev:jazzy
+    container_name: lambkin_developer
+    network_mode: "host"
+    privileged: true
+    stdin_open: true
+    tty: true
+    profiles: ["development"]
+    volumes:
+      - ../../..:/ws
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # optionally override datasets:
+      # - ../datasets:/data/datasets:ro
+      # - ../maps:/data/maps:ro
+      # - ../ground_truth:/data/ground_truth:ro
+      # ── Output (benchmark results persisted on host) ──────────
+      - ../results:/ws/examples/beluga/results
+
+  lambkin_prod:
+    build:
+      context: ../../..
+      dockerfile: examples/beluga/docker/Dockerfile
+      target: production
+    image: lambkin_ros:jazzy
+    container_name: lambkin_production
+    network_mode: "host"
+    privileged: true
+    stdin_open: true
+    tty: true
+    profiles: ["production"]
+    volumes:
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # optionally override datasets:
+      # - ../datasets:/data/datasets:ro
+      # - ../maps:/data/maps:ro
+      # - ../ground_truth:/data/ground_truth:ro
+      # ── Output (benchmark results persisted on host) ──────────
+      - ../results:/ws/examples/beluga/results
