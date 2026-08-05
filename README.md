@@ -12,6 +12,8 @@
 
 LAMBKIN is a Python SDK for building SLAM evaluation pipelines that are reproducible and structured by design.
 
+> **Notice**: This is the second iteration of this software. The first version of LAMBKIN has now been deprecated and is no longer maintained, but the code can still be found in the `lambkin-classic` branch in this repository.
+
 ## Philosophy
 
 Most benchmarking systems are built around a specific algorithm, dataset format, or middleware stack. Adapting them to a new setup means working around assumptions that were never designed to be removed. Reproducing a run means knowing which constants changed and when. Adding a new algorithm or dataset variant means touching plumbing that was never meant to be touched.
@@ -45,7 +47,7 @@ To understand how LAMBKIN works under the hood, see the [SDK documentation](src/
 ## Installation
 
 ```bash
-git clone -b next-gen git@github.com:Ekumen-OS/lambkin.git
+git clone git@github.com:Ekumen-OS/lambkin.git
 cd lambkin
 uv tool install .
 ```

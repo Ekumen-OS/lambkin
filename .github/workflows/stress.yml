@@ -2,7 +2,7 @@ name: stress
 
 on:
   push:
-    branches: [ next-gen ]
+    branches: [ main ]
 
 jobs:
   stress:
