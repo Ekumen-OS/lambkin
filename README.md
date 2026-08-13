@@ -188,7 +188,8 @@ def nominal(ctx):
 lambkin/
 ├── src/lambkin/        # The SDK package — see src/lambkin/README.md
 ├── examples/           # Self-contained worked examples
-│   └── beluga/         # Beluga AMCL example
+│   ├── beluga/         # Beluga AMCL example
+│   └── ekf/            # robot_localization EKF odometry baseline
 ├── test/               # Unit and integration tests
 └── pyproject.toml
 ```
@@ -200,3 +201,4 @@ The [`examples/`](examples/) directory contains ready-to-run setups, each packag
 Current examples:
 
 * [examples/beluga/](examples/beluga/README.md) — Beluga AMCL localization, with a worked benchmark script and Docker setup.
+* [examples/ekf/](examples/ekf/README.md) — raw wheel odometry vs. a `robot_localization` EKF fusion, scored with `evo_rpe`.
