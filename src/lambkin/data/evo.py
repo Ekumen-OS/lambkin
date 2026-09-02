@@ -22,9 +22,8 @@ import logging
 from pathlib import Path
 from types import SimpleNamespace
 
-from evo.tools import file_interface  # type: ignore[import-untyped]
-
 from lambkin.data import access
+from lambkin.data.results import read_result
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ def series(source: Path | str | object, filename: str) -> list:
         if not result_path.exists():
             logger.warning("%s is missing", result_path)
             continue
-        result = file_interface.load_res_file(result_path)
+        result = read_result(result_path)
         results.append(
             SimpleNamespace(
                 iter_dir=entry.iter_dir,
@@ -106,7 +105,7 @@ def stats(source: Path | str | object, filename: str) -> list:
         if not result_path.exists():
             logger.warning("%s is missing", result_path)
             continue
-        result = file_interface.load_res_file(result_path)
+        result = read_result(result_path)
         results.append(
             SimpleNamespace(
                 iter_dir=entry.iter_dir,
