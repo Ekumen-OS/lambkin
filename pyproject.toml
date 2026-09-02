@@ -30,15 +30,20 @@ authors = [
 ]
 keywords = ["robotics", "benchmarking", "SLAM", "localization", "ROS 2"]
 dependencies = [
-    "evo>=1.34.3",
-    "pydantic>=2.0",
     "click>=8.3.0",
+    "numpy>=1.24",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
 ]
 
 [project.urls]
 Repository = "https://github.com/Ekumen-OS/lambkin"
 
 [dependency-groups]
+# Needed to run examples/, not by the SDK itself.
+example = [
+    "matplotlib>=3.7",
+]
 dev = [
     "ruff>=0.15.0",
     "mypy>=1.19.1",

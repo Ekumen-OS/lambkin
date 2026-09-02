@@ -44,6 +44,13 @@ To understand how LAMBKIN works under the hood, see the [SDK documentation](src/
 - [`uv`](https://github.com/astral-sh/uv)
 - Linux with [cgroups v2](https://docs.kernel.org/admin-guide/cgroup-v2.html)
 
+Depending on what your benchmark does, you may also want:
+
+- [`evo`](https://github.com/MichaelGrupp/evo), to evaluate trajectories with `evo_ape` /
+  `evo_rpe`. LAMBKIN runs it as an external command rather than bundling it, so install it
+  yourself with `uv tool install evo`.
+- `matplotlib`, to plot results as the examples below do.
+
 ## Installation
 
 ```bash

@@ -18,6 +18,7 @@ _Put an `x` in the boxes that apply. This is simply a reminder of what we will r
 - [ ] Lint and unit tests (if any) pass locally with my changes
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] I have added necessary documentation (if appropriate)
+- [ ] I have not added a copyleft dependency to `pyproject.toml`
 
 ### Additional comments
 
