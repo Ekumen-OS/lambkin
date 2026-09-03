@@ -26,3 +26,8 @@ examples/beluga/results/
 examples/beluga/rosbags/
 examples/beluga/maps/
 examples/beluga/groundtruth/
+
+# Nix
+result
+result-*
+.direnv/

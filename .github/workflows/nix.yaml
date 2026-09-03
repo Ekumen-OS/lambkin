@@ -1,0 +1,29 @@
+name: nix
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  nix:
+    runs-on: ubuntu-latest
+    # Runs the same harness contributors run locally. The sandbox is re-enabled
+    # here because GitHub runners allow privileged containers.
+    env:
+      LAMBKIN_NIX_SANDBOX: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the Nix harness image
+        run: ./nix/docker/run.sh image
+
+      - name: Check that flake.lock is complete and current
+        run: ./nix/docker/run.sh flake lock --no-update-lock-file
+
+      - name: Check the flake
+        run: ./nix/docker/run.sh flake check --all-systems --print-build-logs
+
+      - name: Build and smoke-test both packages
+        run: ./nix/docker/run.sh smoke
