@@ -44,6 +44,16 @@ To understand how LAMBKIN works under the hood, see the [SDK documentation](src/
 - [`uv`](https://github.com/astral-sh/uv)
 - Linux with [cgroups v2](https://docs.kernel.org/admin-guide/cgroup-v2.html)
 
+Depending on what your benchmark does, you may also want:
+
+- [`evo`](https://github.com/MichaelGrupp/evo), to evaluate trajectories with `evo_ape` /
+  `evo_rpe`. LAMBKIN runs it as an external command rather than bundling it, so install it
+  yourself with `uv tool install evo` (or `nix profile install github:Ekumen-OS/lambkin#evo`).
+- `matplotlib`, to plot results as the examples below do.
+
+If you use [Nix](https://nixos.org), you can skip this list — the flake pins everything.
+See [Installation](#installation).
+
 ## Installation
 
 ```bash
@@ -61,6 +71,31 @@ uv sync
 ```
 
 Then run benchmarks via `uv run lambkin my_benchmark.py`.
+
+Alternatively, with [Nix](https://nixos.org) — no clone required:
+
+```bash
+nix profile install github:Ekumen-OS/lambkin
+nix run github:Ekumen-OS/lambkin -- my_benchmark.py
+```
+
+`evo` is a separate output, so LAMBKIN's Apache-2.0 closure never contains GPL-3 code. A
+fresh install has no `evo_*` on `PATH`, and a benchmark that calls one fails with `Command
+not found`, so install it when you need it:
+
+```bash
+nix profile install github:Ekumen-OS/lambkin#evo
+```
+
+Under Nix the benchmark script runs in a closed Python environment, so anything it imports
+beyond LAMBKIN has to be built in:
+
+```bash
+nix profile install --expr '(builtins.getFlake "github:Ekumen-OS/lambkin").packages.x86_64-linux.lambkin.override { extraPythonPackages = ps: [ ps.matplotlib ]; }'
+```
+
+You do not need Nix installed to build or verify these packages; see
+[`nix/README.md`](nix/README.md) for the containerised harness.
 
 ## Usage
 
@@ -189,7 +224,10 @@ lambkin/
 ├── src/lambkin/        # The SDK package — see src/lambkin/README.md
 ├── examples/           # Self-contained worked examples
 │   └── beluga/         # Beluga AMCL example
+├── nix/                # Nix packaging — see nix/README.md
+│   └── docker/         # Containerised Nix build harness
 ├── test/               # Unit and integration tests
+├── flake.nix
 └── pyproject.toml
 ```
 

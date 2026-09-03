@@ -20,16 +20,14 @@ import numpy as np
 import pytest
 import yaml
 
-from lambkin.data import evo
+from lambkin.data import evo, results
 
 
 def make_ape_zip(path: Path) -> Path:
     """Write a minimal evo_ape result zip file to ``path``.
 
-    Builds a ``Result`` object with realistic ``error_array`` and
-    ``seconds_from_start`` arrays and saves it using evo's own
-    ``file_interface``, producing an artifact identical to what
-    ``evo_ape`` writes during a real benchmark run.
+    Holds the same arrays and statistics ``evo_ape`` writes for a real run.
+    That this matches genuine evo output is covered by ``test_results.py``.
 
     Args:
         path: Destination path for the zip file (must not exist).
@@ -37,23 +35,25 @@ def make_ape_zip(path: Path) -> Path:
     Returns:
         The path to the written zip file.
     """
-    from evo.core.result import Result
-    from evo.tools import file_interface
-
-    result = Result()
-    result.add_np_array("error_array", np.array([0.05, 0.10, 0.07, 0.12, 0.04]))
-    result.add_np_array("seconds_from_start", np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
-    result.add_np_array("distances_from_start", np.array([0.0, 0.5, 1.0, 1.5, 2.0]))
-    result.add_stats({
-        "rmse": 0.08,
-        "mean": 0.076,
-        "median": 0.07,
-        "std": 0.03,
-        "min": 0.04,
-        "max": 0.12,
-        "sse": 0.032,
-    })
-    file_interface.save_res_file(path, result)
+    results.write_result(
+        path,
+        results.Result(
+            stats={
+                "rmse": 0.08,
+                "mean": 0.076,
+                "median": 0.07,
+                "std": 0.03,
+                "min": 0.04,
+                "max": 0.12,
+                "sse": 0.032,
+            },
+            np_arrays={
+                "error_array": np.array([0.05, 0.10, 0.07, 0.12, 0.04]),
+                "seconds_from_start": np.array([0.0, 1.0, 2.0, 3.0, 4.0]),
+                "distances_from_start": np.array([0.0, 0.5, 1.0, 1.5, 2.0]),
+            },
+        ),
+    )
     return path
 
 

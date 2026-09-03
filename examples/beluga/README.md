@@ -9,6 +9,7 @@ A worked example of a LAMBKIN benchmark pipeline applied to [Beluga AMCL](https:
   [Podman](https://podman.io/getting-started/installation) and
   `podman-compose` (see note below) — only needed for [running in a container](#run-in-a-container).
 - Reference data is bundled in [`ekumenlabs/lambkin-beluga-datasets`](https://hub.docker.com/r/ekumenlabs/lambkin-beluga-datasets) and copied into the image at build time.
+- [`evo`](https://github.com/MichaelGrupp/evo) and `matplotlib`. Neither is a LAMBKIN dependency, so the image installs both explicitly; outside the container, install them yourself (`uv tool install evo`).
 
 | Artifact | Default location in image | Description |
 | --- | --- | --- |
