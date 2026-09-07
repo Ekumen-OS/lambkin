@@ -31,6 +31,12 @@ COPY src/ /tmp/lambkin/src/
 RUN uv pip install /tmp/lambkin --system --break-system-packages \
     && rm -rf /tmp/lambkin
 
+# Needed by the example, not by LAMBKIN itself. evo goes in as an isolated tool
+# so its pins can't collide with the ROS system packages.
+RUN uv pip install matplotlib --system --break-system-packages
+RUN UV_TOOL_BIN_DIR=/usr/local/bin uv tool install "evo>=1.34.3" \
+    && evo_ape --help > /dev/null
+
 COPY examples/beluga /ws/examples/beluga
 
 RUN apt-get update \
