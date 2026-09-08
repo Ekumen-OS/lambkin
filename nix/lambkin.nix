@@ -42,7 +42,8 @@ let
 in
 buildPythonPackage {
   pname = "lambkin";
-  version = "0.0.0";
+  # Single source of truth; the wheel carries this same number.
+  version = (lib.importTOML ../pyproject.toml).project.version;
   pyproject = true;
 
   disabled = pythonOlder "3.10";

@@ -79,9 +79,9 @@ nix profile install github:Ekumen-OS/lambkin
 nix run github:Ekumen-OS/lambkin -- my_benchmark.py
 ```
 
-`evo` is a separate output, so LAMBKIN's Apache-2.0 closure never contains GPL-3 code. A
-fresh install has no `evo_*` on `PATH`, and a benchmark that calls one fails with `Command
-not found`, so install it when you need it:
+`evo` is a separate output. A fresh install has no `evo_*` on `PATH` thus a benchmark that calls one
+fails with `Command not found`.
+Install it when you need it:
 
 ```bash
 nix profile install github:Ekumen-OS/lambkin#evo
