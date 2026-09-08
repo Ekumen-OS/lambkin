@@ -22,7 +22,8 @@ build/
 .mypy_cache
 
 # Benchmark inputs/outputs (mounted from docker-compose)
-examples/beluga/results/
+examples/**/results/
+examples/**/datasets/
 examples/beluga/rosbags/
 examples/beluga/maps/
 examples/beluga/groundtruth/
