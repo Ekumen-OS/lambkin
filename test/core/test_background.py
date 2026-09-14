@@ -18,17 +18,28 @@ import signal
 import time
 
 import pytest
+import yaml
 
-from lambkin.common import signals
+from lambkin.common import defaults, signals
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
+from lambkin.core.process.resources import ResourceSampler
 from lambkin.core.shell.proxy import ShellProxy
 
 COOPERATIVE = (
     "import signal, sys, time; "
     "signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0)); "
     "time.sleep(30)"
+)
+
+# Allocates a few MiB and burns CPU, so a measurement of it is non-zero.
+BURN = (
+    "import signal, sys, time; "
+    "signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0)); "
+    "blob = bytearray(8 * 1024 * 1024); "
+    "end = time.monotonic() + 30; "
+    "\nwhile time.monotonic() < end: pass"
 )
 
 
@@ -237,3 +248,112 @@ def test_background_process_sets_sigusr1_pending_on_unexpected_death(tmp_path):
     finally:
         signal.signal(signal.SIGUSR1, previous)
         signals.sigusr1_pending.clear()
+
+
+def test_background_measure_defaults_to_empty(dry_shell):
+    """Measure is empty unless asked for."""
+    assert background(dry_shell.sleep, "10")._measure == ()
+
+
+def test_background_measure_accepts_a_string(dry_shell):
+    """A single process name is normalized to a one-element tuple."""
+    bp = background(dry_shell.sleep, "10", measure="cartographer_node")
+    assert bp._measure == ("cartographer_node",)
+
+
+def test_background_measure_accepts_a_sequence(dry_shell):
+    """A sequence of process names is preserved in order."""
+    bp = background(dry_shell.sleep, "10", measure=["node_a", "node_b"])
+    assert bp._measure == ("node_a", "node_b")
+
+
+def test_background_measure_rejects_an_empty_name(dry_shell):
+    """A blank process name is rejected."""
+    with pytest.raises(ValueError):
+        background(dry_shell.sleep, "10", measure="  ")
+
+
+def test_background_measure_rejects_a_non_string(dry_shell):
+    """A non-string process name is rejected."""
+    with pytest.raises(TypeError):
+        background(dry_shell.sleep, "10", measure=[42])
+
+
+def test_background_measure_is_not_passed_to_the_child_argv(dry_shell):
+    """Measure configures the SDK and never reaches the command line."""
+    bp = background(dry_shell.sleep, "10", measure="cartographer_node")
+    assert bp._argv == ["sleep", "10"]
+    assert "--measure" not in bp._argv
+    assert "cartographer_node" not in bp._argv
+
+
+def test_background_measure_interval_is_not_passed_to_the_child_argv(dry_shell):
+    """measure_interval configures the SDK and never reaches the command line."""
+    bp = background(dry_shell.sleep, "10", measure="node", measure_interval=0.1)
+    assert bp._argv == ["sleep", "10"]
+    assert "--measure-interval" not in bp._argv
+
+
+def test_background_measure_interval_defaults_to_the_sdk_default(dry_shell):
+    """An unset measure_interval falls back to defaults.MEASURE_INTERVAL."""
+    bp = background(dry_shell.sleep, "10", measure="node")
+    assert bp._measure_interval == defaults.MEASURE_INTERVAL
+
+
+def test_background_dry_run_measure_writes_no_artifacts(dry_shell, tmp_path):
+    """In dry-run mode, measurement produces no files."""
+    with background(dry_shell.sleep, "10", measure="sleep"):
+        pass
+    assert not list(tmp_path.glob("*.resources.*"))
+
+
+def test_background_measures_a_real_process(tmp_path):
+    """A measured background process gets a populated summary and series."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    with background(
+        shell.python3, "-c", BURN, measure="python3", measure_interval=0.05
+    ):
+        time.sleep(0.8)
+
+    summary = yaml.safe_load((iteration_dir / "python3.resources.yaml").read_text())
+    assert summary["pid_found"] is True
+    assert summary["cpu_total_s"] > 0
+    assert summary["peak_rss_mib"] > 0
+    rows = (iteration_dir / "python3.resources.csv").read_text().splitlines()
+    assert len(rows) > 1
+
+
+def test_background_measure_missing_process_writes_a_summary(tmp_path):
+    """A name that never runs still produces a summary saying so."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    with background(shell.sleep, "30", measure="definitely_not_running"):
+        time.sleep(0.2)
+
+    path = iteration_dir / "definitely_not_running.resources.yaml"
+    assert yaml.safe_load(path.read_text())["pid_found"] is False
+
+
+def test_background_cgroup_removed_when_sampler_fails(tmp_path, monkeypatch):
+    """A failing sampler propagates but still leaves the cgroup cleaned up."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    def _boom(self):
+        raise RuntimeError("sampler exploded")
+
+    monkeypatch.setattr(ResourceSampler, "stop", _boom)
+
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    with pytest.raises(RuntimeError, match="sampler exploded"):
+        with background(shell.sleep, "30", measure="sleep") as bp:
+            child_cgroup = bp._cgroup
+    assert not child_cgroup.exists()

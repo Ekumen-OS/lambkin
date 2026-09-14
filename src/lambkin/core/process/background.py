@@ -27,12 +27,14 @@ import shlex
 import signal
 import subprocess
 import threading
+from collections.abc import Sequence
 from pathlib import Path
 from types import TracebackType
 from typing import IO, Any
 
 from lambkin.common import defaults, exceptions, signals
 from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
+from lambkin.core.process.resources import ResourceSampler
 from lambkin.core.shell.proxy import CommandProxy
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,8 @@ class BackgroundProcess:
         env: dict[str, str] | None = None,
         stdout: IO[str] | None = None,
         stderr: IO[str] | None = None,
+        measure: Sequence[str] = (),
+        measure_interval: float | None = None,
     ) -> None:
         """Initialize the BackgroundProcess.
 
@@ -71,6 +75,11 @@ class BackgroundProcess:
                 inherits from the parent.
             stdout: stdout stream for the process. If None, inherits from the parent.
             stderr: stderr stream for the process. If None, inherits from the parent.
+            measure (Sequence[str]): Names of processes to measure resource usage
+                for, matched against the basename of argv[0]. Empty disables
+                measurement.
+            measure_interval (float | None): Seconds between resource samples.
+                If None, uses defaults.MEASURE_INTERVAL.
         """
         self._argv = argv
         self._iteration_cgroup = iteration_cgroup
@@ -84,6 +93,11 @@ class BackgroundProcess:
         self._env = env
         self._stdout = stdout
         self._stderr = stderr
+        self._measure = tuple(measure)
+        self._measure_interval = (
+            defaults.MEASURE_INTERVAL if measure_interval is None else measure_interval
+        )
+        self._sampler: ResourceSampler | None = None
 
     def _enter_cgroup(self) -> None:
         """Write the current PID to cgroup.procs.
@@ -139,6 +153,17 @@ class BackgroundProcess:
             self._monitor.start()
         finally:
             signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
+
+        # Started after the death monitor, so a sampler problem can never
+        # leave the process running unmonitored.
+        if self._measure:
+            self._sampler = ResourceSampler(
+                names=self._measure,
+                cgroup=self._cgroup,
+                output_dir=self._cwd or Path.cwd(),
+                interval=self._measure_interval,
+            )
+            self._sampler.start()
         return self
 
     def __exit__(
@@ -167,12 +192,18 @@ class BackgroundProcess:
         self._exiting.set()
 
         assert self._cgroup is not None
-        kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
+        try:
+            # While the process is still alive: once it is signalled its /proc
+            # entry is gone, taking VmHWM and the CPU counters with it.
+            if self._sampler is not None:
+                self._sampler.stop()
+        finally:
+            kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
 
-        if self._monitor is not None:
-            self._monitor.join()
+            if self._monitor is not None:
+                self._monitor.join()
 
-        remove_cgroup(self._cgroup)
+            remove_cgroup(self._cgroup)
 
         assert self._proc is not None
         if self._died_unexpectedly and exc_type in (
@@ -185,25 +216,64 @@ class BackgroundProcess:
             )
 
 
+def _normalize_measure(measure: str | Sequence[str] | None) -> tuple[str, ...]:
+    """Normalize the ``measure`` argument to a tuple of process names.
+
+    Args:
+        measure: A single process name, a sequence of names, or None.
+
+    Returns:
+        The process names, empty if measurement was not requested.
+
+    Raises:
+        TypeError: If measure is neither a string nor a sequence of strings.
+        ValueError: If any process name is empty or blank.
+    """
+    if measure is None:
+        return ()
+    names = (measure,) if isinstance(measure, str) else tuple(measure)
+    for name in names:
+        if not isinstance(name, str):
+            raise TypeError(
+                f"measure must be a string or a sequence of strings, got {name!r}."
+            )
+        if not name.strip():
+            raise ValueError("measure process names must not be empty.")
+    return names
+
+
 def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProcess:
     """Create a BackgroundProcess context manager from a command proxy.
 
     Args:
         proxy (CommandProxy): A command proxy representing the command to run.
         *args: Positional arguments to append to the command.
-        **kwargs: Keyword arguments to convert to --flag value pairs.
+        **kwargs: Keyword arguments to convert to --flag value pairs. The SDK
+            consumes ``log_output``, ``measure`` and ``measure_interval``
+            itself; they never reach the command. ``measure`` is validated by
+            :func:`_normalize_measure`, which rejects non-string names with a
+            TypeError.
 
     Returns:
         BackgroundProcess: A context manager that runs the command in the background.
 
     Raises:
-        ValueError: If the proxy has no cgroup set.
+        ValueError: If the proxy has no cgroup set, or a measure name is blank.
 
     Example:
         with background(ctx.shell.ros2.bag.record, "-O", "output.mcap", "-a"):
         ...
+
+        with background(
+            ctx.shell.ros2.launch, "pkg", "slam.launch.py", measure="slam_node"
+        ):
+        ...
     """
     per_call_log_output = kwargs.pop("log_output", None)
+    # Popped before build_argv, or they would be forwarded to the command as
+    # --measure flags.
+    measure = _normalize_measure(kwargs.pop("measure", None))
+    measure_interval = kwargs.pop("measure_interval", None)
     argv = proxy.build_argv(*args, **kwargs)
     env = proxy.build_env()
     stdout, stderr = proxy.open_streams(per_call_log_output)
@@ -218,4 +288,6 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
         env=env,
         stdout=stdout,
         stderr=stderr,
+        measure=measure,
+        measure_interval=measure_interval,
     )
