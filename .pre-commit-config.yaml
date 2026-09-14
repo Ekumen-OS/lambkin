@@ -15,8 +15,12 @@ repos:
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
       - id: check-xml
+      # Fixtures are verbatim tool output; rewriting them would stop them
+      # representing what the tool actually emits.
       - id: end-of-file-fixer
+        exclude: ^test/core/fixtures/
       - id: trailing-whitespace
+        exclude: ^test/core/fixtures/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.0

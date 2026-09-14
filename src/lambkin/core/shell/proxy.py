@@ -24,11 +24,20 @@ import logging
 import shlex
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 from lambkin.common import defaults, exceptions
 
 logger = logging.getLogger(__name__)
+
+# Keyword arguments the SDK consumes itself. They configure how a command is
+# run, never what is passed to it, so build_argv strips them from the argv.
+_SDK_KWARGS: Final[frozenset[str]] = frozenset({
+    "log_output",
+    "measure",
+    "measure_interval",
+    "flamegraph",
+})
 
 
 class CommandError(Exception):
@@ -261,7 +270,8 @@ class CommandProxy:
         Returns:
             The complete argv list ready to pass to the operating system.
         """
-        kwargs.pop("log_output", None)
+        for name in _SDK_KWARGS:
+            kwargs.pop(name, None)
         extra: list[str] = []
         for arg in args:
             extra.append(str(arg))
@@ -294,6 +304,11 @@ class CommandProxy:
                 or if the executable is not found or not executable.
         """
         per_call_log_output = kwargs.pop("log_output", None)
+        if "measure" in kwargs:
+            logger.warning(
+                "measure= is only supported by background(); ignoring it for %s.",
+                self._log_name(),
+            )
         argv = self.build_argv(*args, **kwargs)
         if self._dry_run:
             logger.debug("[DRY RUN] %s", shlex.join(argv))

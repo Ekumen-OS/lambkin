@@ -52,6 +52,19 @@ def test_multiple_positional_args(dry_shell):
     assert result.args == ["ros2", "bag", "play", "my_bag", "--clock", "-r", "1.0"]
 
 
+def test_build_argv_strips_sdk_keywords(dry_shell):
+    """SDK keywords configure the run and never become command flags."""
+    argv = dry_shell.my_tool.build_argv(
+        "pos",
+        log_output="console",
+        measure="node",
+        measure_interval=0.1,
+        flamegraph=True,
+        real_flag="keep",
+    )
+    assert argv == ["my_tool", "pos", "--real-flag", "keep"]
+
+
 def test_kwarg_becomes_flag(dry_shell):
     """Keyword arguments are converted to --flag value pairs."""
     result = dry_shell.evo_ape.bag2("output.mcap", save_results="out.zip")
