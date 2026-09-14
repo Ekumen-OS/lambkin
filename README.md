@@ -30,6 +30,7 @@ A benchmark's output deserves the same discipline as its execution: a structured
 | **Iterations** | Run each variant across multiple iterations, giving results statistical significance instead of relying on a single noisy sample. |
 | **Scoped inputs** | Resolve data dependencies once at the benchmark, variant, or iteration level — not on every single run. |
 | **Process lifecycle** | Launch, supervise, and terminate external processes automatically across benchmark iterations, with cgroup-based cleanup. |
+| **Resource measurement** | Opt in to sampling CPU time, peak memory, and thread count for a named process inside an iteration, optionally with a `perf` flamegraph, written alongside its other artifacts. |
 | **Partial restarts** | Skip iterations that already completed successfully in a previous run, based on a hash of their inputs. |
 | **Dry-run validation** | Validate an entire benchmark's flow — variants, inputs, process calls — without executing a single command, via `--dry-run`. |
 | **Context passing** | Carry configuration, paths, and state through the pipeline without coupling stages to each other. |
