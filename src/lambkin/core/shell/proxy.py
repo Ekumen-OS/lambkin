@@ -36,6 +36,7 @@ _SDK_KWARGS: Final[frozenset[str]] = frozenset({
     "log_output",
     "measure",
     "measure_interval",
+    "flamegraph",
 })
 
 
