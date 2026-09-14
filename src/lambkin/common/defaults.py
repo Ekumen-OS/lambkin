@@ -39,3 +39,6 @@ LOG_OUTPUT: Final[str] = "file"
 
 # Default log level for lambkin SDK output.
 LOG_LEVEL: Final[str] = "info"
+
+# Sampling interval in seconds for per-process resource measurement.
+MEASURE_INTERVAL: Final[float] = 0.5
