@@ -62,6 +62,7 @@ class BackgroundProcess:
         stderr: IO[str] | None = None,
         measure: Sequence[str] = (),
         measure_interval: float | None = None,
+        flamegraph: bool = False,
     ) -> None:
         """Initialize the BackgroundProcess.
 
@@ -80,6 +81,8 @@ class BackgroundProcess:
                 measurement.
             measure_interval (float | None): Seconds between resource samples.
                 If None, uses defaults.MEASURE_INTERVAL.
+            flamegraph (bool): If True, also profile the measured processes with
+                perf and render a flamegraph SVG for each.
         """
         self._argv = argv
         self._iteration_cgroup = iteration_cgroup
@@ -97,6 +100,7 @@ class BackgroundProcess:
         self._measure_interval = (
             defaults.MEASURE_INTERVAL if measure_interval is None else measure_interval
         )
+        self._flamegraph = flamegraph
         self._sampler: ResourceSampler | None = None
 
     def _enter_cgroup(self) -> None:
@@ -162,6 +166,7 @@ class BackgroundProcess:
                 cgroup=self._cgroup,
                 output_dir=self._cwd or Path.cwd(),
                 interval=self._measure_interval,
+                flamegraph=self._flamegraph,
             )
             self._sampler.start()
         return self
@@ -274,6 +279,7 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
     # --measure flags.
     measure = _normalize_measure(kwargs.pop("measure", None))
     measure_interval = kwargs.pop("measure_interval", None)
+    flamegraph = bool(kwargs.pop("flamegraph", False))
     argv = proxy.build_argv(*args, **kwargs)
     env = proxy.build_env()
     stdout, stderr = proxy.open_streams(per_call_log_output)
@@ -290,4 +296,5 @@ def background(proxy: CommandProxy, *args: Any, **kwargs: Any) -> BackgroundProc
         stderr=stderr,
         measure=measure,
         measure_interval=measure_interval,
+        flamegraph=flamegraph,
     )

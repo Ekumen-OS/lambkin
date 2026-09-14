@@ -43,6 +43,7 @@ from typing import IO, Any, Final
 import yaml
 
 from lambkin.common import defaults
+from lambkin.core.process.flamegraph import PerfProfiler
 
 logger = logging.getLogger(__name__)
 
@@ -241,6 +242,7 @@ class _Target:
     exited_early: bool = False
     pid_reused: bool = False
     done: bool = False
+    profiler: PerfProfiler | None = None
     handle: IO[str] | None = None
     writer: Any = None
 
@@ -271,6 +273,7 @@ class ResourceSampler:
         output_dir: Path,
         interval: float = defaults.MEASURE_INTERVAL,
         proc_root: Path = Path("/proc"),
+        flamegraph: bool = False,
     ) -> None:
         """Initialize the sampler without starting it or touching the disk.
 
@@ -281,12 +284,16 @@ class ResourceSampler:
             interval: Seconds between samples. Affects only the resolution of
                 the time series; peak memory is exact at any interval.
             proc_root: Root of the proc filesystem. Overridden in tests.
+            flamegraph: If True, also profile each target with perf and render
+                a flamegraph. Requires perf on PATH; skipped with a warning if
+                it is missing.
         """
         self._targets: dict[str, _Target] = {name: _Target(name=name) for name in names}
         self._cgroup = cgroup
         self._output_dir = output_dir
         self._interval = interval
         self._proc_root = proc_root
+        self._flamegraph = flamegraph
         # Not `_stop`: threading.Thread defines a private _stop() that join()
         # calls internally, and shadowing it turns join() into
         # "TypeError: 'Event' object is not callable". This class owns a thread
@@ -326,6 +333,9 @@ class ResourceSampler:
             logger.exception("Final resource sample failed.")
         self._stop_event.set()
         self._thread.join(timeout=self._interval * 2.0 + 1.0)
+        for target in self._targets.values():
+            if target.profiler is not None:
+                target.profiler.stop()
         if self._thread.is_alive():
             logger.warning("Resource sampling thread did not stop in time.")
         self._close_series_files()
@@ -417,6 +427,9 @@ class ResourceSampler:
                 if found is None:
                     continue  # not started yet, or never will
                 target.pid, target.starttime = found
+                if self._flamegraph:
+                    target.profiler = PerfProfiler(target.name, self._output_dir)
+                    target.profiler.start(target.pid)
             self._sample_one(target, elapsed)
 
     def _sample_one(self, target: _Target, elapsed: float) -> None:

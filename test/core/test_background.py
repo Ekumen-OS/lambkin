@@ -300,6 +300,19 @@ def test_background_measure_interval_defaults_to_the_sdk_default(dry_shell):
     assert bp._measure_interval == defaults.MEASURE_INTERVAL
 
 
+def test_background_flamegraph_defaults_to_false(dry_shell):
+    """Flamegraph profiling is off unless asked for."""
+    assert background(dry_shell.sleep, "10")._flamegraph is False
+
+
+def test_background_flamegraph_is_not_passed_to_the_child_argv(dry_shell):
+    """Flamegraph configures the SDK and never reaches the command line."""
+    bp = background(dry_shell.sleep, "10", measure="sleep", flamegraph=True)
+    assert bp._argv == ["sleep", "10"]
+    assert "--flamegraph" not in bp._argv
+    assert bp._flamegraph is True
+
+
 def test_background_dry_run_measure_writes_no_artifacts(dry_shell, tmp_path):
     """In dry-run mode, measurement produces no files."""
     with background(dry_shell.sleep, "10", measure="sleep"):
