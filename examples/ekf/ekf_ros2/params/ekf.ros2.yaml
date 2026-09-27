@@ -1,0 +1,50 @@
+ekf_filter_node:
+  ros__parameters:
+    # Use the /clock topic recorded in the source bag instead of the wall
+    # clock, since the recording's timestamps are years in the past.
+    use_sim_time: true
+    # Rate, in Hz, at which the filter publishes its state estimate. Under
+    # use_sim_time this is a ceiling: actual rate is capped by how fast
+    # /clock advances (~40 Hz for the bundled dataset).
+    frequency: 50.0
+    # Assume the robot only moves in the horizontal plane.
+    two_d_mode: true
+    # Do not broadcast odom->base_link; the source bag's own recorded /tf
+    # is used for playback instead.
+    publish_tf: false
+    # The frame used as the parent for the filter's estimated pose.
+    map_frame: map
+    # The frame published by the odometry system being fused.
+    odom_frame: odom
+    # The frame of the robot base.
+    base_link_frame: base_footprint
+    # The frame in which the filter's output is expressed.
+    world_frame: odom
+
+    # Wheel odometry input topic.
+    odom0: /odom
+    # Fuse yaw and linear/angular velocity from odometry. Yaw comes from
+    # odom rather than the IMU because the IMU's orientation field is an
+    # unusable placeholder (see imu0_config below).
+    odom0_config: [false, false, false,
+                   false, false, true,
+                   true,  true,  false,
+                   false, false, true,
+                   false, false, false]
+    odom0_differential: false
+    odom0_relative: false
+    odom0_queue_size: 10
+
+    # IMU input topic.
+    imu0: /imu/data_raw_transformed
+    # Fuse only yaw rate: this IMU's orientation field is a constant
+    # placeholder with zero covariance, so fusing absolute roll/pitch/yaw
+    # would anchor heading to a bogus fixed value.
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 10

@@ -1,0 +1,46 @@
+services:
+
+  lambkin_dev:
+    build:
+      context: ../../..
+      dockerfile: examples/ekf/docker/Dockerfile
+      target: development
+      args:
+        DATASET_IMAGE: ${DATASET_IMAGE:-docker.io/ekumenlabs/lambkin-beluga-datasets:jazzy}
+    image: lambkin_ekf_dev:jazzy
+    container_name: lambkin_ekf_developer
+    network_mode: "host"
+    privileged: true
+    stdin_open: true
+    tty: true
+    profiles: ["development"]
+    volumes:
+      - ../../..:/ws
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # optionally override datasets:
+      # - ../datasets:/data/datasets:ro
+      # - ../ground_truth:/data/ground_truth:ro
+      # ── Output (benchmark results persisted on host) ──────────
+      - ../results:/ws/examples/ekf/results
+
+  lambkin_prod:
+    build:
+      context: ../../..
+      dockerfile: examples/ekf/docker/Dockerfile
+      target: production
+      args:
+        DATASET_IMAGE: ${DATASET_IMAGE:-docker.io/ekumenlabs/lambkin-beluga-datasets:jazzy}
+    image: lambkin_ekf:jazzy
+    container_name: lambkin_ekf_production
+    network_mode: "host"
+    privileged: true
+    stdin_open: true
+    tty: true
+    profiles: ["production"]
+    volumes:
+      # ── Inputs (uncomment and adjust paths as needed) ─────────
+      # optionally override datasets:
+      # - ../datasets:/data/datasets:ro
+      # - ../ground_truth:/data/ground_truth:ro
+      # ── Output (benchmark results persisted on host) ──────────
+      - ../results:/ws/examples/ekf/results
