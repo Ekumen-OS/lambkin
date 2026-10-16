@@ -47,7 +47,7 @@ example = [
 dev = [
     "ruff>=0.15.0",
     "mypy>=1.19.1",
-    "pytest>=8.0",
+    "pytest>=9.0.3",
     "pytest-repeat>=0.9.3",
     "types-pyyaml>=6.0.12.20260518",
 ]
