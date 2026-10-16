@@ -9,11 +9,14 @@ The LAMBKIN Python SDK is the core library for building SLAM evaluation pipeline
 - [Expected Output](#expected-output)
 - [Core Concepts](#core-concepts)
 - [Process Management with cgroups v2](#process-management-with-cgroups-v2)
+- [Resource Measurement](#resource-measurement)
+  - [Flamegraphs](#flamegraphs)
 - [CLI](#cli)
 - [Partial Restarts](#partial-restarts)
 - [Logging](#logging)
 - [Results](#results)
   - [Metrics](#metrics)
+  - [Resource Metrics](#resource-metrics)
   - [Output Hooks](#output-hooks)
   - [Reprocessing](#reprocessing)
 - [Cookbook](#cookbook)
@@ -41,6 +44,9 @@ results/
         ├── lambkin_metadata.yaml
         ├── output.mcap
         ├── out.zip
+        ├── my_algorithm.resources.yaml
+        ├── my_algorithm.resources.csv
+        ├── my_algorithm.flamegraph.svg
         ├── my_algorithm.stdout.log
         ├── my_algorithm.stderr.log
         ├── my_recorder.stdout.log
@@ -157,6 +163,54 @@ When running on the host, a user systemd app slice (app.slice) is always availab
 When an iteration completes, LAMBKIN tears down the iteration cgroup by sending `SIGTERM` to all remaining processes, waiting for a grace period, then sending `SIGKILL` to any survivors. On Ctrl-C, the CLI writes 1 to `cgroup.kill`, which the kernel propagates instantly to the entire iteration cgroup.
 
 Your benchmark function's process never receives `SIGINT` directly — only the CLI's own session does.
+
+## Resource Measurement
+
+Opt in to measuring a process' CPU time, memory and thread count by naming it on the `background()` call that starts it:
+
+```python
+with lambkin.process.background(
+    ctx.shell.ros2.launch, "my_slam_ros2", "slam.launch.py",
+    measure="slam_node",
+):
+    ctx.shell.ros2.bag.play(ctx.inputs.dataset, "--clock")
+```
+
+`measure` takes one process name or a sequence of them, all sampled by one thread on a shared timebase. `measure_interval` overrides `defaults.MEASURE_INTERVAL` (0.5 s) per call.
+
+Naming a process rather than reading the cgroup it runs in is deliberate. In the example above `slam_node` is a *grandchild* of `ros2 launch`, so the background process' cgroup also covers the launch machinery, and the iteration cgroup also covers bag playback and recording. The cgroup is used only as the set of PIDs to search. Names match the basename of `argv[0]`, not `/proc/<pid>/comm`, which the kernel truncates to 15 characters — `cartographer_node` is 17.
+
+Each measured process gets two files in the iteration directory, read back with [`lambkin.data.resources`](#resource-metrics):
+
+- `<process>.resources.yaml` — `pid`, `pid_found`, `samples`, `duration_s`, `sample_interval_s`, `peak_rss_mib`, `final_rss_mib`, `cpu_user_s`, `cpu_sys_s`, `cpu_total_s`, `max_threads`, and the `exited_early` / `pid_reused` caveat flags.
+- `<process>.resources.csv` — one row per sample: `time_s`, `rss_mib`, `cpu_user_s`, `cpu_sys_s`, `threads`. Rows are flushed as written, so an interrupted run still leaves a valid file.
+
+> [!NOTE]
+> The interval sets the resolution of the time series only. `peak_rss_mib` comes from the kernel's own `VmHWM` high water mark, so it is exact at any interval.
+
+> [!NOTE]
+> Measurement is configured in the script, never on the command line. SDK-level CLI options are excluded from the partial-restart hash, so a `--measure` flag would hit the cache on an already-completed tree and exit successfully having measured nothing.
+
+### Flamegraphs
+
+Add `flamegraph=True` to also profile the measured processes with `perf` and render a flamegraph:
+
+```python
+with lambkin.process.background(
+    ctx.shell.ros2.launch, "my_slam_ros2", "slam.launch.py",
+    measure="slam_node", flamegraph=True,
+):
+```
+
+`perf record -p` attaches to a PID, so the same name lookup that drives resource sampling is what lets a grandchild process be profiled without wrapping its launch. Alongside the summary and series you get `<process>.perf.data`, `<process>.folded` and `<process>.flamegraph.svg`, rendered here rather than by `flamegraph.pl` so that nothing copyleft is vendored in.
+
+This needs `perf` on `PATH` — a `linux-tools` matching the **host** kernel, since the container shares it — and permission to use it: either `CAP_PERFMON` (which `--privileged` grants) or a `perf_event_paranoid` low enough for unprivileged profiling. If `perf` is missing the flamegraph is skipped with a warning and the rest of the measurement is unaffected.
+
+> [!NOTE]
+> Frames only carry names where the profiled binary has them. Distribution builds are usually stripped, so expect gaps unless the target was built with symbols and frame pointers.
+
+> [!WARNING]
+> Not measured: a process that starts and exits between two samples (reported as `pid_found: false`); one launched under a wrapper such as `gdb` or `taskset`, which matches the wrapper instead; a respawned replacement, since concatenating two processes' counters would be meaningless (reported as `exited_early: true`); CPU spent after the final sample, taken just before the process is signalled; and child processes, as CPU and RSS are the target's own. Resource sampling measures cost, not hotspots; see Flamegraphs above for call stacks. Hardware counters such as cache misses are not collected.
 
 ## CLI
 
@@ -303,6 +357,8 @@ Precedence (highest to lowest):
 - **`lambkin.data.access.iterations(source)`** — walks `results/var_*/iter_*/`, skips any iteration that didn't complete, and returns one entry per completed iteration with `iter_dir`, `variant` (e.g. `"var_1"`), `iteration`, and `params` (the variant's parameters as a `SimpleNamespace`). Accepts either a context-like object exposing `.base_dir`, or a plain path/string.
 - **`lambkin.data.evo.series(source, filename)`** — same traversal, plus loads the `evo` result file (e.g. `"output.ape.zip"`) from each iteration directory and exposes `time`, `error`, and `distance` arrays, ready to plot.
 - **`lambkin.data.evo.stats(source, filename)`** — same traversal, but exposes the aggregate statistics `evo` computes for each result: `rmse`, `mean`, `median`, `std`, `min`, `max`, `sse`.
+- **`lambkin.data.resources.summary(source, process)`** — same traversal, plus the resource summary written for `process` by [`measure`](#resource-measurement): `peak_rss_mib`, `cpu_total_s`, `max_threads` and the rest of the summary fields.
+- **`lambkin.data.resources.series(source, process)`** — same traversal, exposing that process' sampled `time_s`, `rss_mib`, `cpu_total_s` and `threads` as numpy arrays, ready to plot.
 
 
 ### Metrics
@@ -313,6 +369,37 @@ LAMBKIN doesn't compute trajectory metrics itself — it invokes `evo` through `
 
 - **APE** (`evo_ape`) — Absolute Pose Error. Directly compares corresponding poses between the estimate and the reference. Measures global consistency, i.e. how close the full trajectory is to ground truth.
 - **RPE** (`evo_rpe`) — Relative Pose Error. Compares pose deltas (motions) instead of absolute poses. Measures local accuracy and drift, e.g. translational or rotational error per meter traveled.
+
+
+### Resource Metrics
+
+Unlike trajectory metrics, resource metrics are collected by LAMBKIN itself — there is no external tool to shell out to. Enable them with [`measure`](#resource-measurement), then read them back per iteration:
+
+```python
+@my_benchmark.output
+def cost(ctx):
+    for entry in lambkin.data.resources.summary(ctx, "slam_node"):
+        lambkin.logger.info(
+            "%s iter %d: cpu=%.1fs peak_rss=%.1fMiB threads=%d",
+            entry.variant,
+            entry.iteration,
+            entry.cpu_total_s,
+            entry.peak_rss_mib,
+            entry.max_threads,
+        )
+
+
+@my_benchmark.output
+def memory_plot(ctx):
+    for entry in lambkin.data.resources.series(ctx, "slam_node"):
+        plt.plot(
+            entry.time_s, entry.rss_mib, label=f"{entry.variant} / iter {entry.iteration}"
+        )
+    plt.xlabel("Time (s)")
+    plt.ylabel("RSS (MiB)")
+    plt.legend()
+    plt.savefig(ctx.base_dir / "memory.png")
+```
 
 
 ### Output Hooks
