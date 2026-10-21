@@ -1,0 +1,40 @@
+# beluga_vs_beluga package
+
+## Instructions
+
+- Cd to `lambkin` root directory.
+```sh
+cd {LAMBKIN_ROOT_DIR}
+```
+- Build the beluga_vs_beluga `devcontainer` image
+```sh
+./tools/setup.sh
+./tools/earthly ./src/benchmarks/beluga_vs_beluga+local-devel
+```
+- Copy the datasets inside the `playground` directory, under the benchmark package.
+```bash
+cd src/benchmarks/beluga_vs_beluga && mkdir -p playground
+```
+- Copy in that folder the datasets from the `/srv/datasets/beluga_evaluation_datasets` directory in the beefy machine.
+```sh
+- Open beluga_vs_beluga `devcontainer` using either its CLI or `vscode`
+```
+docker compose -f .devcontainer/docker-compose.yml run devcontainer
+```
+- Build
+```sh
+BUILD_DOCUMENTATION=false BUILD_TESTING=false colcon build --packages-up-to beluga_vs_beluga --symlink-install
+source install/setup.bash
+```
+- Go to the `playground` directory, where you've downloaded the datasets
+```sh
+cd src/lambkin/benchmarks/beluga_vs_beluga/playground
+```
+- Run the benchmark itself.
+```sh
+ros2 run beluga_vs_beluga nominal.robot
+```
+- The report can be found in the `report` directory.
+```sh
+ls nominal/report/build/latex/report.pdf
+```

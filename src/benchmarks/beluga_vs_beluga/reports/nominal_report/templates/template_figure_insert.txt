@@ -1,0 +1,5 @@
+
+.. figure:: assets/hq4_office.png
+   :scale: 99 %
+   :alt: {dataset} localization map
+
