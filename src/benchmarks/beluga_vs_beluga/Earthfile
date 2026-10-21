@@ -30,7 +30,7 @@ devel:
     RUN cd src \
      && git clone https://github.com/Ekumen-OS/beluga \
      && cd beluga \
-     && git checkout 0cce34c32652ccf0c1aa36bea2eda310ca9620bb
+     && git checkout af0ad11d1
     COPY package.xml src/lambkin/benchmarks/beluga_vs_beluga/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src \
@@ -61,7 +61,7 @@ build:
     RUN cd src \
      && git clone https://github.com/Ekumen-OS/beluga \
      && cd beluga \
-     && git checkout 0cce34c32652ccf0c1aa36bea2eda310ca9620bb
+     && git checkout af0ad11d1
     COPY . src/beluga_vs_beluga
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \
