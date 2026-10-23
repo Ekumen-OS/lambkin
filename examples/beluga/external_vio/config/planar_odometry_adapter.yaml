@@ -1,0 +1,8 @@
+planar_odometry_adapter:
+  ros__parameters:
+    input_topic: /ov_msckf/odomimu
+    output_topic: /beluga/vio/odometry
+    queue_size: 10
+    base_frame: base_link
+    transform_timeout: 0.05
+    unobserved_axis_variance: 1000000.0

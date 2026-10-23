@@ -2,6 +2,12 @@
 
 A worked example of a LAMBKIN benchmark pipeline applied to [Beluga AMCL](https://github.com/Ekumen-OS/beluga) in ROS 2. It sweeps over sensor models and particle counts, evaluates trajectory accuracy with `evo`, and aggregates results across all configurations. Ships with its own ROS 2 package, Docker environment, and benchmark script.
 
+For the external visual-odometry comparison, see
+[`ODOMETRY_BENCHMARK.md`](ODOMETRY_BENCHMARK.md) and
+[`external_vio/README.md`](external_vio/README.md). That path compares
+OpenVINS (mono/stereo with IMU) against an external ORB-SLAM3 VO-only wrapper
+(mono/stereo) at the shared Beluga SE(2) odometry boundary.
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and

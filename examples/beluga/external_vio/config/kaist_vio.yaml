@@ -1,0 +1,34 @@
+# KAIST VIO topic and frame contract
+#
+# The official KAIST VIO ROS 1 bags contain both the mono RGB stream and a
+# rectified stereo infrared pair.  The bag also contains the Pixhawk IMU and
+# OptiTrack ground truth.  This file is deliberately a profile, not a ROS
+# parameter file: it is consumed by the Lambkin benchmark documentation and
+# keeps the external estimator topic contract in one place.
+
+dataset:
+  name: kaist_vio
+  sequence: rotation_fast
+  raw_bag: rotation/rotation_fast.bag
+  ground_truth_topic: /pose_transformed
+
+camera:
+  mono_image_topic: /camera/infra1/image_rect_raw
+  rgb_image_topic: /camera/color/image_raw
+  left_image_topic: /camera/infra1/image_rect_raw
+  right_image_topic: /camera/infra2/image_rect_raw
+  image_transport: raw
+  frame_rate_hz: 30
+
+imu:
+  topic: /mavros/imu/data
+  frame_rate_hz: 100
+
+estimator_outputs:
+  openvins: /ov_msckf/odomimu
+  orbslam3_vo: /orbslam3/odom
+
+beluga:
+  planar_odometry_topic: /odom
+  world_frame: map
+  base_frame: base_link
