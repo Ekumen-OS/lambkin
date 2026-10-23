@@ -26,12 +26,23 @@ devel:
     FROM lambkin+embed-ubuntu-devel --distro=${distro}  --rosdistro=${rosdistro}
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
+    RUN cd src \
+     && git clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga \
+     && git checkout af0ad11d133fdf1754aeb7a87333015475a8d842
     COPY package.xml src/lambkin/benchmarks/beluga_vs_nav2_multi_dataset/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src \
             --skip-keys 'lambkin-shepherd lambkin-clerk' && \
         apt clean && rm -rf /var/lib/apt/lists/*
     RUN pip install linuxdoc sphinxcontrib.datatemplates sphinxcontrib-repl
+    RUN apt update && apt install -y --no-install-recommends ccache && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+    # The ccache directory is meant to be mounted as a volume at run time.
+    ENV CCACHE_DIR=/ccache
+    ENV CMAKE_C_COMPILER_LAUNCHER=ccache
+    ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
+    RUN mkdir -p /ccache && chown ${uid}:${gid} /ccache
     COPY DEFAULT_FASTRTPS_PROFILES.xml /
     ENV FASTRTPS_DEFAULT_PROFILES_FILE=/DEFAULT_FASTRTPS_PROFILES.xml
     DO os+ADDUSER --user=${user} --uid=${uid} --gid=${gid} --workdir=/workspace
@@ -52,6 +63,10 @@ build:
     FROM lambkin+embed-ubuntu-devel --distro=${distro} --rosdistro=${rosdistro} --components="external/ros2"
     RUN mkdir -p /workspace/src
     WORKDIR /workspace
+    RUN cd src \
+     && git clone https://github.com/Ekumen-OS/beluga \
+     && cd beluga \
+     && git checkout af0ad11d133fdf1754aeb7a87333015475a8d842
     COPY . src/beluga_vs_nav2_multi_dataset
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \

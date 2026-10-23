@@ -48,7 +48,7 @@ Before ROS 2 2D SLAM system benchmark case rig shutdown
     ...  See `Before ${some} benchmark case rig shutdown` documentation.
     [Tags]  declarative  override
     Save ROS 2 Occupancy Grid Map
-    ...  map  timeout=10s  cwd=${BENCHMARK.CASE.ITERATION.PATH}
+    ...  map  timeout=20s  cwd=${BENCHMARK.CASE.ITERATION.PATH}
     Set Non Local Variable  ${BENCHMARK.CASE.SCOPE}  $BENCHMARK.OUTPUT.MAP.PATH
     ...  ${BENCHMARK.CASE.ITERATION.PATH}/map.yaml
 
