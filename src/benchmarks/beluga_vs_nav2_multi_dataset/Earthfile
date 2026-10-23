@@ -29,7 +29,7 @@ devel:
     RUN cd src \
      && git clone https://github.com/Ekumen-OS/beluga \
      && cd beluga \
-     && git checkout cf50ab4ea4db72b604b2ea81d6b56d4f83621004
+     && git checkout af0ad11d133fdf1754aeb7a87333015475a8d842
     COPY package.xml src/lambkin/benchmarks/beluga_vs_nav2_multi_dataset/package.xml
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src \
@@ -59,7 +59,7 @@ build:
     RUN cd src \
      && git clone https://github.com/Ekumen-OS/beluga \
      && cd beluga \
-     && git checkout cf50ab4ea4db72b604b2ea81d6b56d4f83621004
+     && git checkout af0ad11d133fdf1754aeb7a87333015475a8d842
     COPY . src/beluga_vs_nav2_multi_dataset
     RUN . /etc/profile && apt update && rosdep update && \
         rosdep install -y -i --from-paths src -t build -t buildtool -t test \

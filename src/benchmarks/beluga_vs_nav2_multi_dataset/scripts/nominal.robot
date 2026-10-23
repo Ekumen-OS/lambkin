@@ -268,6 +268,7 @@ Beluga vs Nav2 benchmark case
     Uses timemory-timem to sample beluga_amcl_beam performance
     Uses timemory-timem to sample beluga_amcl_likelihood performance
     Uses timemory-timem to sample beluga_amcl_likelihood_prob performance
+    Uses timemory-timem to sample beluga_amcl_likelihood_beam_skip performance
     # Setup tracking
     Tracks /nav2_amcl_beam/pose trajectories
     Tracks /nav2_amcl_likelihood/pose trajectories
@@ -276,6 +277,7 @@ Beluga vs Nav2 benchmark case
     Tracks /beluga_amcl_beam/pose trajectories
     Tracks /beluga_amcl_likelihood/pose trajectories
     Tracks /beluga_amcl_likelihood_prob/pose trajectories
+    Tracks /beluga_amcl_likelihood_beam_skip/pose trajectories
     # Setup benchmark analysis
     Uses ${artifacts_path}/groundtruth.tum as trajectory groundtruth
     Performs trajectory corrections  align=yes  t_max_diff=${0.1}
