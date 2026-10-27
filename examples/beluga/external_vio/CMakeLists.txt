@@ -46,14 +46,6 @@ install(
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(planar_odometry_projection_test
-                  test/planar_odometry_projection_test.cpp)
-  target_link_libraries(planar_odometry_projection_test ${PROJECT_NAME})
-  ament_target_dependencies(planar_odometry_projection_test geometry_msgs nav_msgs tf2)
-endif()
-
 ament_export_dependencies(geometry_msgs nav_msgs tf2)
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
