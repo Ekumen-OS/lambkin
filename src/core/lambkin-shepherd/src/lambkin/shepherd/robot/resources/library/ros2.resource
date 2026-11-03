@@ -128,10 +128,15 @@ Stop Recording ROS 2 Bag
 Save ROS 2 Occupancy Grid Map
     [Documentation]
     ...  Saves a ROS occupancy grid map using `map_server` utilities.
-    [Arguments]  ${map}=map  ${topic}=${null}  ${timeout}=${-1}  ${cwd}=.  &{kwargs}
+    ...  `map_wait_timeout` is how long (in seconds) `map_saver` waits for a map
+    ...  message, and `timeout` is the overall limit for the process to complete.
+    [Arguments]  ${map}=map  ${topic}=${null}  ${timeout}=${-1}  ${cwd}=.
+    ...          ${map_wait_timeout}=${8.0}  &{kwargs}
     [Tags]  imperative
     ${args} =  Create List  -f  ${map}
     IF  "${topic}" != "${null}"  Append To List  ${args}  -t  ${topic}
+    # --ros-args must be the last arguments of map_saver_cli.
+    Append To List  ${args}  --ros-args  -p  save_map_timeout:=${map_wait_timeout}
     Start Managed Process  ros2  run  nav2_map_server  map_saver_cli  @{args}
     ...                    cwd=${cwd}  alias=SAVE:${map}  &{kwargs}
     ${result} =  Wait For Managed Process  SAVE:${map}  timeout=${timeout}

@@ -1,7 +1,10 @@
 {
     "image": "ekumenlabs/beluga-vs-nav2:dev",
 
-    "mounts": [{"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"}],
+    "mounts": [
+        {"source": "${localEnv:DEVCONTAINER_DATA:/tmp}", "target": "/data", "type": "bind"},
+        {"source": "beluga-vs-nav2-ccache", "target": "/ccache", "type": "volume"}
+    ],
     "workspaceMount": "source=${localWorkspaceFolder}/../..,target=/workspace/src/lambkin,type=bind,consistency=cached",
     "workspaceFolder": "/workspace",
 
