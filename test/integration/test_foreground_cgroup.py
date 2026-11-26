@@ -32,6 +32,7 @@ from lambkin.core.process.cgroup import (
     make_iteration_cgroup,
     remove_cgroup_tree,
 )
+from lambkin.core.process.resources import pids_in_cgroup
 from lambkin.core.shell import proxy
 from lambkin.core.shell.proxy import CommandError, CommandProxy, ShellProxy
 
@@ -69,34 +70,6 @@ def _child_cgroups(cgroup: Path) -> list[Path]:
     return [p for p in cgroup.iterdir() if p.is_dir()]
 
 
-def _procs(cgroup: Path) -> list[str]:
-    return (cgroup / "cgroup.procs").read_text().split()
-
-
-def _running(pid: int) -> bool:
-    """Return whether pid is a live process.
-
-    A killed process whose parent is gone is reparented to PID 1, and stays a
-    zombie until PID 1 reaps it. In a container whose PID 1 is not an init,
-    as in CI's ``podman run ... bash -c "... && uv run pytest"``, that never
-    happens. A zombie has exited and left its cgroup, so it counts as gone.
-    """
-    try:
-        stat = Path(f"/proc/{pid}/stat").read_text()
-    except FileNotFoundError:
-        return False
-    return stat.rsplit(") ", 1)[1][0] != "Z"
-
-
-def _wait_gone(pid: int, timeout: float = 5.0) -> bool:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if not _running(pid):
-            return True
-        time.sleep(0.05)
-    return False
-
-
 def test_foreground_runs_in_its_own_cgroup(shell, tmp_path, iteration_cgroup):
     """A foreground command runs under iter-…/<cmd>-…/, removed after it returns."""
     shell.cat("/proc/self/cgroup")
@@ -111,7 +84,7 @@ def test_foreground_runs_in_its_own_cgroup(shell, tmp_path, iteration_cgroup):
 
 
 def test_foreground_orphan_is_killed_with_warning(
-    shell, tmp_path, iteration_cgroup, caplog, monkeypatch
+    wait_gone, shell, tmp_path, iteration_cgroup, caplog, monkeypatch
 ):
     """A process a foreground command leaves behind is killed when it returns."""
     # configure_logging, run by other tests, stops "lambkin" from propagating
@@ -122,12 +95,12 @@ def test_foreground_orphan_is_killed_with_warning(
         shell.sh("-c", f"sleep 60 & echo $! > {pid_file}; exit 0")
 
     orphan = int(pid_file.read_text())
-    assert _wait_gone(orphan), f"orphan {orphan} still alive"
+    assert wait_gone(orphan), f"orphan {orphan} still alive"
     assert any(
         str(orphan) in r.getMessage() and "sleep 60" in r.getMessage()
         for r in caplog.records
     ), caplog.text
-    assert _procs(iteration_cgroup) == []
+    assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
 
 
@@ -144,7 +117,7 @@ def test_foreground_clean_command_logs_no_warning(
 
 
 def test_foreground_orphan_in_sub_cgroup_is_killed_with_warning(
-    shell, tmp_path, iteration_cgroup, caplog, monkeypatch
+    wait_gone, shell, tmp_path, iteration_cgroup, caplog, monkeypatch
 ):
     """A process a command moved into a cgroup of its own is still cleaned up."""
     monkeypatch.setattr(logging.getLogger("lambkin"), "propagate", True)
@@ -161,7 +134,7 @@ def test_foreground_orphan_in_sub_cgroup_is_killed_with_warning(
         shell.sh(str(script))
 
     nested = int(pid_file.read_text())
-    assert _wait_gone(nested), f"nested {nested} still alive"
+    assert wait_gone(nested), f"nested {nested} still alive"
     assert any(
         str(nested) in r.getMessage() and "sleep 64" in r.getMessage()
         for r in caplog.records
@@ -204,7 +177,9 @@ def _raise_after(seconds: float, exc: type[BaseException]):
     return _restore
 
 
-def test_foreground_interrupted_kills_whole_tree(shell, tmp_path, iteration_cgroup):
+def test_foreground_interrupted_kills_whole_tree(
+    wait_gone, shell, tmp_path, iteration_cgroup
+):
     """An exception raised while waiting kills the command and its children."""
     pid_file = tmp_path / "child.pid"
     restore = _raise_after(1.0, _InterruptedError)
@@ -214,13 +189,13 @@ def test_foreground_interrupted_kills_whole_tree(shell, tmp_path, iteration_cgro
     finally:
         restore()
 
-    assert _wait_gone(int(pid_file.read_text()))
-    assert _procs(iteration_cgroup) == []
+    assert wait_gone(int(pid_file.read_text()))
+    assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
 
 
 def test_foreground_sigusr1_interrupt_kills_whole_tree(
-    shell, tmp_path, iteration_cgroup
+    wait_gone, shell, tmp_path, iteration_cgroup
 ):
     """A dying background process interrupts the command; it is cleaned up."""
     pid_file = tmp_path / "child.pid"
@@ -231,12 +206,12 @@ def test_foreground_sigusr1_interrupt_kills_whole_tree(
         restore()
 
     assert result.returncode == -1
-    assert _wait_gone(int(pid_file.read_text()))
-    assert _procs(iteration_cgroup) == []
+    assert wait_gone(int(pid_file.read_text()))
+    assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
 
 
-def test_foreground_interrupted_without_cgroup_kills_command(tmp_path):
+def test_foreground_interrupted_without_cgroup_kills_command(wait_gone, tmp_path):
     """Without a cgroup, an interrupted command is still killed."""
     shell = ShellProxy(dry_run=False, cwd=tmp_path)
     pid_file = tmp_path / "cmd.pid"
@@ -247,10 +222,12 @@ def test_foreground_interrupted_without_cgroup_kills_command(tmp_path):
     finally:
         restore()
 
-    assert _wait_gone(int(pid_file.read_text()))
+    assert wait_gone(int(pid_file.read_text()))
 
 
-def test_foreground_daemon_in_new_session_is_killed(shell, tmp_path, iteration_cgroup):
+def test_foreground_daemon_in_new_session_is_killed(
+    wait_gone, shell, tmp_path, iteration_cgroup
+):
     """A process that left the command's session is still in its cgroup."""
     pid_file = tmp_path / "daemon.pid"
     shell.sh(
@@ -260,15 +237,16 @@ def test_foreground_daemon_in_new_session_is_killed(shell, tmp_path, iteration_c
         f" while [ ! -s {pid_file} ]; do sleep 0.01; done",
     )
 
-    assert _wait_gone(int(pid_file.read_text()))
-    assert _procs(iteration_cgroup) == []
+    assert wait_gone(int(pid_file.read_text()))
+    assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
 
 
 def test_foreground_orphan_ignoring_sigterm_is_sigkilled(
-    shell, tmp_path, iteration_cgroup
+    wait_gone, shell, tmp_path, iteration_cgroup, monkeypatch
 ):
     """An orphan that ignores SIGTERM is killed after the grace period."""
+    monkeypatch.setattr(defaults, "SIGTERM_GRACE_PERIOD", 0.2)
     pid_file = tmp_path / "stubborn.pid"
     shell.sh(
         "-c",
@@ -276,8 +254,8 @@ def test_foreground_orphan_ignoring_sigterm_is_sigkilled(
         f" while [ ! -s {pid_file} ]; do sleep 0.01; done",
     )
 
-    assert _wait_gone(int(pid_file.read_text()))
-    assert _procs(iteration_cgroup) == []
+    assert wait_gone(int(pid_file.read_text()))
+    assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
 
 
@@ -312,7 +290,7 @@ def test_foreground_cleanup_failure_keeps_command_result(
     def _fail(cgroup):
         raise OSError(errno.EACCES, "denied")
 
-    monkeypatch.setattr("lambkin.core.shell.proxy.remove_cgroup_tree", _fail)
+    monkeypatch.setattr("lambkin.core.shell.proxy.remove_cgroup", _fail)
     with caplog.at_level(logging.WARNING, logger="lambkin.core.shell.proxy"):
         if returncode:
             with pytest.raises(CommandError) as excinfo:
@@ -335,14 +313,14 @@ def test_foreground_streams_closed_when_cleanup_raises(
         opened.extend(s for s in streams if s is not None)
         return streams
 
-    real_remove = proxy.remove_cgroup_tree
+    real_remove = proxy.remove_cgroup
 
     def _remove_then_fail(cgroup):
         real_remove(cgroup)
         raise _InterruptedError
 
     monkeypatch.setattr(CommandProxy, "open_streams", _record)
-    monkeypatch.setattr(proxy, "remove_cgroup_tree", _remove_then_fail)
+    monkeypatch.setattr(proxy, "remove_cgroup", _remove_then_fail)
     with pytest.raises(_InterruptedError):
         shell.true()
     assert opened
@@ -370,7 +348,7 @@ def lambkin_sigusr1():
 
 
 def test_foreground_sigusr1_during_cleanup_finishes_cleanup(
-    shell, tmp_path, iteration_cgroup, lambkin_sigusr1, caplog, monkeypatch
+    wait_gone, shell, tmp_path, iteration_cgroup, lambkin_sigusr1, caplog, monkeypatch
 ):
     """A background death while an orphan is being killed does not cut cleanup.
 
@@ -401,8 +379,8 @@ def test_foreground_sigusr1_during_cleanup_finishes_cleanup(
     assert elapsed < defaults.SIGTERM_GRACE_PERIOD, elapsed
 
     assert result.returncode == -1
-    assert _wait_gone(int(pid_file.read_text()))
-    assert _procs(iteration_cgroup) == []
+    assert wait_gone(int(pid_file.read_text()))
+    assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
 
 

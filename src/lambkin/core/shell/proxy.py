@@ -20,12 +20,10 @@ processes to be launched and managed through a consistent interface.
 
 from __future__ import annotations
 
-import functools
 import logging
 import os
 import shlex
 import subprocess
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Final
 
@@ -35,7 +33,7 @@ from lambkin.core.process.cgroup import (
     kill_cgroup,
     kill_cgroup_tree,
     make_process_cgroup,
-    remove_cgroup_tree,
+    remove_cgroup,
 )
 from lambkin.core.process.resources import pids_in_cgroup, read_cmdline
 
@@ -205,31 +203,14 @@ class CommandProxy:
         Returns:
             The running subprocess.
         """
-        preexec = None
-        if cgroup is not None:
-            preexec = functools.partial(self._prepare_child, cgroup_joiner(cgroup))
         return subprocess.Popen(
             argv,
             cwd=self._cwd,
             stdout=stdout,
             stderr=stderr,
             env=self.build_env(),
-            preexec_fn=preexec,
+            preexec_fn=cgroup_joiner(cgroup) if cgroup is not None else None,
         )
-
-    def _prepare_child(self, join_cgroup: Callable[[], None]) -> None:
-        """Set up a foreground child between fork() and exec().
-
-        Runs in the child process, so it must stay async-signal-safe in
-        spirit: no logging, no locks, nothing computed here that the parent
-        could prepare. This is the single place to add more per-child setup
-        steps.
-
-        Args:
-            join_cgroup: Moves the child into the command's own cgroup, from
-                ``cgroup_joiner``.
-        """
-        join_cgroup()
 
     def _make_cgroup(self, parent: Path, argv: list[str]) -> Path:
         """Create the cgroup a foreground command runs in.
@@ -293,7 +274,8 @@ class CommandProxy:
                 if len(cgroups) > 1:
                     # kill_cgroup only signals the cgroup's own members.
                     kill_cgroup_tree(cgroup)
-            remove_cgroup_tree(cgroup)
+            for cg in reversed(cgroups):  # Deepest first.
+                remove_cgroup(cg)
         except OSError as e:
             # Best effort: this runs in a finally block, so raising here would
             # hide the command's own result. The iteration teardown removes
@@ -478,7 +460,7 @@ class CommandProxy:
         except exceptions.LambkinSIGUSR1Interrupt:
             interrupted = True
         except subprocess.SubprocessError as e:
-            # Raised by Popen when _prepare_child fails in the child.
+            # Raised by Popen when cgroup_joiner fails in the child.
             raise CommandError(
                 argv,
                 f"Could not prepare {argv[0]!r} to run: {e}",

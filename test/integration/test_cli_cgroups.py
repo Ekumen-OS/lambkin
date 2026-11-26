@@ -203,29 +203,11 @@ def test_ctrl_c_mid_iteration_leaves_no_cgroup(script, tmp_path):
     assert _leftover_run_cgroups(script) == []
 
 
-def _running(pid: int) -> bool:
-    """Return whether pid is a live process.
-
-    A killed process whose parent is gone is reparented to PID 1, and stays a
-    zombie until PID 1 reaps it. In a container whose PID 1 is not an init,
-    as in CI's ``podman run ... bash -c "... && uv run pytest"``, that never
-    happens. A zombie has exited and left its cgroup, so it counts as gone.
-    """
-    try:
-        stat = Path(f"/proc/{pid}/stat").read_text()
-    except FileNotFoundError:
-        return False
-    return stat.rsplit(") ", 1)[1][0] != "Z"
-
-
-def test_process_left_by_script_is_killed_on_normal_exit(script, tmp_path):
+def test_process_left_by_script_is_killed_on_normal_exit(script, tmp_path, wait_gone):
     """A process the script leaves in script/ is killed when the script exits."""
     report = _run_cli(script, _env(tmp_path, LAMBKIN_TEST_LEAVE="1"))
 
     pid = report["leftover"]
-    deadline = time.monotonic() + 5
-    while _running(pid) and time.monotonic() < deadline:
-        time.sleep(0.05)
-    assert not _running(pid), f"process {pid} left by the script is still alive"
+    assert wait_gone(pid), f"process {pid} left by the script is still alive"
     assert not Path(report["run"]).exists()
     assert _leftover_run_cgroups(script) == []

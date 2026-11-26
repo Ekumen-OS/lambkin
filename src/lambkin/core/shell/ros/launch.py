@@ -32,27 +32,15 @@ class RosLaunchCommand(CommandProxy):
     benchmark artefacts.
     """
 
-    def _make_env(self) -> dict:
-        """Build the environment for the child process.
-
-        Copies the current environment and sets ROS_LOG_DIR to the iteration
-        directory so that ROS node logs are written alongside all other
-        benchmark artefacts.
-
-        Returns:
-            A copy of the current environment with ROS_LOG_DIR set.
-        """
-        env = os.environ.copy()
-        env["ROS_LOG_DIR"] = str(self._cwd)
-        return env
-
     def build_env(self) -> dict:
         """Override of CommandProxy.build_env.
 
         Returns:
             A copy of os.environ with ROS_LOG_DIR set to the working directory.
         """
-        return self._make_env()
+        env = os.environ.copy()
+        env["ROS_LOG_DIR"] = str(self._cwd)
+        return env
 
 
 CommandProxy.register(("ros2", "launch"), RosLaunchCommand)
