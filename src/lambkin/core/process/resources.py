@@ -164,6 +164,28 @@ def _parse_kib(line: str) -> float | None:
         return None
 
 
+def read_cmdline(pid: int, proc_root: Path) -> list[str] | None:
+    """Return a process' command line as a list of arguments.
+
+    Args:
+        pid: Process ID to read.
+        proc_root: Root of the proc filesystem, ``/proc`` in production.
+
+    Returns:
+        The arguments, empty for a process with no command line (a kernel
+        thread or a zombie), or None if the process is gone.
+    """
+    try:
+        raw = (proc_root / str(pid) / "cmdline").read_bytes()
+    except OSError:
+        return None
+    if not raw:
+        return []
+    return [
+        arg.decode("utf-8", "replace") for arg in raw.removesuffix(b"\0").split(b"\0")
+    ]
+
+
 def read_name(pid: int, proc_root: Path) -> str | None:
     """Return the basename of ``argv[0]`` for a process.
 
@@ -179,12 +201,10 @@ def read_name(pid: int, proc_root: Path) -> str | None:
         The basename of ``argv[0]``, or None if the process is gone or has an
         empty command line, as kernel threads do.
     """
-    try:
-        raw = (proc_root / str(pid) / "cmdline").read_bytes()
-    except OSError:
+    argv = read_cmdline(pid, proc_root)
+    if not argv:
         return None
-    argv0 = raw.split(b"\0", 1)[0].decode("utf-8", "replace")
-    return os.path.basename(argv0) or None
+    return os.path.basename(argv[0]) or None
 
 
 def pids_in_cgroup(cgroup: Path) -> list[int]:

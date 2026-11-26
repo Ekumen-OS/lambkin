@@ -20,7 +20,7 @@ import pytest
 import yaml
 
 from lambkin.core.ctx.benchmark_context import BenchmarkContext
-from lambkin.core.ctx.iteration_context import IterationContext
+from lambkin.core.ctx.iteration_context import IterationContext, _run_cgroup
 from lambkin.core.ctx.source import Source
 from lambkin.core.ctx.variant_context import VariantContext
 
@@ -390,3 +390,35 @@ class TestIterationContext:
                     assert ctx.skipped is True
                     with pytest.raises(AttributeError):
                         _ = ctx.shell
+
+
+def test_run_cgroup_uses_cli_environment(monkeypatch, tmp_path):
+    """Iteration cgroups go under the run cgroup the CLI exports."""
+    (tmp_path / "cgroup.procs").write_text("")
+    monkeypatch.setenv("LAMBKIN_RUN_CGROUP", str(tmp_path))
+    assert _run_cgroup() == tmp_path
+
+
+@pytest.mark.parametrize("make_dir", [False, True])
+def test_run_cgroup_rejects_stale_cli_environment(monkeypatch, tmp_path, make_dir):
+    """A run cgroup that is gone, or not a cgroup, names the variable."""
+    stale = tmp_path / "lambkin-bench-1234"
+    if make_dir:
+        stale.mkdir()
+    monkeypatch.setenv("LAMBKIN_RUN_CGROUP", str(stale))
+    with pytest.raises(RuntimeError, match="LAMBKIN_RUN_CGROUP=.*unset it"):
+        _run_cgroup()
+
+
+@pytest.mark.parametrize("value", [None, ""])
+def test_run_cgroup_falls_back_to_delegated_cgroup(monkeypatch, tmp_path, value):
+    """Without the CLI, or with the variable empty, use the delegated cgroup."""
+    if value is None:
+        monkeypatch.delenv("LAMBKIN_RUN_CGROUP", raising=False)
+    else:
+        monkeypatch.setenv("LAMBKIN_RUN_CGROUP", value)
+    monkeypatch.setattr(
+        "lambkin.core.ctx.iteration_context.find_delegated_cgroup",
+        lambda: tmp_path,
+    )
+    assert _run_cgroup() == tmp_path

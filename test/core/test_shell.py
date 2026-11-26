@@ -15,10 +15,13 @@
 """Unit tests for the shell class in lambkin.core.shell."""
 
 import subprocess
+import time
+from pathlib import Path
 
 import pytest
 
 from lambkin.core.shell import CommandError, ShellProxy
+from lambkin.core.shell.proxy import _cmdline
 from lambkin.core.shell.ros.launch import RosLaunchCommand
 
 
@@ -238,3 +241,41 @@ def test_ros_launch_build_env_sets_ros_log_dir(tmp_path):
     proxy = s.ros2.launch
     env = proxy.build_env()
     assert env["ROS_LOG_DIR"] == str(tmp_path)
+
+
+def test_cmdline_of_live_process():
+    """_cmdline joins a live process' arguments with spaces."""
+    proc = subprocess.Popen(["sleep", "30"])
+    try:
+        # Popen can return before the kernel has finished exec(), while the
+        # child's cmdline still reads empty.
+        cmdline = Path(f"/proc/{proc.pid}/cmdline")
+        deadline = time.monotonic() + 5
+        while not cmdline.read_bytes():
+            assert time.monotonic() < deadline, "child never finished exec()"
+            time.sleep(0.01)
+        assert _cmdline(proc.pid) == "sleep 30"
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_cmdline_of_reaped_process_is_placeholder():
+    """_cmdline returns "?" once the process is gone."""
+    proc = subprocess.Popen(["true"])
+    proc.wait()
+    assert _cmdline(proc.pid) == "?"
+
+
+def test_cmdline_of_zombie_is_placeholder():
+    """A zombie has an empty cmdline; _cmdline returns "?" for it too."""
+    proc = subprocess.Popen(["true"])
+    try:
+        stat = Path(f"/proc/{proc.pid}/stat")
+        deadline = time.monotonic() + 5
+        while stat.read_text().split(") ")[1][0] != "Z":
+            assert time.monotonic() < deadline, "child never became a zombie"
+            time.sleep(0.01)
+        assert _cmdline(proc.pid) == "?"
+    finally:
+        proc.wait()

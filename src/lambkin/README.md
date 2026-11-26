@@ -139,20 +139,26 @@ The cgroup hierarchy for a run looks like this:
 
 ```
 app.slice/                               ← user's systemd app slice
-└── lambkin-my_benchmark-a1b2c3d4/       ← one per CLI invocation
+└── lambkin-my_benchmark-a1b2c3d4/       ← one per CLI invocation (no processes)
+    ├── script/                          ← the benchmark script itself
     └── iter-var_1-iter_1-e5f6a7b8/      ← one per (variant, iteration) pair
-        ├── my_algorithm-a9b0c1d2/       ← ros2 launch process
-        └── my_recorder-e3f4a5b6/        ← ros2 bag record process
+        ├── ros2-a9b0c1d2/               ← ros2 launch (background)
+        ├── ros2-e3f4a5b6/               ← ros2 bag record (background)
+        └── ros2-c7d8e9f0/               ← ros2 bag play (foreground)
 ```
+
+Every command an iteration runs gets its own cgroup under the iteration cgroup, foreground commands included. When a foreground command returns, anything it left running is logged as a warning and terminated, and its cgroup is removed. This includes daemons a command starts on purpose: the `ros2` CLI, for example, spawns a `ros2 daemon` when none is running, so each foreground `ros2` call logs that warning, the daemon is terminated, and the next call starts a new one. Results are unaffected; each call just queries the ROS graph directly. Run long-lived helpers with `background()` instead. The run cgroup itself holds no processes: the script runs in its `script/` leaf, so cgroup v2 controllers can later be enabled on the run cgroup for its iteration cgroups. The CLI passes the run cgroup to the script in the `LAMBKIN_RUN_CGROUP` environment variable. Commands the script runs outside an iteration, such as benchmark-level hooks, also stay in `script/`. A script run without the CLI creates its iteration cgroups under its own cgroup instead.
 
 When running on the host, a user systemd app slice (app.slice) is always available. In containerized environments no app slice may exist — in that case, LAMBKIN falls back to the nearest delegated cgroup it can find. For example, under Podman with `--systemd=always`:
 
 ```
 <delegated cgroup root>/  ← whatever /proc/self/cgroup reports inside the container
 └── lambkin-my_benchmark-a1b2c3d4/
+    ├── script/
     └── iter-var_1-iter_1-e5f6a7b8/
-        ├── my_algorithm-a9b0c1d2/
-        └── my_recorder-e3f4a5b6/
+        ├── ros2-a9b0c1d2/
+        ├── ros2-e3f4a5b6/
+        └── ros2-c7d8e9f0/
 ```
 
 > [!WARNING]
@@ -170,7 +176,9 @@ Opt in to measuring a process' CPU time, memory and thread count by naming it on
 
 ```python
 with lambkin.process.background(
-    ctx.shell.ros2.launch, "my_slam_ros2", "slam.launch.py",
+    ctx.shell.ros2.launch,
+    "my_slam_ros2",
+    "slam.launch.py",
     measure="slam_node",
 ):
     ctx.shell.ros2.bag.play(ctx.inputs.dataset, "--clock")
@@ -393,7 +401,9 @@ def cost(ctx):
 def memory_plot(ctx):
     for entry in lambkin.data.resources.series(ctx, "slam_node"):
         plt.plot(
-            entry.time_s, entry.rss_mib, label=f"{entry.variant} / iter {entry.iteration}"
+            entry.time_s,
+            entry.rss_mib,
+            label=f"{entry.variant} / iter {entry.iteration}",
         )
     plt.xlabel("Time (s)")
     plt.ylabel("RSS (MiB)")

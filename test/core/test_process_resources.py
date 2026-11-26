@@ -26,6 +26,7 @@ import yaml
 from lambkin.core.process.resources import (
     ResourceSampler,
     pids_in_cgroup,
+    read_cmdline,
     read_memory,
     read_name,
     read_stat,
@@ -191,6 +192,28 @@ def test_read_name_matches_seventeen_character_name(proc_root):
     assert read_name(42, proc_root) == "cartographer_node"
     assert len("cartographer_node") > 15
     assert not (proc_root / "42" / "comm").exists()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (b"sleep\x0030\x00", ["sleep", "30"]),
+        (b"sh\x00-c\x00a b\x00", ["sh", "-c", "a b"]),
+        (b"setproctitle name", ["setproctitle name"]),
+        (b"bad\xff\x00", ["bad\ufffd"]),
+        (b"", []),
+    ],
+)
+def test_read_cmdline_splits_arguments(proc_root, raw, expected):
+    """read_cmdline splits on NUL, with or without a trailing one."""
+    (proc_root / "42").mkdir()
+    (proc_root / "42" / "cmdline").write_bytes(raw)
+    assert read_cmdline(42, proc_root) == expected
+
+
+def test_read_cmdline_returns_none_for_missing_pid(proc_root):
+    """read_cmdline returns None when the process is gone."""
+    assert read_cmdline(4242, proc_root) is None
 
 
 def test_read_name_returns_none_for_empty_cmdline(proc_root):

@@ -370,3 +370,45 @@ def test_background_cgroup_removed_when_sampler_fails(tmp_path, monkeypatch):
         with background(shell.sleep, "30", measure="sleep") as bp:
             child_cgroup = bp._cgroup
     assert not child_cgroup.exists()
+
+
+def test_background_death_during_start_raises_died_and_cleans_up(tmp_path, monkeypatch):
+    """A process that dies while __enter__ still runs is reported and cleaned up."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+    signals.setup()
+
+    def _slow_start(self):
+        # `true` exits at once, so its SIGUSR1 arrives during this sleep.
+        time.sleep(2)
+
+    monkeypatch.setattr(ResourceSampler, "start", _slow_start)
+    monkeypatch.setattr(ResourceSampler, "stop", lambda self: None)
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    entered = False
+    with pytest.raises(LambkinProcessDiedUnexpectedlyError):
+        with background(shell.true, measure="true"):
+            entered = True
+    assert not entered
+    assert [p for p in cgroup.iterdir() if p.is_dir()] == []
+    assert not signals.sigusr1_pending.is_set()
+
+
+def test_background_cleaned_up_when_sampler_fails_to_start(tmp_path, monkeypatch):
+    """A sampler that cannot start stops the process and removes its cgroup."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    def _boom(self):
+        raise RuntimeError("sampler would not start")
+
+    monkeypatch.setattr(ResourceSampler, "start", _boom)
+    monkeypatch.setattr(ResourceSampler, "stop", lambda self: None)
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    with pytest.raises(RuntimeError, match="would not start"):
+        with background(shell.sleep, "30", measure="sleep"):
+            pass
+    assert [p for p in cgroup.iterdir() if p.is_dir()] == []
+    assert (cgroup / "cgroup.procs").read_text() == ""
