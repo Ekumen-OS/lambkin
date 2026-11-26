@@ -19,6 +19,7 @@ import os
 import signal
 import time
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 from lambkin.common import defaults
@@ -88,6 +89,33 @@ def make_cgroup(parent: Path, name: str) -> Path:
     child = parent / name
     child.mkdir(exist_ok=True)
     return child
+
+
+def cgroup_joiner(cgroup: Path) -> Callable[[], None]:
+    """Return a ``subprocess.Popen`` ``preexec_fn`` that joins a cgroup.
+
+    The returned function writes ``"0"`` to the cgroup's ``cgroup.procs``,
+    which the kernel reads as "the writing process". It runs between
+    ``fork()`` and ``exec()`` while other threads of the parent may hold
+    locks, so the path is resolved here, in the parent, and the child only
+    makes raw ``os`` calls.
+
+    Args:
+        cgroup (Path): The cgroup directory to join.
+
+    Returns:
+        A function that moves the calling process into ``cgroup``.
+    """
+    procs = os.fsencode(cgroup / "cgroup.procs")
+
+    def _join() -> None:
+        fd = os.open(procs, os.O_WRONLY)
+        try:
+            os.write(fd, b"0")
+        finally:
+            os.close(fd)
+
+    return _join
 
 
 def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
@@ -216,7 +244,7 @@ def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
 
 
 def make_process_cgroup(parent: Path, argv: list[str]) -> Path:
-    """Create a cgroup for a background process.
+    """Create a cgroup for one command, background or foreground.
 
     Args:
         parent (Path): The parent cgroup directory (typically the iteration cgroup).

@@ -25,6 +25,7 @@ from unittest.mock import patch
 import pytest
 
 from lambkin.core.process.cgroup import (
+    cgroup_joiner,
     find_delegated_cgroup,
     kill_cgroup,
     make_cgroup,
@@ -205,3 +206,19 @@ def test_kill_cgroup_empty_cgroup_does_nothing():
     kill_cgroup(cgroup, grace_period=1.0)
     remove_cgroup(cgroup)
     assert not cgroup.exists()
+
+
+def test_cgroup_joiner_moves_child_before_exec():
+    """cgroup_joiner's function as preexec_fn places the child in the cgroup."""
+    cgroup = make_cgroup(find_delegated_cgroup(), "test-join")
+    try:
+        out = subprocess.run(
+            ["cat", "/proc/self/cgroup"],
+            preexec_fn=cgroup_joiner(cgroup),
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        assert out.strip().endswith("/test-join")
+    finally:
+        remove_cgroup(cgroup)

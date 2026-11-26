@@ -33,9 +33,14 @@ from types import TracebackType
 from typing import IO, Any
 
 from lambkin.common import defaults, exceptions, signals
-from lambkin.core.process.cgroup import kill_cgroup, make_process_cgroup, remove_cgroup
+from lambkin.core.process.cgroup import (
+    cgroup_joiner,
+    kill_cgroup,
+    make_process_cgroup,
+    remove_cgroup,
+)
 from lambkin.core.process.resources import ResourceSampler
-from lambkin.core.shell.proxy import CommandProxy
+from lambkin.core.shell.proxy import CommandError, CommandProxy
 
 logger = logging.getLogger(__name__)
 
@@ -103,14 +108,6 @@ class BackgroundProcess:
         self._flamegraph = flamegraph
         self._sampler: ResourceSampler | None = None
 
-    def _enter_cgroup(self) -> None:
-        """Write the current PID to cgroup.procs.
-
-        Runs in the child process after fork() but before exec().
-        """
-        assert self._cgroup is not None
-        (self._cgroup / "cgroup.procs").write_text(str(os.getpid()))
-
     def _monitor_process(self) -> None:
         """Monitor thread that detects if the process dies unexpectedly.
 
@@ -133,21 +130,63 @@ class BackgroundProcess:
 
         Returns:
             BackgroundProcess: This instance.
+
+        Raises:
+            CommandError: If the child could not be prepared to run, for
+                example because it could not join its cgroup.
         """
         if self._dry_run:
             logger.debug("[DRY RUN BG] %s", shlex.join(self._argv))
             return self
 
-        self._cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)
-        self._proc = subprocess.Popen(
-            self._argv,
-            preexec_fn=self._enter_cgroup,
-            cwd=self._cwd,
-            env=self._env,
-            stdout=self._stdout,
-            stderr=self._stderr,
-        )
+        cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)
+        self._cgroup = cgroup
+        try:
+            self._proc = subprocess.Popen(
+                self._argv,
+                preexec_fn=cgroup_joiner(cgroup),
+                cwd=self._cwd,
+                env=self._env,
+                stdout=self._stdout,
+                stderr=self._stderr,
+            )
+        except BaseException as e:
+            # Nothing started, so __exit__ has nothing to stop: close the log
+            # files and remove the empty cgroup here.
+            self._close_streams()
+            remove_cgroup(cgroup)
+            if isinstance(e, subprocess.SubprocessError):
+                # Raised by Popen when the child could not join its cgroup.
+                raise CommandError(
+                    self._argv,
+                    f"Could not prepare {self._argv[0]!r} to run: {e}",
+                ) from e
+            raise
 
+        try:
+            self._start_watchers(cgroup)
+        except BaseException as e:
+            # Python never calls __exit__ when __enter__ raises, so clean up
+            # here. That includes the SIGUSR1 a process that died at once
+            # sends while this is still running, which __exit__ turns into
+            # LambkinProcessDiedUnexpectedlyError.
+            self.__exit__(type(e), e, e.__traceback__)
+            raise
+        return self
+
+    def _close_streams(self) -> None:
+        """Close the process's log files, if any."""
+        if self._stdout:
+            self._stdout.close()
+        if self._stderr:
+            self._stderr.close()
+
+    def _start_watchers(self, cgroup: Path) -> None:
+        """Start the death monitor and, if requested, the resource sampler.
+
+        Args:
+            cgroup: The process's cgroup, which the sampler reads.
+        """
         self._monitor = threading.Thread(
             target=self._monitor_process,
             daemon=True,
@@ -163,13 +202,12 @@ class BackgroundProcess:
         if self._measure:
             self._sampler = ResourceSampler(
                 names=self._measure,
-                cgroup=self._cgroup,
+                cgroup=cgroup,
                 output_dir=self._cwd or Path.cwd(),
                 interval=self._measure_interval,
                 flamegraph=self._flamegraph,
             )
             self._sampler.start()
-        return self
 
     def __exit__(
         self,
@@ -190,10 +228,7 @@ class BackgroundProcess:
         """
         if self._dry_run:
             return
-        if self._stdout:
-            self._stdout.close()
-        if self._stderr:
-            self._stderr.close()
+        self._close_streams()
         self._exiting.set()
 
         assert self._cgroup is not None

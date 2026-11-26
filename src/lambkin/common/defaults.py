@@ -34,6 +34,13 @@ SIGKILL_GRACE_PERIOD: Final[float] = 5.0
 # Polling interval in seconds when waiting for cgroup processes to exit.
 CGROUP_POLL_INTERVAL: Final[float] = 0.05
 
+# Environment variable the lambkin CLI sets to the run cgroup, the parent of
+# every iteration cgroup. The script itself runs in its "script" child.
+RUN_CGROUP_ENV: Final[str] = "LAMBKIN_RUN_CGROUP"
+
+# Name of the run cgroup's child that holds the benchmark script process.
+SCRIPT_CGROUP: Final[str] = "script"
+
 # Where to route process output. Either 'file' or 'console'.
 LOG_OUTPUT: Final[str] = "file"
 

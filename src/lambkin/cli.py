@@ -38,7 +38,9 @@ from typing import Any
 import click
 from click.formatting import HelpFormatter
 
+from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
+    cgroup_joiner,
     find_app_slice,
     find_delegated_cgroup,
     kill_cgroup_tree,
@@ -135,6 +137,9 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
         0    The benchmark script completed successfully.
         130  The benchmark was interrupted via Ctrl-C (SIGINT).
         N    Any other return code is propagated from the benchmark script.
+
+    If the script cannot be started, the run cgroup is removed and the error
+    propagates.
     """
     # TODO(teresa-ortega): Handle concurrent runs, interrupted benchmarks, and re-runs
     # (e.g. detect an already active scope, support partial restarts).
@@ -149,9 +154,6 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
         logger.debug("app.slice not available, falling back to delegated cgroup")
         parent = find_delegated_cgroup()
 
-    run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
-    logger.debug("run_cgroup: %s", run_cgroup)
-
     # Save the terminal state before launching the benchmark script.
     # start_new_session=True detaches the script from the terminal's process
     # group, which can leave the terminal in a bad state when the script is
@@ -164,24 +166,45 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
 
     signal.signal(signal.SIGINT, _handle_sigint)
 
-    # Launch the benchmark script in a new session so that Ctrl-C (SIGINT) is
-    # delivered only to the CLI process, not to the script.
-    # preexec_fn places the child process inside run_cgroup immediately after
-    # fork() but before exec(), ensuring it is tracked from the start.
-    proc = subprocess.Popen(
-        [sys.executable, str(script), "--log-level", log_level, *args],
-        start_new_session=True,
-        preexec_fn=lambda: (run_cgroup / "cgroup.procs").write_text(str(os.getpid())),
-    )
-    try:
-        proc.wait()
-    except KeyboardInterrupt:
-        logger.warning("Interrupted, cleaning up benchmark processes...")
+    # The run cgroup holds no processes itself: the script lives in its
+    # script/ leaf and every iteration gets a sibling cgroup. cgroup v2
+    # only lets an inner node with no member processes enable controllers.
+    run_cgroup = make_cgroup(parent, f"lambkin-{script.stem}-{uuid.uuid4().hex[:8]}")
+    logger.debug("run_cgroup: %s", run_cgroup)
+
+    def _clean_up() -> None:
+        """Kill whatever runs in the run cgroup, remove it, restore the tty."""
         kill_cgroup_tree(run_cgroup)
         remove_cgroup_tree(run_cgroup)
         _restore_terminal_state(terminal_state)
-        sys.exit(130)
 
-    _restore_terminal_state(terminal_state)
-    remove_cgroup_tree(run_cgroup)
+    # Launch the benchmark script in a new session so that Ctrl-C (SIGINT) is
+    # delivered only to the CLI process, not to the script.
+    # preexec_fn places the child process inside the script cgroup
+    # immediately after fork() but before exec(), ensuring it is tracked from
+    # the start. The script finds the run cgroup through the environment.
+    try:
+        script_cgroup = make_cgroup(run_cgroup, defaults.SCRIPT_CGROUP)
+        proc = subprocess.Popen(
+            [sys.executable, str(script), "--log-level", log_level, *args],
+            start_new_session=True,
+            env={**os.environ, defaults.RUN_CGROUP_ENV: str(run_cgroup)},
+            preexec_fn=cgroup_joiner(script_cgroup),
+        )
+        proc.wait()
+    except KeyboardInterrupt:
+        # Also covers Ctrl-C while the script was still starting.
+        logger.warning("Interrupted, cleaning up benchmark processes...")
+        _clean_up()
+        sys.exit(130)
+    except BaseException:
+        # The script could not be started: nothing else removes the run
+        # cgroup. Killing first covers a child that was already forked.
+        _clean_up()
+        raise
+
+    # The script is gone, but a process it left behind, such as one started
+    # by a benchmark-level hook, may still run in script/ or in an iteration
+    # cgroup it never tore down. Kill them so the run cgroup can be removed.
+    _clean_up()
     sys.exit(proc.returncode)
