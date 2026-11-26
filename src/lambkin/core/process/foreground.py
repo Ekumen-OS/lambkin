@@ -51,9 +51,6 @@ def run_foreground(
 ) -> int | None:
     """Run a command in its own cgroup and wait for it to finish.
 
-    A CommandError from starting the command, for example because it is not
-    installed or could not join its cgroup, propagates to the caller.
-
     Args:
         argv: The command to run as a list of tokens.
         parent_cgroup: The iteration cgroup the command's cgroup goes under,
@@ -66,7 +63,11 @@ def run_foreground(
     Returns:
         The command's return code, or None if a ``LambkinSIGUSR1Interrupt``
         arrived while it ran or while it was cleaned up.
-    """
+
+    Raises:
+        CommandError: If the command could not be started, for example
+            because it is not installed or could not join its cgroup.
+    """  # noqa: DOC502 - raised by start_process and spawn_in_cgroup
     proc: subprocess.Popen[bytes] | None = None
     cgroup: Path | None = None
     interrupted = False

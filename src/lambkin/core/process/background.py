@@ -122,12 +122,14 @@ class BackgroundProcess:
         """Start the background process inside its own cgroup.
 
         In dry-run mode, logs the command at debug level instead of executing it.
-        A CommandError from starting the command, for example because it is
-        not installed or could not join its cgroup, propagates to the caller.
 
         Returns:
             BackgroundProcess: This instance.
-        """
+
+        Raises:
+            CommandError: If the command could not be started, for example
+                because it is not installed or could not join its cgroup.
+        """  # noqa: DOC502 - raised by spawn_in_cgroup
         if self._dry_run:
             logger.debug("[DRY RUN BG] %s", shlex.join(self._argv))
             return self
