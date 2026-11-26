@@ -20,7 +20,6 @@ alongside all other benchmark artefacts.
 """
 
 import os
-import subprocess
 
 from lambkin.core.shell.proxy import CommandProxy
 
@@ -46,25 +45,6 @@ class RosLaunchCommand(CommandProxy):
         env = os.environ.copy()
         env["ROS_LOG_DIR"] = str(self._cwd)
         return env
-
-    def _make_popen(self, argv, stdout, stderr) -> subprocess.Popen:
-        """Launch the process with ROS_LOG_DIR set to the iteration directory.
-
-        Args:
-            argv: The command to run.
-            stdout: stdout stream configuration.
-            stderr: stderr stream configuration.
-
-        Returns:
-            The running process.
-        """
-        return subprocess.Popen(
-            argv,
-            cwd=self._cwd,
-            stdout=stdout,
-            stderr=stderr,
-            env=self._make_env(),
-        )
 
     def build_env(self) -> dict:
         """Override of CommandProxy.build_env.

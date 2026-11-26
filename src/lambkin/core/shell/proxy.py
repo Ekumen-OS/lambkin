@@ -190,6 +190,7 @@ class CommandProxy:
             cwd=self._cwd,
             stdout=stdout,
             stderr=stderr,
+            env=self.build_env(),
         )
 
     def open_streams(self, log_output: str | None = None) -> tuple:
