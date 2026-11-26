@@ -23,6 +23,33 @@ class LambkinError(Exception):
     """Base class for all lambkin SDK errors."""
 
 
+class CommandError(Exception):
+    """Raised when a shell command cannot be started or exits with an error.
+
+    Attributes:
+        command:    The argv list passed to the operating system.
+        returncode: Exit code of the process, or None if it never started.
+    """
+
+    def __init__(
+        self,
+        command: list[str],
+        message: str,
+        returncode: int | None = None,
+    ) -> None:
+        """Initialize the error with the command that failed and its cause.
+
+        Args:
+            command:    The argv list that was passed to the operating system.
+            message:    Human-readable description of the failure.
+            returncode: The exit code returned by the process, or None if it
+                        never started.
+        """
+        self.command = command
+        self.returncode = returncode
+        super().__init__(message)
+
+
 class LambkinSystemdNotFoundError(LambkinError):
     """Raised when systemd-run is not found on the system."""
 

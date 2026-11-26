@@ -19,7 +19,9 @@ Each shell implementation exposes the same interface, allowing benchmarks to
 switch between dry-run and real execution without changing any benchmark code.
 """
 
-from .proxy import CommandError, ShellProxy
+from lambkin.common.exceptions import CommandError
+
+from .proxy import ShellProxy
 
 __all__ = [
     "ShellProxy",
