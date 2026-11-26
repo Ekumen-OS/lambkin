@@ -21,8 +21,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from lambkin.core.process.foreground import _cmdline
 from lambkin.core.shell import CommandError, ShellProxy
-from lambkin.core.shell.proxy import _cmdline
 from lambkin.core.shell.ros.launch import RosLaunchCommand
 
 
@@ -288,13 +288,13 @@ def test_ros_launch_foreground_child_gets_ros_log_dir(tmp_path, monkeypatch, cgr
     popen = MagicMock()
     popen.return_value.returncode = 0
     popen.return_value.poll.return_value = 0
-    monkeypatch.setattr("lambkin.core.shell.proxy.subprocess.Popen", popen)
+    monkeypatch.setattr("lambkin.core.process.foreground.subprocess.Popen", popen)
     monkeypatch.setattr(
-        "lambkin.core.shell.proxy.make_process_cgroup",
+        "lambkin.core.process.foreground.make_process_cgroup",
         lambda parent, argv: parent / "ros2-1234",
     )
     monkeypatch.setattr(
-        "lambkin.core.shell.proxy.CommandProxy._release_cgroup",
+        "lambkin.core.process.foreground._release_cgroup",
         lambda *args, **kwargs: None,
     )
     s = ShellProxy(

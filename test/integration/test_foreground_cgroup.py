@@ -26,6 +26,7 @@ import pytest
 
 from lambkin.common import defaults, signals
 from lambkin.common.exceptions import LambkinSIGUSR1Interrupt
+from lambkin.core.process import foreground
 from lambkin.core.process.cgroup import (
     find_delegated_cgroup,
     kill_cgroup_tree,
@@ -33,7 +34,6 @@ from lambkin.core.process.cgroup import (
     remove_cgroup_tree,
 )
 from lambkin.core.process.resources import pids_in_cgroup
-from lambkin.core.shell import proxy
 from lambkin.core.shell.proxy import CommandError, CommandProxy, ShellProxy
 
 
@@ -91,7 +91,7 @@ def test_foreground_orphan_is_killed_with_warning(
     # to the root logger that caplog listens on.
     monkeypatch.setattr(logging.getLogger("lambkin"), "propagate", True)
     pid_file = tmp_path / "orphan.pid"
-    with caplog.at_level(logging.WARNING, logger="lambkin.core.shell.proxy"):
+    with caplog.at_level(logging.WARNING, logger="lambkin.core.process.foreground"):
         shell.sh("-c", f"sleep 60 & echo $! > {pid_file}; exit 0")
 
     orphan = int(pid_file.read_text())
@@ -267,7 +267,9 @@ def test_foreground_child_setup_failure_cleans_up_cgroup(
     def _fail():
         raise OSError(errno.EACCES, "denied")
 
-    monkeypatch.setattr("lambkin.core.shell.proxy.cgroup_joiner", lambda cgroup: _fail)
+    monkeypatch.setattr(
+        "lambkin.core.process.foreground.cgroup_joiner", lambda cgroup: _fail
+    )
     with pytest.raises(CommandError, match="Could not prepare 'true'"):
         shell.true()
     assert _child_cgroups(iteration_cgroup) == []
@@ -290,8 +292,8 @@ def test_foreground_cleanup_failure_keeps_command_result(
     def _fail(cgroup):
         raise OSError(errno.EACCES, "denied")
 
-    monkeypatch.setattr("lambkin.core.shell.proxy.remove_cgroup", _fail)
-    with caplog.at_level(logging.WARNING, logger="lambkin.core.shell.proxy"):
+    monkeypatch.setattr("lambkin.core.process.foreground.remove_cgroup", _fail)
+    with caplog.at_level(logging.WARNING, logger="lambkin.core.process.foreground"):
         if returncode:
             with pytest.raises(CommandError) as excinfo:
                 shell.sh("-c", script)
@@ -313,14 +315,14 @@ def test_foreground_streams_closed_when_cleanup_raises(
         opened.extend(s for s in streams if s is not None)
         return streams
 
-    real_remove = proxy.remove_cgroup
+    real_remove = foreground.remove_cgroup
 
     def _remove_then_fail(cgroup):
         real_remove(cgroup)
         raise _InterruptedError
 
     monkeypatch.setattr(CommandProxy, "open_streams", _record)
-    monkeypatch.setattr(proxy, "remove_cgroup", _remove_then_fail)
+    monkeypatch.setattr(foreground, "remove_cgroup", _remove_then_fail)
     with pytest.raises(_InterruptedError):
         shell.true()
     assert opened
@@ -362,7 +364,7 @@ def test_foreground_sigusr1_during_cleanup_finishes_cleanup(
     timer = lambkin_sigusr1(1.0)
     start = time.monotonic()
     try:
-        with caplog.at_level(logging.WARNING, logger="lambkin.core.shell.proxy"):
+        with caplog.at_level(logging.WARNING, logger="lambkin.core.process.foreground"):
             result = shell.sh(
                 "-c",
                 f"sh -c 'trap \"\" TERM; echo $$ > {pid_file}; exec sleep 63' &"

@@ -21,21 +21,13 @@ processes to be launched and managed through a consistent interface.
 from __future__ import annotations
 
 import logging
-import os
 import shlex
 import subprocess
 from pathlib import Path
 from typing import Any, Final
 
 from lambkin.common import defaults, exceptions
-from lambkin.core.process.cgroup import (
-    cgroup_joiner,
-    kill_cgroup,
-    kill_cgroup_tree,
-    make_process_cgroup,
-    remove_cgroup,
-)
-from lambkin.core.process.resources import pids_in_cgroup, read_cmdline
+from lambkin.core.process.foreground import CgroupSetupError, run_foreground
 
 logger = logging.getLogger(__name__)
 
@@ -184,146 +176,6 @@ class CommandProxy:
         """Return the dry run flag."""
         return self._dry_run
 
-    def _make_popen(
-        self,
-        argv: list[str],
-        stdout,
-        stderr,
-        cgroup: Path | None = None,
-    ) -> subprocess.Popen:
-        """Create and return a subprocess with the given streams.
-
-        Args:
-            argv: The command to run as a list of tokens.
-            stdout: stdout stream configuration passed to subprocess.Popen.
-            stderr: stderr stream configuration passed to subprocess.Popen.
-            cgroup: Cgroup the child joins before exec(), or None to stay in
-                the caller's cgroup.
-
-        Returns:
-            The running subprocess.
-        """
-        return subprocess.Popen(
-            argv,
-            cwd=self._cwd,
-            stdout=stdout,
-            stderr=stderr,
-            env=self.build_env(),
-            preexec_fn=cgroup_joiner(cgroup) if cgroup is not None else None,
-        )
-
-    def _make_cgroup(self, parent: Path, argv: list[str]) -> Path:
-        """Create the cgroup a foreground command runs in.
-
-        Args:
-            parent: The iteration cgroup the command's cgroup goes under.
-            argv: The command about to run, used to name the cgroup.
-
-        Returns:
-            The new cgroup directory.
-
-        Raises:
-            CommandError: If the cgroup cannot be created, for example because
-                the iteration cgroup is gone. Raised as its own error so it is
-                not reported as a problem with the command itself.
-        """
-        try:
-            return make_process_cgroup(parent, argv)
-        except OSError as e:
-            raise CommandError(
-                argv,
-                f"Could not create a cgroup for {argv[0]!r} under {parent}: {e}",
-            ) from e
-
-    def _release_cgroup(
-        self, argv: list[str], cgroup: Path, *, retry: bool = False
-    ) -> None:
-        """Kill what a finished foreground command left behind and remove its cgroup.
-
-        Processes still in the cgroup, or in cgroups the command created
-        below it, after the command returned are orphans, for example
-        something it daemonised. They are logged as a warning before being
-        terminated.
-
-        Args:
-            argv: The command that ran, for the warning message.
-            cgroup: The command's cgroup.
-            retry: True if an earlier call was interrupted after it had
-                started. The orphans were then already reported and sent
-                SIGTERM, so they are not reported again and are killed
-                without a second grace period.
-        """
-        try:
-            cgroups = [Path(root) for root, _, _ in os.walk(cgroup)]
-            if not cgroups:
-                return  # Already gone.
-            orphans = [pid for cg in cgroups for pid in pids_in_cgroup(cg)]
-            if orphans:
-                if not retry:
-                    logger.warning(
-                        "%s left %d process(es) running after it returned; "
-                        "terminating them: %s",
-                        shlex.join(argv),
-                        len(orphans),
-                        "; ".join(f"{pid} ({_cmdline(pid)})" for pid in orphans),
-                    )
-                kill_cgroup(
-                    cgroup,
-                    grace_period=0.0 if retry else defaults.SIGTERM_GRACE_PERIOD,
-                )
-                if len(cgroups) > 1:
-                    # kill_cgroup only signals the cgroup's own members.
-                    kill_cgroup_tree(cgroup)
-            for cg in reversed(cgroups):  # Deepest first.
-                remove_cgroup(cg)
-        except OSError as e:
-            # Best effort: this runs in a finally block, so raising here would
-            # hide the command's own result. The iteration teardown removes
-            # whatever is left.
-            logger.warning("Could not clean up cgroup %s: %s", cgroup, e)
-
-    def _finish(
-        self,
-        argv: list[str],
-        proc: subprocess.Popen[bytes] | None,
-        cgroup: Path | None,
-    ) -> bool:
-        """Stop a foreground command if it still runs and release its cgroup.
-
-        A background process that dies meanwhile raises
-        ``LambkinSIGUSR1Interrupt`` wherever this happens to be, for example
-        while an orphan gets its SIGTERM grace period. Every step can be
-        repeated, so cleanup simply starts over until it completes; orphans
-        are reported and given their SIGTERM grace period only once.
-
-        Args:
-            argv: The command that ran.
-            proc: The command's process, or None if it never started.
-            cgroup: The command's cgroup, or None if it has none.
-
-        Returns:
-            True if a ``LambkinSIGUSR1Interrupt`` arrived during cleanup.
-        """
-        interrupted = False
-        release_started = False
-        while True:
-            try:
-                if proc is not None and proc.poll() is None:
-                    # Interrupted while the command still runs: kill its whole
-                    # tree at once, not just the direct child.
-                    if cgroup is not None:
-                        kill_cgroup_tree(cgroup)
-                    else:
-                        proc.kill()
-                    proc.wait()
-                if cgroup is not None:
-                    retry = release_started
-                    release_started = True
-                    self._release_cgroup(argv, cgroup, retry=retry)
-                return interrupted
-            except exceptions.LambkinSIGUSR1Interrupt:
-                interrupted = True
-
     def open_streams(self, log_output: str | None = None) -> tuple:
         """Open log files for stdout and stderr in the iteration directory.
 
@@ -447,18 +299,21 @@ class CommandProxy:
             return subprocess.CompletedProcess(argv, returncode=0)
 
         stdout, stderr = None, None
-        proc: subprocess.Popen[bytes] | None = None
-        cgroup: Path | None = None
-        interrupted = False
-
+        returncode: int | None = None
         try:
             stdout, stderr = self.open_streams(per_call_log_output)
-            if self._cgroup is not None:
-                cgroup = self._make_cgroup(self._cgroup, argv)
-            proc = self._make_popen(argv, stdout, stderr, cgroup)
-            proc.wait()
+            returncode = run_foreground(
+                argv,
+                self._cgroup,
+                cwd=self._cwd,
+                env=self.build_env(),
+                stdout=stdout,
+                stderr=stderr,
+            )
         except exceptions.LambkinSIGUSR1Interrupt:
-            interrupted = True
+            pass
+        except CgroupSetupError as e:
+            raise CommandError(argv, str(e)) from e
         except subprocess.SubprocessError as e:
             # Raised by Popen when cgroup_joiner fails in the child.
             raise CommandError(
@@ -485,42 +340,23 @@ class CommandProxy:
                 f"OS error while starting {argv[0]!r}: {e}.",
             ) from e
         finally:
-            try:
-                if self._finish(argv, proc, cgroup):
-                    interrupted = True
-            finally:
-                if stdout:
-                    stdout.close()
-                if stderr:
-                    stderr.close()
+            if stdout:
+                stdout.close()
+            if stderr:
+                stderr.close()
 
-        if interrupted:
-            # dummy return — never observed, background.__exit__ raises
-            # LambkinProcessDiedUnexpectedlyError immediately after
+        if returncode is None:
+            # Interrupted. Dummy return — never observed, background.__exit__
+            # raises LambkinProcessDiedUnexpectedlyError immediately after.
             return subprocess.CompletedProcess(argv, returncode=-1)
 
-        assert proc is not None
-        if not interrupted and proc.returncode != 0:
+        if returncode != 0:
             raise CommandError(
                 argv,
-                f"Command {shlex.join(argv)!r} failed with return code"
-                f" {proc.returncode}.",
-                returncode=proc.returncode,
+                f"Command {shlex.join(argv)!r} failed with return code {returncode}.",
+                returncode=returncode,
             )
-        return subprocess.CompletedProcess(argv, returncode=proc.returncode)
-
-
-def _cmdline(pid: int) -> str:
-    """Return a process' command line for log messages, best effort.
-
-    Args:
-        pid: The process ID.
-
-    Returns:
-        The space-joined command line, or "?" if it cannot be read.
-    """
-    argv = read_cmdline(pid, Path("/proc"))
-    return " ".join(argv) if argv else "?"
+        return subprocess.CompletedProcess(argv, returncode=returncode)
 
 
 class ShellProxy:
