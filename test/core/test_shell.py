@@ -17,6 +17,7 @@
 import subprocess
 import time
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -279,3 +280,26 @@ def test_cmdline_of_zombie_is_placeholder():
         assert _cmdline(proc.pid) == "?"
     finally:
         proc.wait()
+
+
+@pytest.mark.parametrize("cgroup", [None, "iter"])
+def test_ros_launch_foreground_child_gets_ros_log_dir(tmp_path, monkeypatch, cgroup):
+    """A foreground ros2 launch passes ROS_LOG_DIR to the process it starts."""
+    popen = MagicMock()
+    popen.return_value.returncode = 0
+    popen.return_value.poll.return_value = 0
+    monkeypatch.setattr("lambkin.core.shell.proxy.subprocess.Popen", popen)
+    monkeypatch.setattr(
+        "lambkin.core.shell.proxy.make_process_cgroup",
+        lambda parent, argv: parent / "ros2-1234",
+    )
+    monkeypatch.setattr(
+        "lambkin.core.shell.proxy.CommandProxy._release_cgroup",
+        lambda *args, **kwargs: None,
+    )
+    s = ShellProxy(
+        dry_run=False, cwd=tmp_path, cgroup=tmp_path / cgroup if cgroup else None
+    )
+    s.ros2.launch("pkg", "file.launch.py")
+    assert popen.call_args.args[0] == ["ros2", "launch", "pkg", "file.launch.py"]
+    assert popen.call_args.kwargs["env"]["ROS_LOG_DIR"] == str(tmp_path)

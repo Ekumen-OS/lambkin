@@ -72,6 +72,16 @@ with IterationContext.from_params(
     if os.environ.get("LAMBKIN_TEST_HANG"):
         (out / "ready.json").write_text(json.dumps(report))
         ctx.shell.sleep(60)
+if os.environ.get("LAMBKIN_TEST_LEAVE"):
+    # Outside any iteration, as a benchmark-level hook would: stays in script/.
+    import subprocess
+    left = subprocess.Popen(
+        ["sleep", "300"],
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    report["leftover"] = left.pid
 (out / "report.json").write_text(json.dumps(report))
 """
 
@@ -169,10 +179,17 @@ def test_ctrl_c_mid_iteration_leaves_no_cgroup(script, tmp_path):
             assert proc.poll() is None, (tmp_path / "cli.log").read_text()
             time.sleep(0.05)
         assert ready.exists(), "script never reached the foreground command"
-        # Let the foreground sleep start and join its cgroup.
-        time.sleep(0.5)
-        run = Path(json.loads(ready.read_text())["run"])
-        assert run.exists()
+        report = json.loads(ready.read_text())
+        run = Path(report["run"])
+        # SIGINT only once the foreground sleep runs in its own cgroup, so the
+        # test covers Ctrl-C in the middle of a command.
+        iteration = Path(report["iter"])
+        deadline = time.monotonic() + 10
+        while not any(
+            (p / "cgroup.procs").read_text().strip() for p in iteration.glob("sleep-*")
+        ):
+            assert time.monotonic() < deadline, "foreground sleep never started"
+            time.sleep(0.01)
 
         proc.send_signal(signal.SIGINT)
         assert proc.wait(timeout=30) == 130
@@ -183,4 +200,32 @@ def test_ctrl_c_mid_iteration_leaves_no_cgroup(script, tmp_path):
         log.close()
 
     assert not run.exists()
+    assert _leftover_run_cgroups(script) == []
+
+
+def _running(pid: int) -> bool:
+    """Return whether pid is a live process.
+
+    A killed process whose parent is gone is reparented to PID 1, and stays a
+    zombie until PID 1 reaps it. In a container whose PID 1 is not an init,
+    as in CI's ``podman run ... bash -c "... && uv run pytest"``, that never
+    happens. A zombie has exited and left its cgroup, so it counts as gone.
+    """
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+    except FileNotFoundError:
+        return False
+    return stat.rsplit(") ", 1)[1][0] != "Z"
+
+
+def test_process_left_by_script_is_killed_on_normal_exit(script, tmp_path):
+    """A process the script leaves in script/ is killed when the script exits."""
+    report = _run_cli(script, _env(tmp_path, LAMBKIN_TEST_LEAVE="1"))
+
+    pid = report["leftover"]
+    deadline = time.monotonic() + 5
+    while _running(pid) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert not _running(pid), f"process {pid} left by the script is still alive"
+    assert not Path(report["run"]).exists()
     assert _leftover_run_cgroups(script) == []

@@ -15,7 +15,7 @@
 """Tests for the lambkin CLI entry point."""
 
 import subprocess
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from click.testing import CliRunner
@@ -86,9 +86,10 @@ def test_script_runs_in_script_with_run_cgroup_exported(dummy_script, tmp_path):
                 run_cgroup / name if parent == run_cgroup else run_cgroup
             ),
         ) as mk:
-            with patch("lambkin.cli.remove_cgroup_tree"):
-                with patch("lambkin.cli.cgroup_joiner") as mock_joiner:
-                    result = runner.invoke(main, [str(dummy_script)])
+            with patch("lambkin.cli.kill_cgroup_tree"):
+                with patch("lambkin.cli.remove_cgroup_tree"):
+                    with patch("lambkin.cli.cgroup_joiner") as mock_joiner:
+                        result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 0
     mk.assert_any_call(run_cgroup, "script")
     assert mock_popen.call_args.kwargs["env"]["LAMBKIN_RUN_CGROUP"] == str(run_cgroup)
@@ -177,3 +178,27 @@ def test_help_output_contains_expected_sections():
     assert "SDK Options (always available)" in result.output
     assert "Custom Options (script-defined)" in result.output
     assert "--dry-run" in result.output
+
+
+def test_normal_exit_kills_run_cgroup_before_removing_it(dummy_script, tmp_path):
+    """Whatever the script left running is killed before the cgroup is removed."""
+    run_cgroup = tmp_path / "lambkin-bench-1234"
+    calls = MagicMock()
+    runner = CliRunner()
+    with patch("subprocess.Popen") as mock_popen:
+        mock_popen.return_value = MagicMock(returncode=3)
+        with patch(
+            "lambkin.cli.make_cgroup",
+            side_effect=lambda parent, name: (
+                run_cgroup / name if parent == run_cgroup else run_cgroup
+            ),
+        ):
+            with patch("lambkin.cli.cgroup_joiner"):
+                with patch("lambkin.cli.kill_cgroup_tree", calls.kill):
+                    with patch("lambkin.cli.remove_cgroup_tree", calls.remove):
+                        result = runner.invoke(main, [str(dummy_script)])
+    assert result.exit_code == 3
+    assert calls.mock_calls == [
+        call.kill(run_cgroup),
+        call.remove(run_cgroup),
+    ]

@@ -15,6 +15,7 @@
 """Unit tests for background process management via cgroups v2."""
 
 import signal
+import sys
 import time
 
 import pytest
@@ -25,7 +26,7 @@ from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
 from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
 from lambkin.core.process.resources import ResourceSampler
-from lambkin.core.shell.proxy import ShellProxy
+from lambkin.core.shell.proxy import CommandError, ShellProxy
 
 COOPERATIVE = (
     "import signal, sys, time; "
@@ -380,8 +381,11 @@ def test_background_death_during_start_raises_died_and_cleans_up(tmp_path, monke
     signals.setup()
 
     def _slow_start(self):
-        # `true` exits at once, so its SIGUSR1 arrives during this sleep.
-        time.sleep(2)
+        # `true` exits at once; its SIGUSR1 interrupts this wait with
+        # LambkinSIGUSR1Interrupt. Returning normally means it never came.
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            time.sleep(0.01)
 
     monkeypatch.setattr(ResourceSampler, "start", _slow_start)
     monkeypatch.setattr(ResourceSampler, "stop", lambda self: None)
@@ -412,3 +416,37 @@ def test_background_cleaned_up_when_sampler_fails_to_start(tmp_path, monkeypatch
             pass
     assert [p for p in cgroup.iterdir() if p.is_dir()] == []
     assert (cgroup / "cgroup.procs").read_text() == ""
+
+
+def test_background_not_found_cleans_up_cgroup_and_streams(tmp_path):
+    """A command that cannot be started leaves no cgroup and no open log file."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    bp = background(shell.lambkin_no_such_command_xyz)
+    with pytest.raises(FileNotFoundError):
+        with bp:
+            pass
+    assert [p for p in cgroup.iterdir() if p.is_dir()] == []
+    assert bp._stdout.closed and bp._stderr.closed
+
+
+def test_background_child_setup_failure_raises_command_error(tmp_path, monkeypatch):
+    """A child that cannot join its cgroup raises CommandError, like foreground."""
+    iteration_dir = tmp_path / "var_1" / "iter_1"
+    iteration_dir.mkdir(parents=True)
+    cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
+
+    def _fail():
+        raise OSError(13, "denied")
+
+    # The package re-exports the background() function under the module's
+    # name, so patch the module object itself.
+    module = sys.modules["lambkin.core.process.background"]
+    monkeypatch.setattr(module, "cgroup_joiner", lambda cgroup: _fail)
+    shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
+    with pytest.raises(CommandError, match="Could not prepare 'sleep'"):
+        with background(shell.sleep, "30"):
+            pass
+    assert [p for p in cgroup.iterdir() if p.is_dir()] == []

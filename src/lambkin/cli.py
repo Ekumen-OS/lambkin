@@ -203,6 +203,8 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
         _clean_up()
         raise
 
-    _restore_terminal_state(terminal_state)
-    remove_cgroup_tree(run_cgroup)
+    # The script is gone, but a process it left behind, such as one started
+    # by a benchmark-level hook, may still run in script/ or in an iteration
+    # cgroup it never tore down. Kill them so the run cgroup can be removed.
+    _clean_up()
     sys.exit(proc.returncode)

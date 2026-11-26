@@ -40,7 +40,7 @@ from lambkin.core.process.cgroup import (
     remove_cgroup,
 )
 from lambkin.core.process.resources import ResourceSampler
-from lambkin.core.shell.proxy import CommandProxy
+from lambkin.core.shell.proxy import CommandError, CommandProxy
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +130,10 @@ class BackgroundProcess:
 
         Returns:
             BackgroundProcess: This instance.
+
+        Raises:
+            CommandError: If the child could not be prepared to run, for
+                example because it could not join its cgroup.
         """
         if self._dry_run:
             logger.debug("[DRY RUN BG] %s", shlex.join(self._argv))
@@ -137,14 +141,27 @@ class BackgroundProcess:
 
         cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)
         self._cgroup = cgroup
-        self._proc = subprocess.Popen(
-            self._argv,
-            preexec_fn=cgroup_joiner(cgroup),
-            cwd=self._cwd,
-            env=self._env,
-            stdout=self._stdout,
-            stderr=self._stderr,
-        )
+        try:
+            self._proc = subprocess.Popen(
+                self._argv,
+                preexec_fn=cgroup_joiner(cgroup),
+                cwd=self._cwd,
+                env=self._env,
+                stdout=self._stdout,
+                stderr=self._stderr,
+            )
+        except BaseException as e:
+            # Nothing started, so __exit__ has nothing to stop: close the log
+            # files and remove the empty cgroup here.
+            self._close_streams()
+            remove_cgroup(cgroup)
+            if isinstance(e, subprocess.SubprocessError):
+                # Raised by Popen when the child could not join its cgroup.
+                raise CommandError(
+                    self._argv,
+                    f"Could not prepare {self._argv[0]!r} to run: {e}",
+                ) from e
+            raise
 
         try:
             self._start_watchers(cgroup)
@@ -156,6 +173,13 @@ class BackgroundProcess:
             self.__exit__(type(e), e, e.__traceback__)
             raise
         return self
+
+    def _close_streams(self) -> None:
+        """Close the process's log files, if any."""
+        if self._stdout:
+            self._stdout.close()
+        if self._stderr:
+            self._stderr.close()
 
     def _start_watchers(self, cgroup: Path) -> None:
         """Start the death monitor and, if requested, the resource sampler.
@@ -204,10 +228,7 @@ class BackgroundProcess:
         """
         if self._dry_run:
             return
-        if self._stdout:
-            self._stdout.close()
-        if self._stderr:
-            self._stderr.close()
+        self._close_streams()
         self._exiting.set()
 
         assert self._cgroup is not None

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import os
 import shlex
 import subprocess
 from collections.abc import Callable
@@ -34,7 +35,7 @@ from lambkin.core.process.cgroup import (
     kill_cgroup,
     kill_cgroup_tree,
     make_process_cgroup,
-    remove_cgroup,
+    remove_cgroup_tree,
 )
 from lambkin.core.process.resources import pids_in_cgroup, read_cmdline
 
@@ -253,29 +254,46 @@ class CommandProxy:
                 f"Could not create a cgroup for {argv[0]!r} under {parent}: {e}",
             ) from e
 
-    def _release_cgroup(self, argv: list[str], cgroup: Path) -> None:
+    def _release_cgroup(
+        self, argv: list[str], cgroup: Path, *, retry: bool = False
+    ) -> None:
         """Kill what a finished foreground command left behind and remove its cgroup.
 
-        Processes still in the cgroup after the command returned are orphans,
-        for example something it daemonised. They are logged as a warning
-        before being terminated.
+        Processes still in the cgroup, or in cgroups the command created
+        below it, after the command returned are orphans, for example
+        something it daemonised. They are logged as a warning before being
+        terminated.
 
         Args:
             argv: The command that ran, for the warning message.
             cgroup: The command's cgroup.
+            retry: True if an earlier call was interrupted after it had
+                started. The orphans were then already reported and sent
+                SIGTERM, so they are not reported again and are killed
+                without a second grace period.
         """
-        orphans = pids_in_cgroup(cgroup)
         try:
+            cgroups = [Path(root) for root, _, _ in os.walk(cgroup)]
+            if not cgroups:
+                return  # Already gone.
+            orphans = [pid for cg in cgroups for pid in pids_in_cgroup(cg)]
             if orphans:
-                logger.warning(
-                    "%s left %d process(es) running after it returned; "
-                    "terminating them: %s",
-                    shlex.join(argv),
-                    len(orphans),
-                    "; ".join(f"{pid} ({_cmdline(pid)})" for pid in orphans),
+                if not retry:
+                    logger.warning(
+                        "%s left %d process(es) running after it returned; "
+                        "terminating them: %s",
+                        shlex.join(argv),
+                        len(orphans),
+                        "; ".join(f"{pid} ({_cmdline(pid)})" for pid in orphans),
+                    )
+                kill_cgroup(
+                    cgroup,
+                    grace_period=0.0 if retry else defaults.SIGTERM_GRACE_PERIOD,
                 )
-                kill_cgroup(cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
-            remove_cgroup(cgroup)
+                if len(cgroups) > 1:
+                    # kill_cgroup only signals the cgroup's own members.
+                    kill_cgroup_tree(cgroup)
+            remove_cgroup_tree(cgroup)
         except OSError as e:
             # Best effort: this runs in a finally block, so raising here would
             # hide the command's own result. The iteration teardown removes
@@ -293,7 +311,8 @@ class CommandProxy:
         A background process that dies meanwhile raises
         ``LambkinSIGUSR1Interrupt`` wherever this happens to be, for example
         while an orphan gets its SIGTERM grace period. Every step can be
-        repeated, so cleanup simply starts over until it completes.
+        repeated, so cleanup simply starts over until it completes; orphans
+        are reported and given their SIGTERM grace period only once.
 
         Args:
             argv: The command that ran.
@@ -304,6 +323,7 @@ class CommandProxy:
             True if a ``LambkinSIGUSR1Interrupt`` arrived during cleanup.
         """
         interrupted = False
+        release_started = False
         while True:
             try:
                 if proc is not None and proc.poll() is None:
@@ -315,7 +335,9 @@ class CommandProxy:
                         proc.kill()
                     proc.wait()
                 if cgroup is not None:
-                    self._release_cgroup(argv, cgroup)
+                    retry = release_started
+                    release_started = True
+                    self._release_cgroup(argv, cgroup, retry=retry)
                 return interrupted
             except exceptions.LambkinSIGUSR1Interrupt:
                 interrupted = True

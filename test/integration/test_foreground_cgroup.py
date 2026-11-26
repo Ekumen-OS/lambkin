@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from lambkin.common import signals
+from lambkin.common import defaults, signals
 from lambkin.common.exceptions import LambkinSIGUSR1Interrupt
 from lambkin.core.process.cgroup import (
     find_delegated_cgroup,
@@ -73,12 +73,25 @@ def _procs(cgroup: Path) -> list[str]:
     return (cgroup / "cgroup.procs").read_text().split()
 
 
+def _running(pid: int) -> bool:
+    """Return whether pid is a live process.
+
+    A killed process whose parent is gone is reparented to PID 1, and stays a
+    zombie until PID 1 reaps it. In a container whose PID 1 is not an init,
+    as in CI's ``podman run ... bash -c "... && uv run pytest"``, that never
+    happens. A zombie has exited and left its cgroup, so it counts as gone.
+    """
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+    except FileNotFoundError:
+        return False
+    return stat.rsplit(") ", 1)[1][0] != "Z"
+
+
 def _wait_gone(pid: int, timeout: float = 5.0) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
+        if not _running(pid):
             return True
         time.sleep(0.05)
     return False
@@ -115,6 +128,45 @@ def test_foreground_orphan_is_killed_with_warning(
         for r in caplog.records
     ), caplog.text
     assert _procs(iteration_cgroup) == []
+    assert _child_cgroups(iteration_cgroup) == []
+
+
+def test_foreground_clean_command_logs_no_warning(
+    shell, iteration_cgroup, caplog, monkeypatch
+):
+    """A command that leaves nothing behind logs no warning."""
+    monkeypatch.setattr(logging.getLogger("lambkin"), "propagate", True)
+    with caplog.at_level(logging.WARNING, logger="lambkin"):
+        shell.true()
+        shell.sh("-c", "sleep 0.1 & wait")
+    assert caplog.records == [], caplog.text
+    assert _child_cgroups(iteration_cgroup) == []
+
+
+def test_foreground_orphan_in_sub_cgroup_is_killed_with_warning(
+    shell, tmp_path, iteration_cgroup, caplog, monkeypatch
+):
+    """A process a command moved into a cgroup of its own is still cleaned up."""
+    monkeypatch.setattr(logging.getLogger("lambkin"), "propagate", True)
+    pid_file = tmp_path / "nested.pid"
+    script = tmp_path / "nest.sh"
+    script.write_text(
+        "cg=\"/sys/fs/cgroup$(sed -n 's/^0:://p' /proc/self/cgroup)\"\n"
+        'mkdir "$cg/sub"\n'
+        f'sh -c \'echo $$ > "$0/sub/cgroup.procs"; echo $$ > {pid_file};'
+        ' exec sleep 64\' "$cg" &\n'
+        f"while [ ! -s {pid_file} ]; do sleep 0.01; done\n"
+    )
+    with caplog.at_level(logging.WARNING, logger="lambkin"):
+        shell.sh(str(script))
+
+    nested = int(pid_file.read_text())
+    assert _wait_gone(nested), f"nested {nested} still alive"
+    assert any(
+        str(nested) in r.getMessage() and "sleep 64" in r.getMessage()
+        for r in caplog.records
+    ), caplog.text
+    assert "Could not remove cgroup" not in caplog.text
     assert _child_cgroups(iteration_cgroup) == []
 
 
@@ -260,7 +312,7 @@ def test_foreground_cleanup_failure_keeps_command_result(
     def _fail(cgroup):
         raise OSError(errno.EACCES, "denied")
 
-    monkeypatch.setattr("lambkin.core.shell.proxy.remove_cgroup", _fail)
+    monkeypatch.setattr("lambkin.core.shell.proxy.remove_cgroup_tree", _fail)
     with caplog.at_level(logging.WARNING, logger="lambkin.core.shell.proxy"):
         if returncode:
             with pytest.raises(CommandError) as excinfo:
@@ -283,14 +335,14 @@ def test_foreground_streams_closed_when_cleanup_raises(
         opened.extend(s for s in streams if s is not None)
         return streams
 
-    real_remove = proxy.remove_cgroup
+    real_remove = proxy.remove_cgroup_tree
 
     def _remove_then_fail(cgroup):
         real_remove(cgroup)
         raise _InterruptedError
 
     monkeypatch.setattr(CommandProxy, "open_streams", _record)
-    monkeypatch.setattr(proxy, "remove_cgroup", _remove_then_fail)
+    monkeypatch.setattr(proxy, "remove_cgroup_tree", _remove_then_fail)
     with pytest.raises(_InterruptedError):
         shell.true()
     assert opened
@@ -318,21 +370,35 @@ def lambkin_sigusr1():
 
 
 def test_foreground_sigusr1_during_cleanup_finishes_cleanup(
-    shell, tmp_path, iteration_cgroup, lambkin_sigusr1
+    shell, tmp_path, iteration_cgroup, lambkin_sigusr1, caplog, monkeypatch
 ):
-    """A background death while an orphan is being killed does not cut cleanup."""
+    """A background death while an orphan is being killed does not cut cleanup.
+
+    The orphan is reported once, and cleanup does not start a second SIGTERM
+    grace period.
+    """
+    monkeypatch.setattr(logging.getLogger("lambkin"), "propagate", True)
     pid_file = tmp_path / "stubborn.pid"
     # The orphan ignores SIGTERM, so cleanup spends the grace period waiting
     # on it; the interrupt lands in that wait.
     timer = lambkin_sigusr1(1.0)
+    start = time.monotonic()
     try:
-        result = shell.sh(
-            "-c",
-            f"sh -c 'trap \"\" TERM; echo $$ > {pid_file}; exec sleep 63' &"
-            f" while [ ! -s {pid_file} ]; do sleep 0.01; done",
-        )
+        with caplog.at_level(logging.WARNING, logger="lambkin.core.shell.proxy"):
+            result = shell.sh(
+                "-c",
+                f"sh -c 'trap \"\" TERM; echo $$ > {pid_file}; exec sleep 63' &"
+                f" while [ ! -s {pid_file} ]; do sleep 0.01; done",
+            )
     finally:
         timer.cancel()
+    elapsed = time.monotonic() - start
+
+    warnings = [r for r in caplog.records if "left 1 process(es)" in r.getMessage()]
+    assert len(warnings) == 1, caplog.text
+    # One grace period started at about 0 s and cut short at 1 s; a restarted
+    # one would run until about 1 + SIGTERM_GRACE_PERIOD.
+    assert elapsed < defaults.SIGTERM_GRACE_PERIOD, elapsed
 
     assert result.returncode == -1
     assert _wait_gone(int(pid_file.read_text()))
