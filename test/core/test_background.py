@@ -15,7 +15,6 @@
 """Unit tests for background process management via cgroups v2."""
 
 import signal
-import sys
 import time
 
 import pytest
@@ -24,7 +23,10 @@ import yaml
 from lambkin.common import defaults, signals
 from lambkin.common.exceptions import LambkinProcessDiedUnexpectedlyError
 from lambkin.core.process.background import background
-from lambkin.core.process.cgroup import find_delegated_cgroup, make_iteration_cgroup
+from lambkin.core.process.cgroup import (
+    find_delegated_cgroup,
+    make_iteration_cgroup,
+)
 from lambkin.core.process.resources import ResourceSampler
 from lambkin.core.shell.proxy import CommandError, ShellProxy
 
@@ -425,7 +427,7 @@ def test_background_not_found_cleans_up_cgroup_and_streams(tmp_path):
     cgroup = make_iteration_cgroup(find_delegated_cgroup(), iteration_dir)
     shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
     bp = background(shell.lambkin_no_such_command_xyz)
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(CommandError, match="Command not found"):
         with bp:
             pass
     assert [p for p in cgroup.iterdir() if p.is_dir()] == []
@@ -441,10 +443,9 @@ def test_background_child_setup_failure_raises_command_error(tmp_path, monkeypat
     def _fail():
         raise OSError(13, "denied")
 
-    # The package re-exports the background() function under the module's
-    # name, so patch the module object itself.
-    module = sys.modules["lambkin.core.process.background"]
-    monkeypatch.setattr(module, "cgroup_joiner", lambda cgroup: _fail)
+    monkeypatch.setattr(
+        "lambkin.core.process.cgroup.cgroup_joiner", lambda cgroup: _fail
+    )
     shell = ShellProxy(dry_run=False, cwd=iteration_dir, cgroup=cgroup)
     with pytest.raises(CommandError, match="Could not prepare 'sleep'"):
         with background(shell.sleep, "30"):

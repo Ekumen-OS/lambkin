@@ -288,9 +288,9 @@ def test_ros_launch_foreground_child_gets_ros_log_dir(tmp_path, monkeypatch, cgr
     popen = MagicMock()
     popen.return_value.returncode = 0
     popen.return_value.poll.return_value = 0
-    monkeypatch.setattr("lambkin.core.process.foreground.subprocess.Popen", popen)
+    monkeypatch.setattr("lambkin.core.process.cgroup.subprocess.Popen", popen)
     monkeypatch.setattr(
-        "lambkin.core.process.foreground.make_process_cgroup",
+        "lambkin.core.process.cgroup.make_process_cgroup",
         lambda parent, argv: parent / "ros2-1234",
     )
     monkeypatch.setattr(

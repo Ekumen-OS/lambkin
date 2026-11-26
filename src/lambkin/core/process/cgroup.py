@@ -17,12 +17,14 @@ import errno
 import logging
 import os
 import signal
+import subprocess
 import time
 import uuid
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
-from lambkin.common import defaults
+from lambkin.common import defaults, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -220,10 +222,25 @@ def remove_cgroup_tree(cgroup: Path) -> None:
     Args:
         cgroup (Path): The root cgroup directory to remove.
     """
-    for child in sorted(cgroup.iterdir(), reverse=True):
-        if child.is_dir():
-            remove_cgroup_tree(child)
+    for child in _child_cgroups(cgroup):
+        remove_cgroup_tree(child)
     remove_cgroup(cgroup)
+
+
+def _child_cgroups(cgroup: Path) -> list[Path]:
+    """Return a cgroup's child cgroups.
+
+    Uses the directory entries' types instead of a ``stat`` per entry, as
+    most entries are interface files.
+
+    Args:
+        cgroup (Path): The cgroup directory.
+
+    Returns:
+        The child cgroup directories.
+    """
+    with os.scandir(cgroup) as entries:
+        return [Path(e.path) for e in entries if e.is_dir(follow_symlinks=False)]
 
 
 def make_iteration_cgroup(delegated: Path, iteration_dir: Path) -> Path:
@@ -256,6 +273,145 @@ def make_process_cgroup(parent: Path, argv: list[str]) -> Path:
     """
     name = f"{argv[0].split('/')[-1]}-{uuid.uuid4().hex[:8]}"
     return make_cgroup(parent, name)
+
+
+def start_process(
+    argv: list[str], cgroup: Path | None = None, **popen_kwargs: Any
+) -> subprocess.Popen[bytes]:
+    """Start a command, optionally inside an existing cgroup.
+
+    Args:
+        argv (list[str]): The command to run.
+        cgroup (Path | None): The cgroup the child joins before ``exec()``,
+            or None to stay in the caller's cgroup.
+        **popen_kwargs: Passed to ``subprocess.Popen``.
+
+    Returns:
+        The running process.
+
+    Raises:
+        CommandError: If the command is missing or not executable, or the
+            child cannot join ``cgroup``.
+    """
+    preexec_fn = cgroup_joiner(cgroup) if cgroup is not None else None
+    try:
+        return subprocess.Popen(argv, preexec_fn=preexec_fn, **popen_kwargs)
+    except subprocess.SubprocessError as e:
+        # Raised by Popen when cgroup_joiner fails in the child.
+        raise exceptions.CommandError(
+            argv, f"Could not prepare {argv[0]!r} to run: {e}"
+        ) from e
+    except OSError as e:
+        raise exceptions.CommandError(argv, _not_started_message(argv, e)) from e
+
+
+def _not_started_message(argv: list[str], error: OSError) -> str:
+    """Describe why ``subprocess.Popen`` could not run a command.
+
+    Args:
+        argv: The command that failed to start.
+        error: The OSError ``subprocess.Popen`` raised.
+
+    Returns:
+        The message for the CommandError raised in its place.
+    """
+    # FileNotFoundError and PermissionError are subclasses of OSError.
+    if isinstance(error, FileNotFoundError):
+        return (
+            f"Command not found: {argv[0]!r}. "
+            "Make sure it is installed and available on PATH."
+        )
+    if isinstance(error, PermissionError):
+        return (
+            f"Permission denied: {argv[0]!r} is not executable. Check file permissions."
+        )
+    return f"OS error while starting {argv[0]!r}: {error}."
+
+
+def spawn_in_cgroup(
+    parent: Path, argv: list[str], **popen_kwargs: Any
+) -> tuple[subprocess.Popen[bytes], Path]:
+    """Start a command in a new cgroup of its own under ``parent``.
+
+    If the command cannot be started, the cgroup is emptied and removed
+    before the error propagates.
+
+    Args:
+        parent (Path): The cgroup the command's cgroup goes under, typically
+            the iteration cgroup.
+        argv (list[str]): The command to run.
+        **popen_kwargs: Passed to ``subprocess.Popen``.
+
+    Returns:
+        The running process and its cgroup.
+
+    Raises:
+        CommandError: If the cgroup cannot be created, or the command cannot
+            be started in it.
+    """
+    try:
+        cgroup = make_process_cgroup(parent, argv)
+    except OSError as e:
+        raise exceptions.CommandError(
+            argv, f"Could not create a cgroup for {argv[0]!r} under {parent}: {e}"
+        ) from e
+    try:
+        proc = start_process(argv, cgroup, **popen_kwargs)
+    except BaseException:
+        _discard_cgroup(cgroup)
+        raise
+    return proc, cgroup
+
+
+def _discard_cgroup(cgroup: Path) -> None:
+    """Kill and remove a command's cgroup after the command failed to start.
+
+    Runs while another exception propagates, so it never raises: an
+    interrupt restarts it, and an OSError is logged and left to the
+    iteration teardown. An interrupt can land after ``fork()``, with the
+    child already inside, so the cgroup is destroyed, not just removed.
+
+    Args:
+        cgroup (Path): The cgroup to discard.
+    """
+    while True:
+        try:
+            destroy_cgroup(cgroup, grace_period=0.0)
+            return
+        except exceptions.LambkinSIGUSR1Interrupt:
+            # A background process died. Finish cleaning up; the error
+            # already propagating is what went wrong here first.
+            continue
+        except OSError as e:
+            logger.warning("Could not clean up cgroup %s: %s", cgroup, e)
+            return
+
+
+def destroy_cgroup(cgroup: Path, grace_period: float) -> None:
+    """Stop every process in a cgroup tree and remove the tree.
+
+    The cgroup's own members get SIGTERM and ``grace_period`` seconds to
+    exit before SIGKILL. Anything left in child cgroups is then killed, and
+    the tree is removed deepest first. A cgroup that is already gone, or
+    goes away meanwhile, counts as destroyed.
+
+    Args:
+        cgroup (Path): The root of the cgroup tree.
+        grace_period (float): Seconds between SIGTERM and SIGKILL.
+    """
+    try:
+        kill_cgroup(cgroup, grace_period=grace_period)
+        # kill_cgroup only signals the cgroup's own members. Look for child
+        # cgroups only now: the members that could create them are gone.
+        children = _child_cgroups(cgroup)
+        if children:
+            kill_cgroup_tree(cgroup)
+            for child in children:
+                remove_cgroup_tree(child)
+        remove_cgroup(cgroup)
+    except FileNotFoundError:
+        # Removed meanwhile, for example by the iteration teardown.
+        return
 
 
 def cgroup_exists(cgroup: Path) -> bool:

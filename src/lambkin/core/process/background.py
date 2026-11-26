@@ -33,14 +33,9 @@ from types import TracebackType
 from typing import IO, Any
 
 from lambkin.common import defaults, exceptions, signals
-from lambkin.core.process.cgroup import (
-    cgroup_joiner,
-    kill_cgroup,
-    make_process_cgroup,
-    remove_cgroup,
-)
+from lambkin.core.process.cgroup import destroy_cgroup, spawn_in_cgroup
 from lambkin.core.process.resources import ResourceSampler
-from lambkin.core.shell.proxy import CommandError, CommandProxy
+from lambkin.core.shell.proxy import CommandProxy
 
 logger = logging.getLogger(__name__)
 
@@ -127,41 +122,31 @@ class BackgroundProcess:
         """Start the background process inside its own cgroup.
 
         In dry-run mode, logs the command at debug level instead of executing it.
+        A CommandError from starting the command, for example because it is
+        not installed or could not join its cgroup, propagates to the caller.
 
         Returns:
             BackgroundProcess: This instance.
-
-        Raises:
-            CommandError: If the child could not be prepared to run, for
-                example because it could not join its cgroup.
         """
         if self._dry_run:
             logger.debug("[DRY RUN BG] %s", shlex.join(self._argv))
             return self
 
-        cgroup = make_process_cgroup(self._iteration_cgroup, self._argv)
-        self._cgroup = cgroup
         try:
-            self._proc = subprocess.Popen(
+            self._proc, cgroup = spawn_in_cgroup(
+                self._iteration_cgroup,
                 self._argv,
-                preexec_fn=cgroup_joiner(cgroup),
                 cwd=self._cwd,
                 env=self._env,
                 stdout=self._stdout,
                 stderr=self._stderr,
             )
-        except BaseException as e:
+        except BaseException:
             # Nothing started, so __exit__ has nothing to stop: close the log
-            # files and remove the empty cgroup here.
+            # files here. spawn_in_cgroup already removed the cgroup.
             self._close_streams()
-            remove_cgroup(cgroup)
-            if isinstance(e, subprocess.SubprocessError):
-                # Raised by Popen when the child could not join its cgroup.
-                raise CommandError(
-                    self._argv,
-                    f"Could not prepare {self._argv[0]!r} to run: {e}",
-                ) from e
             raise
+        self._cgroup = cgroup
 
         try:
             self._start_watchers(cgroup)
@@ -238,12 +223,10 @@ class BackgroundProcess:
             if self._sampler is not None:
                 self._sampler.stop()
         finally:
-            kill_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
+            destroy_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
 
             if self._monitor is not None:
                 self._monitor.join()
-
-            remove_cgroup(self._cgroup)
 
         assert self._proc is not None
         if self._died_unexpectedly and exc_type in (

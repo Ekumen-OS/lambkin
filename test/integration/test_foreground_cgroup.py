@@ -26,11 +26,13 @@ import pytest
 
 from lambkin.common import defaults, signals
 from lambkin.common.exceptions import LambkinSIGUSR1Interrupt
-from lambkin.core.process import foreground
+from lambkin.core.process import cgroup as cgroup_module
 from lambkin.core.process.cgroup import (
+    destroy_cgroup,
     find_delegated_cgroup,
     kill_cgroup_tree,
     make_iteration_cgroup,
+    make_process_cgroup,
     remove_cgroup_tree,
 )
 from lambkin.core.process.resources import pids_in_cgroup
@@ -268,7 +270,7 @@ def test_foreground_child_setup_failure_cleans_up_cgroup(
         raise OSError(errno.EACCES, "denied")
 
     monkeypatch.setattr(
-        "lambkin.core.process.foreground.cgroup_joiner", lambda cgroup: _fail
+        "lambkin.core.process.cgroup.cgroup_joiner", lambda cgroup: _fail
     )
     with pytest.raises(CommandError, match="Could not prepare 'true'"):
         shell.true()
@@ -282,6 +284,54 @@ def test_foreground_missing_iteration_cgroup_is_reported(shell, iteration_cgroup
         shell.true()
 
 
+def test_foreground_start_error_survives_cleanup_failure(
+    shell, iteration_cgroup, monkeypatch
+):
+    """A cgroup that cannot be cleaned up does not hide why the start failed."""
+
+    def _fail(cgroup, grace_period=3.0):
+        raise OSError(errno.EACCES, "denied")
+
+    monkeypatch.setattr("lambkin.core.process.cgroup.kill_cgroup", _fail)
+    with pytest.raises(CommandError, match="Command not found"):
+        shell.lambkin_no_such_command_xyz()
+
+
+def test_foreground_sigusr1_during_start_cleanup_removes_cgroup(
+    shell, iteration_cgroup, monkeypatch
+):
+    """An interrupt while a failed start is cleaned up does not leak its cgroup."""
+    calls = []
+    kill_cgroup = cgroup_module.kill_cgroup
+
+    def _interrupt_once(cgroup, grace_period=3.0):
+        calls.append(cgroup)
+        if len(calls) == 1:
+            raise LambkinSIGUSR1Interrupt()
+        kill_cgroup(cgroup, grace_period)
+
+    monkeypatch.setattr("lambkin.core.process.cgroup.kill_cgroup", _interrupt_once)
+    with pytest.raises(CommandError, match="Command not found"):
+        shell.lambkin_no_such_command_xyz()
+    assert len(calls) == 2
+    assert _child_cgroups(iteration_cgroup) == []
+
+
+def test_destroy_cgroup_removed_meanwhile_counts_as_destroyed(
+    iteration_cgroup, monkeypatch
+):
+    """A cgroup removed by someone else during teardown is not an error."""
+    cgroup = make_process_cgroup(iteration_cgroup, ["true"])
+
+    def _removed_meanwhile(cgroup, grace_period=3.0):
+        cgroup.rmdir()
+        (cgroup / "cgroup.procs").read_text()
+
+    monkeypatch.setattr("lambkin.core.process.cgroup.kill_cgroup", _removed_meanwhile)
+    destroy_cgroup(cgroup, grace_period=0.0)
+    assert not cgroup.exists()
+
+
 @pytest.mark.parametrize(("script", "returncode"), [("exit 0", 0), ("exit 3", 3)])
 def test_foreground_cleanup_failure_keeps_command_result(
     shell, iteration_cgroup, caplog, monkeypatch, script, returncode
@@ -292,7 +342,7 @@ def test_foreground_cleanup_failure_keeps_command_result(
     def _fail(cgroup):
         raise OSError(errno.EACCES, "denied")
 
-    monkeypatch.setattr("lambkin.core.process.foreground.remove_cgroup", _fail)
+    monkeypatch.setattr("lambkin.core.process.cgroup.remove_cgroup", _fail)
     with caplog.at_level(logging.WARNING, logger="lambkin.core.process.foreground"):
         if returncode:
             with pytest.raises(CommandError) as excinfo:
@@ -315,14 +365,14 @@ def test_foreground_streams_closed_when_cleanup_raises(
         opened.extend(s for s in streams if s is not None)
         return streams
 
-    real_remove = foreground.remove_cgroup
+    real_remove = cgroup_module.remove_cgroup
 
     def _remove_then_fail(cgroup):
         real_remove(cgroup)
         raise _InterruptedError
 
     monkeypatch.setattr(CommandProxy, "open_streams", _record)
-    monkeypatch.setattr(foreground, "remove_cgroup", _remove_then_fail)
+    monkeypatch.setattr(cgroup_module, "remove_cgroup", _remove_then_fail)
     with pytest.raises(_InterruptedError):
         shell.true()
     assert opened

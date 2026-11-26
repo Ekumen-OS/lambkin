@@ -30,23 +30,14 @@ from typing import IO
 
 from lambkin.common import defaults, exceptions
 from lambkin.core.process.cgroup import (
-    cgroup_joiner,
-    kill_cgroup,
+    destroy_cgroup,
     kill_cgroup_tree,
-    make_process_cgroup,
-    remove_cgroup,
+    spawn_in_cgroup,
+    start_process,
 )
 from lambkin.core.process.resources import pids_in_cgroup, read_cmdline
 
 logger = logging.getLogger(__name__)
-
-
-class CgroupSetupError(Exception):
-    """Raised when the cgroup for a foreground command cannot be created.
-
-    Kept apart from OSError so that, for example, a missing iteration cgroup
-    is not reported as a missing command.
-    """
 
 
 def run_foreground(
@@ -60,9 +51,8 @@ def run_foreground(
 ) -> int | None:
     """Run a command in its own cgroup and wait for it to finish.
 
-    Errors starting the command propagate to the caller: CgroupSetupError if
-    its cgroup cannot be created, subprocess.SubprocessError if the child
-    cannot join it, and OSError if the command cannot be started.
+    A CommandError from starting the command, for example because it is not
+    installed or could not join its cgroup, propagates to the caller.
 
     Args:
         argv: The command to run as a list of tokens.
@@ -81,48 +71,21 @@ def run_foreground(
     cgroup: Path | None = None
     interrupted = False
     try:
-        if parent_cgroup is not None:
-            cgroup = _make_cgroup(parent_cgroup, argv)
-        proc = subprocess.Popen(
-            argv,
-            cwd=cwd,
-            stdout=stdout,
-            stderr=stderr,
-            env=env,
-            preexec_fn=cgroup_joiner(cgroup) if cgroup is not None else None,
-        )
+        if parent_cgroup is None:
+            proc = start_process(argv, cwd=cwd, env=env, stdout=stdout, stderr=stderr)
+        else:
+            proc, cgroup = spawn_in_cgroup(
+                parent_cgroup, argv, cwd=cwd, env=env, stdout=stdout, stderr=stderr
+            )
         proc.wait()
     except exceptions.LambkinSIGUSR1Interrupt:
         interrupted = True
     finally:
-        if _finish(argv, proc, cgroup):
-            interrupted = True
+        interrupted = _finish(argv, proc, cgroup) or interrupted
     if interrupted:
         return None
     assert proc is not None
     return proc.returncode
-
-
-def _make_cgroup(parent: Path, argv: list[str]) -> Path:
-    """Create the cgroup a foreground command runs in.
-
-    Args:
-        parent: The iteration cgroup the command's cgroup goes under.
-        argv: The command about to run, used to name the cgroup.
-
-    Returns:
-        The new cgroup directory.
-
-    Raises:
-        CgroupSetupError: If the cgroup cannot be created, for example because
-            the iteration cgroup is gone.
-    """
-    try:
-        return make_process_cgroup(parent, argv)
-    except OSError as e:
-        raise CgroupSetupError(
-            f"Could not create a cgroup for {argv[0]!r} under {parent}: {e}"
-        ) from e
 
 
 def _release_cgroup(argv: list[str], cgroup: Path, *, retry: bool = False) -> None:
@@ -142,28 +105,21 @@ def _release_cgroup(argv: list[str], cgroup: Path, *, retry: bool = False) -> No
             without a second grace period.
     """
     try:
-        cgroups = [Path(root) for root, _, _ in os.walk(cgroup)]
-        if not cgroups:
-            return  # Already gone.
-        orphans = [pid for cg in cgroups for pid in pids_in_cgroup(cg)]
-        if orphans:
-            if not retry:
-                logger.warning(
-                    "%s left %d process(es) running after it returned; "
-                    "terminating them: %s",
-                    shlex.join(argv),
-                    len(orphans),
-                    "; ".join(f"{pid} ({_cmdline(pid)})" for pid in orphans),
-                )
-            kill_cgroup(
-                cgroup,
-                grace_period=0.0 if retry else defaults.SIGTERM_GRACE_PERIOD,
+        orphans = [
+            pid for root, _, _ in os.walk(cgroup) for pid in pids_in_cgroup(Path(root))
+        ]
+        if orphans and not retry:
+            logger.warning(
+                "%s left %d process(es) running after it returned; "
+                "terminating them: %s",
+                shlex.join(argv),
+                len(orphans),
+                "; ".join(f"{pid} ({_cmdline(pid)})" for pid in orphans),
             )
-            if len(cgroups) > 1:
-                # kill_cgroup only signals the cgroup's own members.
-                kill_cgroup_tree(cgroup)
-        for cg in reversed(cgroups):  # Deepest first.
-            remove_cgroup(cg)
+        destroy_cgroup(
+            cgroup,
+            grace_period=0.0 if retry else defaults.SIGTERM_GRACE_PERIOD,
+        )
     except OSError as e:
         # Best effort: this runs in a finally block, so raising here would
         # hide the command's own result. The iteration teardown removes

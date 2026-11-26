@@ -27,7 +27,8 @@ from pathlib import Path
 from typing import Any, Final
 
 from lambkin.common import defaults, exceptions
-from lambkin.core.process.foreground import CgroupSetupError, run_foreground
+from lambkin.common.exceptions import CommandError
+from lambkin.core.process.foreground import run_foreground
 
 logger = logging.getLogger(__name__)
 
@@ -39,33 +40,6 @@ _SDK_KWARGS: Final[frozenset[str]] = frozenset({
     "measure_interval",
     "flamegraph",
 })
-
-
-class CommandError(Exception):
-    """Raised when a shell command cannot be started or exits with an error.
-
-    Attributes:
-        command:    The argv list passed to the operating system.
-        returncode: Exit code of the process, or None if it never started.
-    """
-
-    def __init__(
-        self,
-        command: list[str],
-        message: str,
-        returncode: int | None = None,
-    ) -> None:
-        """Initialize the error with the command that failed and its cause.
-
-        Args:
-            command:    The argv list that was passed to the operating system.
-            message:    Human-readable description of the failure.
-            returncode: The exit code returned by the process, or None if it
-                        never started.
-        """
-        self.command = command
-        self.returncode = returncode
-        super().__init__(message)
 
 
 class CommandProxy:
@@ -312,33 +286,6 @@ class CommandProxy:
             )
         except exceptions.LambkinSIGUSR1Interrupt:
             pass
-        except CgroupSetupError as e:
-            raise CommandError(argv, str(e)) from e
-        except subprocess.SubprocessError as e:
-            # Raised by Popen when cgroup_joiner fails in the child.
-            raise CommandError(
-                argv,
-                f"Could not prepare {argv[0]!r} to run: {e}",
-            ) from e
-        # FileNotFoundError and PermissionError must come before OSError,
-        # as they are subclasses of it. Order matters here.
-        except FileNotFoundError:
-            raise CommandError(
-                argv,
-                f"Command not found: {argv[0]!r}. "
-                f"Make sure it is installed and available on PATH.",
-            ) from None
-        except PermissionError:
-            raise CommandError(
-                argv,
-                f"Permission denied: {argv[0]!r} is not executable. "
-                f"Check file permissions.",
-            ) from None
-        except OSError as e:
-            raise CommandError(
-                argv,
-                f"OS error while starting {argv[0]!r}: {e}.",
-            ) from e
         finally:
             if stdout:
                 stdout.close()
