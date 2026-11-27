@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import datetime
 import logging
-import os
 import shutil
 from pathlib import Path
 from types import SimpleNamespace, TracebackType
@@ -35,10 +34,9 @@ import yaml
 
 from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
-    find_delegated_cgroup,
-    kill_cgroup_tree,
+    destroy_cgroup,
+    find_run_cgroup,
     make_iteration_cgroup,
-    remove_cgroup_tree,
 )
 from lambkin.core.shell import ShellProxy
 
@@ -262,7 +260,7 @@ class IterationContext:
 
         if not self.options.dry_run:
             self._iteration_cgroup = make_iteration_cgroup(
-                _run_cgroup(),
+                find_run_cgroup(),
                 self._paths.iteration_dir,
             )
 
@@ -302,8 +300,7 @@ class IterationContext:
             self._write_metadata(completed_at=datetime.datetime.now().isoformat())
 
         if self._iteration_cgroup is not None:
-            kill_cgroup_tree(self._iteration_cgroup)
-            remove_cgroup_tree(self._iteration_cgroup)
+            destroy_cgroup(self._iteration_cgroup, grace_period=0.0)
 
     def _write_metadata(self, completed_at: str | None = None) -> None:
         """Write a YAML metadata file to the iteration output directory.
@@ -360,30 +357,3 @@ class IterationContext:
             f"  iteration_dir = {self._paths.iteration_dir}\n"
             f")"
         )
-
-
-def _run_cgroup() -> Path:
-    """Return the cgroup that iteration cgroups are created under.
-
-    Under the lambkin CLI that is the run cgroup it exports, which the script
-    is not a member of. A script run without the CLI falls back to its own
-    delegated cgroup.
-
-    Returns:
-        Path: The parent cgroup for iteration cgroups.
-
-    Raises:
-        RuntimeError: If the exported run cgroup does not exist, for example
-            because the variable was left over from an earlier run.
-    """
-    run_cgroup = os.environ.get(defaults.RUN_CGROUP_ENV)
-    if not run_cgroup:
-        return find_delegated_cgroup()
-    path = Path(run_cgroup)
-    if not (path / "cgroup.procs").is_file():
-        raise RuntimeError(
-            f"{defaults.RUN_CGROUP_ENV}={run_cgroup} is not an existing cgroup. "
-            "It is set by the lambkin CLI for the script it runs; unset it, "
-            "or run the script through the CLI."
-        )
-    return path

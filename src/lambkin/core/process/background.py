@@ -22,7 +22,6 @@ services or ROS nodes that must run alongside the benchmark.
 from __future__ import annotations
 
 import logging
-import os
 import shlex
 import signal
 import subprocess
@@ -106,17 +105,16 @@ class BackgroundProcess:
     def _monitor_process(self) -> None:
         """Monitor thread that detects if the process dies unexpectedly.
 
-        If the process dies before the context manager exits, sets
-        sigusr1_pending and sends SIGUSR1 to the main thread to interrupt
-        any blocking foreground process. BackgroundProcess.__exit__ is
-        responsible for raising LambkinProcessDiedUnexpectedlyError.
+        If the process dies before the context manager exits, records the
+        death and sends SIGUSR1 to the main thread to interrupt any blocking
+        foreground process. BackgroundProcess.__exit__ is responsible for
+        raising LambkinProcessDiedUnexpectedlyError.
         """
         assert self._proc is not None
         self._proc.wait()
         if not self._exiting.is_set():
             self._died_unexpectedly = True
-            signals.sigusr1_pending.set()
-            os.kill(os.getpid(), signal.SIGUSR1)
+            signals.notify_death(self)
 
     def __enter__(self) -> BackgroundProcess:
         """Start the background process inside its own cgroup.
@@ -209,36 +207,80 @@ class BackgroundProcess:
             exc_val: Exception value if an exception is propagating, else None.
             exc_tb: Exception traceback if an exception is propagating, else None.
 
+        Teardown runs inside ``signals.deferred()``, so another background
+        process dying meanwhile does not cut it short.
+
         Raises:
             LambkinProcessDiedUnexpectedlyError: If the process died before this
                 method was called and no other exception is already propagating.
-        """
+            LambkinSIGUSR1Interrupt: If another background process died during
+                teardown and no other exception is already propagating, which
+                it must not replace. That process's own block reports it.
+        """  # noqa: DOC502 - LambkinProcessDiedUnexpectedlyError via _report_death
         if self._dry_run:
             return
+        # Another process dying meanwhile is raised only if nothing else
+        # propagates. Otherwise its death stays recorded, and its own block
+        # reports it against the exception propagating here.
+        with signals.deferred(raise_on_exit=exc_type is None):
+            err_type, err = exc_type, exc_val
+            try:
+                self._stop()
+            except BaseException as e:
+                # Report the death against the teardown error, which wins.
+                err_type, err = type(e), e
+                raise
+            finally:
+                # Even if teardown failed: a death left recorded would stop
+                # every later foreground command, in later iterations too.
+                signals.clear_death(self)
+                if self._died_unexpectedly:
+                    self._report_death(err_type, err)
+
+    def _stop(self) -> None:
+        """Stop the sampler and the process, and remove the process's cgroup."""
         self._close_streams()
         self._exiting.set()
 
         assert self._cgroup is not None
         try:
-            # While the process is still alive: once it is signalled its /proc
-            # entry is gone, taking VmHWM and the CPU counters with it.
-            if self._sampler is not None:
-                self._sampler.stop()
+            try:
+                # While the process is still alive: once it is signalled its
+                # /proc entry is gone, taking VmHWM and the CPU counters with it.
+                if self._sampler is not None:
+                    self._sampler.stop()
+            finally:
+                destroy_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
         finally:
-            destroy_cgroup(self._cgroup, grace_period=defaults.SIGTERM_GRACE_PERIOD)
-
             if self._monitor is not None:
-                self._monitor.join()
+                # Once it returns, its death record, if any, is final. Bounded
+                # in case the process outlived a failed teardown.
+                self._monitor.join(timeout=defaults.SIGKILL_GRACE_PERIOD)
 
+    def _report_death(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None
+    ) -> None:
+        """Raise or log that the process died before ``__exit__``.
+
+        Args:
+            exc_type: Type of the exception propagating through ``__exit__``.
+            exc_val: The exception propagating through ``__exit__``.
+
+        Raises:
+            LambkinProcessDiedUnexpectedlyError: If no exception, or only the
+                interrupt this death caused, is propagating.
+        """
         assert self._proc is not None
-        if self._died_unexpectedly and exc_type in (
-            None,
-            exceptions.LambkinSIGUSR1Interrupt,
-        ):
-            returncode = self._proc.poll()
-            raise exceptions.LambkinProcessDiedUnexpectedlyError(
-                self._argv, returncode or 1
-            )
+        returncode = self._proc.poll() or 1
+        if exc_type is None or exc_type is exceptions.LambkinSIGUSR1Interrupt:
+            raise exceptions.LambkinProcessDiedUnexpectedlyError(self._argv, returncode)
+        # Another error wins, but the death must leave a trace.
+        logger.warning(
+            "%s died unexpectedly (return code %d) while %s propagated.",
+            shlex.join(self._argv),
+            returncode,
+            exc_type.__name__,
+        )
 
 
 def _normalize_measure(measure: str | Sequence[str] | None) -> tuple[str, ...]:

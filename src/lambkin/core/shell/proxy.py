@@ -26,7 +26,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Final
 
-from lambkin.common import defaults, exceptions
+from lambkin.common import defaults
 from lambkin.common.exceptions import CommandError
 from lambkin.core.process.foreground import run_foreground
 
@@ -273,9 +273,11 @@ class CommandProxy:
             return subprocess.CompletedProcess(argv, returncode=0)
 
         stdout, stderr = None, None
-        returncode: int | None = None
         try:
             stdout, stderr = self.open_streams(per_call_log_output)
+            # A background process dying raises LambkinSIGUSR1Interrupt here.
+            # It unwinds the benchmark code to that process's
+            # BackgroundProcess.__exit__, which reports the death.
             returncode = run_foreground(
                 argv,
                 self._cgroup,
@@ -284,18 +286,11 @@ class CommandProxy:
                 stdout=stdout,
                 stderr=stderr,
             )
-        except exceptions.LambkinSIGUSR1Interrupt:
-            pass
         finally:
             if stdout:
                 stdout.close()
             if stderr:
                 stderr.close()
-
-        if returncode is None:
-            # Interrupted. Dummy return — never observed, background.__exit__
-            # raises LambkinProcessDiedUnexpectedlyError immediately after.
-            return subprocess.CompletedProcess(argv, returncode=-1)
 
         if returncode != 0:
             raise CommandError(

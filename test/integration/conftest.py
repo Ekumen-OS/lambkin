@@ -15,10 +15,17 @@
 """Shared fixtures for the integration tests."""
 
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
+
+from lambkin.core.process.cgroup import (
+    destroy_cgroup,
+    find_delegated_cgroup,
+    make_iteration_cgroup,
+)
+from lambkin.core.shell.proxy import ShellProxy
 
 
 def _running(pid: int) -> bool:
@@ -49,3 +56,22 @@ def _wait_gone(pid: int, timeout: float = 5.0) -> bool:
 def wait_gone() -> Callable[..., bool]:
     """Return a function that waits up to a timeout for a process to be gone."""
     return _wait_gone
+
+
+@pytest.fixture
+def iteration_cgroup(tmp_path: Path) -> Iterator[Path]:
+    """Create an iteration cgroup and tear it down after the test."""
+    try:
+        delegated = find_delegated_cgroup()
+    except (RuntimeError, OSError):
+        pytest.skip("cgroup v2 is not writable here")
+    cgroup = make_iteration_cgroup(delegated, tmp_path / "iter_1")
+    yield cgroup
+    if cgroup.exists():
+        destroy_cgroup(cgroup, grace_period=0.0)
+
+
+@pytest.fixture
+def shell(tmp_path: Path, iteration_cgroup: Path) -> ShellProxy:
+    """Return a real ShellProxy bound to the iteration cgroup."""
+    return ShellProxy(dry_run=False, cwd=tmp_path, cgroup=iteration_cgroup)

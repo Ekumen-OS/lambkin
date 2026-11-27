@@ -24,7 +24,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from lambkin.common import defaults, exceptions
+from lambkin.common import defaults, exceptions, signals
+from lambkin.core.process.resources import pids_in_cgroup
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,33 @@ def find_app_slice() -> Path | None:
     return None
 
 
+def find_run_cgroup() -> Path:
+    """Return the cgroup that iteration cgroups are created under.
+
+    Under the lambkin CLI that is the run cgroup it exports, which the script
+    is not a member of. A script run without the CLI falls back to its own
+    delegated cgroup.
+
+    Returns:
+        Path: The parent cgroup for iteration cgroups.
+
+    Raises:
+        RuntimeError: If the exported run cgroup does not exist, for example
+            because the variable was left over from an earlier run.
+    """
+    run_cgroup = os.environ.get(defaults.RUN_CGROUP_ENV)
+    if not run_cgroup:
+        return find_delegated_cgroup()
+    path = Path(run_cgroup)
+    if not (path / "cgroup.procs").is_file():
+        raise RuntimeError(
+            f"{defaults.RUN_CGROUP_ENV}={run_cgroup} is not an existing cgroup. "
+            "It is set by the lambkin CLI for the script it runs; unset it, "
+            "or run the script through the CLI."
+        )
+    return path
+
+
 def make_cgroup(parent: Path, name: str) -> Path:
     """Create a child cgroup under parent and return its path.
 
@@ -121,49 +149,92 @@ def cgroup_joiner(cgroup: Path) -> Callable[[], None]:
 
 
 def kill_cgroup(cgroup: Path, grace_period: float = 3.0) -> None:
-    """Terminate all processes in a cgroup with a graduated signal sequence.
+    """Terminate every process in a cgroup tree with a graduated signal sequence.
 
-    Sends SIGTERM to all members first, waits for the grace period, then
-    sends SIGKILL to any survivors.
+    Sends SIGTERM to the members of the cgroup and of all its descendants,
+    waits up to the grace period for the tree to empty, then kills whatever
+    is left through ``cgroup.kill``, which covers the whole tree. Processes
+    that join the tree during the grace period, for example ones forked by a
+    member handling SIGTERM, get SIGTERM too.
 
     Args:
-        cgroup (Path): The cgroup directory to kill.
-        grace_period (float): Seconds to wait after SIGTERM before sending SIGKILL.
+        cgroup (Path): The root of the cgroup tree to kill.
+        grace_period (float): Seconds to wait after SIGTERM before SIGKILL.
     """
-    procs_file = cgroup / "cgroup.procs"
-
-    for pid_str in procs_file.read_text().split():
-        try:
-            os.kill(int(pid_str), signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-
-    deadline = time.monotonic() + grace_period
-    while time.monotonic() < deadline:
-        if not procs_file.read_text().strip():
+    if grace_period > 0:
+        signalled: set[int] = set()
+        deadline = time.monotonic() + grace_period
+        while _is_populated(cgroup):
+            for pid in pids_in_tree(cgroup):
+                if pid in signalled:
+                    continue
+                signalled.add(pid)
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(defaults.CGROUP_POLL_INTERVAL)
+        else:
             return
-        time.sleep(defaults.CGROUP_POLL_INTERVAL)
 
-    for pid_str in procs_file.read_text().split():
-        try:
-            os.kill(int(pid_str), signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+    if kill_cgroup_tree(cgroup, defaults.SIGKILL_GRACE_PERIOD):
+        return
+    survivors = pids_in_tree(cgroup)
+    logger.warning(
+        "%d process(es) survived SIGKILL in %s — this indicates a "
+        "serious system problem. PIDs: %s",
+        len(survivors),
+        cgroup,
+        ", ".join(map(str, survivors)),
+    )
 
-    deadline = time.monotonic() + defaults.SIGKILL_GRACE_PERIOD
-    while time.monotonic() < deadline:
-        if not procs_file.read_text().strip():
-            return
+
+def pids_in_tree(cgroup: Path) -> list[int]:
+    """Return the PIDs in a cgroup and all its descendants.
+
+    Args:
+        cgroup (Path): The root of the cgroup tree.
+
+    Returns:
+        The PIDs found. A cgroup removed during the scan contributes none.
+    """
+    return [pid for root, _, _ in os.walk(cgroup) for pid in pids_in_cgroup(Path(root))]
+
+
+def _is_populated(cgroup: Path) -> bool:
+    """Return True if any process lives in a cgroup or its descendants.
+
+    Args:
+        cgroup (Path): The cgroup directory.
+
+    Returns:
+        The ``populated`` field of ``cgroup.events``.
+    """
+    for line in (cgroup / "cgroup.events").read_text().splitlines():
+        key, _, value = line.partition(" ")
+        if key == "populated":
+            return value.strip() != "0"
+    return False
+
+
+def _wait_unpopulated(cgroup: Path, timeout: float) -> bool:
+    """Wait until a cgroup tree holds no processes.
+
+    Args:
+        cgroup (Path): The root of the cgroup tree.
+        timeout (float): Seconds to wait at most.
+
+    Returns:
+        True if the tree emptied in time.
+    """
+    deadline = time.monotonic() + timeout
+    while _is_populated(cgroup):
+        if time.monotonic() >= deadline:
+            return False
         time.sleep(defaults.CGROUP_POLL_INTERVAL)
-    survivors = procs_file.read_text().split()
-    if survivors:
-        logger.warning(
-            "%d process(es) survived SIGKILL in %s — this indicates a "
-            "serious system problem. PIDs: %s",
-            len(survivors),
-            cgroup,
-            ", ".join(survivors),
-        )
+    return True
 
 
 def remove_cgroup(cgroup: Path) -> None:
@@ -194,23 +265,22 @@ def remove_cgroup(cgroup: Path) -> None:
     )
 
 
-def kill_cgroup_tree(cgroup: Path, grace_period: float = 3.0) -> None:
+def kill_cgroup_tree(cgroup: Path, grace_period: float = 3.0) -> bool:
     """Kill all processes in a cgroup tree recursively.
 
     Sends SIGKILL to all processes in the tree via the ``cgroup.kill``
     interface, which propagates to all descendants automatically, then
-    waits for all threads to exit.
+    waits for the whole tree to empty.
 
     Args:
         cgroup (Path): The root cgroup directory to kill.
         grace_period (float): Seconds to wait for all processes to die after SIGKILL.
+
+    Returns:
+        True if the tree emptied within the grace period.
     """
     (cgroup / "cgroup.kill").write_text("1")
-    deadline = time.monotonic() + grace_period
-    while time.monotonic() < deadline:
-        if not (cgroup / "cgroup.threads").read_text().strip():
-            return
-        time.sleep(defaults.CGROUP_POLL_INTERVAL)
+    return _wait_unpopulated(cgroup, grace_period)
 
 
 def remove_cgroup_tree(cgroup: Path) -> None:
@@ -366,49 +436,38 @@ def spawn_in_cgroup(
 def _discard_cgroup(cgroup: Path) -> None:
     """Kill and remove a command's cgroup after the command failed to start.
 
-    Runs while another exception propagates, so it never raises: an
-    interrupt restarts it, and an OSError is logged and left to the
-    iteration teardown. An interrupt can land after ``fork()``, with the
-    child already inside, so the cgroup is destroyed, not just removed.
+    Runs while another exception propagates, so it never raises: an OSError
+    is logged and left to the iteration teardown. An interrupt can land
+    after ``fork()``, with the child already inside, so the cgroup is
+    destroyed, not just removed.
 
     Args:
         cgroup (Path): The cgroup to discard.
     """
-    while True:
-        try:
-            destroy_cgroup(cgroup, grace_period=0.0)
-            return
-        except exceptions.LambkinSIGUSR1Interrupt:
-            # A background process died. Finish cleaning up; the error
-            # already propagating is what went wrong here first.
-            continue
-        except OSError as e:
-            logger.warning("Could not clean up cgroup %s: %s", cgroup, e)
-            return
+    try:
+        destroy_cgroup(cgroup, grace_period=0.0)
+    except OSError as e:
+        logger.warning("Could not clean up cgroup %s: %s", cgroup, e)
 
 
 def destroy_cgroup(cgroup: Path, grace_period: float) -> None:
     """Stop every process in a cgroup tree and remove the tree.
 
-    The cgroup's own members get SIGTERM and ``grace_period`` seconds to
-    exit before SIGKILL. Anything left in child cgroups is then killed, and
-    the tree is removed deepest first. A cgroup that is already gone, or
-    goes away meanwhile, counts as destroyed.
+    Every process in the tree gets SIGTERM and ``grace_period`` seconds to
+    exit before SIGKILL. The tree is then removed deepest first. A cgroup
+    that is already gone, or goes away meanwhile, counts as destroyed.
+
+    A background death meanwhile neither interrupts it nor is raised here;
+    it stays recorded in ``signals`` for the caller's next check.
 
     Args:
         cgroup (Path): The root of the cgroup tree.
         grace_period (float): Seconds between SIGTERM and SIGKILL.
     """
     try:
-        kill_cgroup(cgroup, grace_period=grace_period)
-        # kill_cgroup only signals the cgroup's own members. Look for child
-        # cgroups only now: the members that could create them are gone.
-        children = _child_cgroups(cgroup)
-        if children:
-            kill_cgroup_tree(cgroup)
-            for child in children:
-                remove_cgroup_tree(child)
-        remove_cgroup(cgroup)
+        with signals.deferred(raise_on_exit=False):
+            kill_cgroup(cgroup, grace_period=grace_period)
+            remove_cgroup_tree(cgroup)
     except FileNotFoundError:
         # Removed meanwhile, for example by the iteration teardown.
         return

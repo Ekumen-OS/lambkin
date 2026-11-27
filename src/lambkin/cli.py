@@ -41,11 +41,10 @@ from click.formatting import HelpFormatter
 from lambkin.common import defaults
 from lambkin.core.process.cgroup import (
     cgroup_joiner,
+    destroy_cgroup,
     find_app_slice,
     find_delegated_cgroup,
-    kill_cgroup_tree,
     make_cgroup,
-    remove_cgroup_tree,
 )
 from lambkin.logger import configure_logging
 from lambkin.sdk_options import SDK_OPTIONS
@@ -174,8 +173,7 @@ def main(script: Path, args: tuple[str, ...], log_level: str) -> None:
 
     def _clean_up() -> None:
         """Kill whatever runs in the run cgroup, remove it, restore the tty."""
-        kill_cgroup_tree(run_cgroup)
-        remove_cgroup_tree(run_cgroup)
+        destroy_cgroup(run_cgroup, grace_period=0.0)
         _restore_terminal_state(terminal_state)
 
     # Launch the benchmark script in a new session so that Ctrl-C (SIGINT) is

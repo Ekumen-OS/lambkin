@@ -16,9 +16,7 @@
 
 import errno
 import logging
-import os
 import signal
-import threading
 import time
 from pathlib import Path
 
@@ -30,10 +28,7 @@ from lambkin.core.process import cgroup as cgroup_module
 from lambkin.core.process.cgroup import (
     destroy_cgroup,
     find_delegated_cgroup,
-    kill_cgroup_tree,
-    make_iteration_cgroup,
     make_process_cgroup,
-    remove_cgroup_tree,
 )
 from lambkin.core.process.resources import pids_in_cgroup
 from lambkin.core.shell.proxy import CommandError, CommandProxy, ShellProxy
@@ -50,22 +45,6 @@ def _cgroup_v2_writable() -> bool:
 pytestmark = pytest.mark.skipif(
     not _cgroup_v2_writable(), reason="cgroup v2 is not writable here"
 )
-
-
-@pytest.fixture
-def iteration_cgroup(tmp_path):
-    """Create an iteration cgroup and tear it down after the test."""
-    cgroup = make_iteration_cgroup(find_delegated_cgroup(), tmp_path / "iter_1")
-    yield cgroup
-    if cgroup.exists():
-        kill_cgroup_tree(cgroup)
-        remove_cgroup_tree(cgroup)
-
-
-@pytest.fixture
-def shell(tmp_path, iteration_cgroup):
-    """Return a real ShellProxy bound to the iteration cgroup."""
-    return ShellProxy(dry_run=False, cwd=tmp_path, cgroup=iteration_cgroup)
 
 
 def _child_cgroups(cgroup: Path) -> list[Path]:
@@ -203,11 +182,11 @@ def test_foreground_sigusr1_interrupt_kills_whole_tree(
     pid_file = tmp_path / "child.pid"
     restore = _raise_after(1.0, LambkinSIGUSR1Interrupt)
     try:
-        result = shell.sh("-c", f"sleep 60 & echo $! > {pid_file}; wait")
+        with pytest.raises(LambkinSIGUSR1Interrupt):
+            shell.sh("-c", f"sleep 60 & echo $! > {pid_file}; wait")
     finally:
         restore()
 
-    assert result.returncode == -1
     assert wait_gone(int(pid_file.read_text()))
     assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
@@ -297,23 +276,35 @@ def test_foreground_start_error_survives_cleanup_failure(
         shell.lambkin_no_such_command_xyz()
 
 
-def test_foreground_sigusr1_during_start_cleanup_removes_cgroup(
-    shell, iteration_cgroup, monkeypatch
+def test_foreground_death_during_start_cleanup_is_kept_for_next_command(
+    shell, tmp_path, iteration_cgroup, monkeypatch, lambkin_signals
 ):
-    """An interrupt while a failed start is cleaned up does not leak its cgroup."""
+    """A death while a failed start is cleaned up neither leaks nor gets lost.
+
+    The cleanup runs once and removes the cgroup, the start error propagates,
+    and the next foreground command raises the death instead of running.
+    """
     calls = []
     kill_cgroup = cgroup_module.kill_cgroup
 
-    def _interrupt_once(cgroup, grace_period=3.0):
+    def _die_then_kill(cgroup, grace_period=3.0):
         calls.append(cgroup)
-        if len(calls) == 1:
-            raise LambkinSIGUSR1Interrupt()
+        lambkin_signals.die()
+        lambkin_signals.settle()
         kill_cgroup(cgroup, grace_period)
 
-    monkeypatch.setattr("lambkin.core.process.cgroup.kill_cgroup", _interrupt_once)
+    monkeypatch.setattr("lambkin.core.process.cgroup.kill_cgroup", _die_then_kill)
     with pytest.raises(CommandError, match="Command not found"):
         shell.lambkin_no_such_command_xyz()
-    assert len(calls) == 2
+    monkeypatch.undo()
+    assert len(calls) == 1
+    assert _child_cgroups(iteration_cgroup) == []
+    assert signals.death_pending()
+
+    marker = tmp_path / "ran"
+    with pytest.raises(LambkinSIGUSR1Interrupt):
+        shell.touch(marker)
+    assert not marker.exists()
     assert _child_cgroups(iteration_cgroup) == []
 
 
@@ -380,57 +371,34 @@ def test_foreground_streams_closed_when_cleanup_raises(
     assert _child_cgroups(iteration_cgroup) == []
 
 
-@pytest.fixture
-def lambkin_sigusr1():
-    """Install lambkin's SIGUSR1 handler; return a function that fires it."""
-    previous = signal.signal(signal.SIGUSR1, signals._make_handler(signal.SIG_IGN))
-
-    def _fire_after(seconds: float) -> threading.Timer:
-        def _fire():
-            signals.sigusr1_pending.set()
-            os.kill(os.getpid(), signal.SIGUSR1)
-
-        timer = threading.Timer(seconds, _fire)
-        timer.start()
-        return timer
-
-    yield _fire_after
-    signal.signal(signal.SIGUSR1, previous)
-    signals.sigusr1_pending.clear()
-
-
-def test_foreground_sigusr1_during_cleanup_finishes_cleanup(
-    wait_gone, shell, tmp_path, iteration_cgroup, lambkin_sigusr1, caplog, monkeypatch
+def test_foreground_death_during_cleanup_lets_it_finish(
+    wait_gone, shell, tmp_path, iteration_cgroup, lambkin_signals, caplog, monkeypatch
 ):
     """A background death while an orphan is being killed does not cut cleanup.
 
-    The orphan is reported once, and cleanup does not start a second SIGTERM
-    grace period.
+    The orphan gets its whole SIGTERM grace period, once, and is reported
+    once; the death is raised after its cgroup is gone.
     """
     monkeypatch.setattr(logging.getLogger("lambkin"), "propagate", True)
+    monkeypatch.setattr(defaults, "SIGTERM_GRACE_PERIOD", 1.5)
     pid_file = tmp_path / "stubborn.pid"
     # The orphan ignores SIGTERM, so cleanup spends the grace period waiting
-    # on it; the interrupt lands in that wait.
-    timer = lambkin_sigusr1(1.0)
+    # on it; the death lands in that wait.
     start = time.monotonic()
-    try:
-        with caplog.at_level(logging.WARNING, logger="lambkin.core.process.foreground"):
-            result = shell.sh(
+    lambkin_signals.die_after(0.5)
+    with caplog.at_level(logging.WARNING, logger="lambkin.core.process.foreground"):
+        with pytest.raises(LambkinSIGUSR1Interrupt):
+            shell.sh(
                 "-c",
                 f"sh -c 'trap \"\" TERM; echo $$ > {pid_file}; exec sleep 63' &"
                 f" while [ ! -s {pid_file} ]; do sleep 0.01; done",
             )
-    finally:
-        timer.cancel()
     elapsed = time.monotonic() - start
 
     warnings = [r for r in caplog.records if "left 1 process(es)" in r.getMessage()]
     assert len(warnings) == 1, caplog.text
-    # One grace period started at about 0 s and cut short at 1 s; a restarted
-    # one would run until about 1 + SIGTERM_GRACE_PERIOD.
-    assert elapsed < defaults.SIGTERM_GRACE_PERIOD, elapsed
-
-    assert result.returncode == -1
+    # Not cut short at 0.5 s, and not restarted (about 2.0 s).
+    assert 1.5 <= elapsed < 1.9, elapsed
     assert wait_gone(int(pid_file.read_text()))
     assert pids_in_cgroup(iteration_cgroup) == []
     assert _child_cgroups(iteration_cgroup) == []
