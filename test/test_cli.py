@@ -62,15 +62,13 @@ def test_keyboard_interrupt_exits_130(dummy_script):
         mock_proc = MagicMock()
         mock_proc.wait.side_effect = KeyboardInterrupt
         mock_popen.return_value = mock_proc
-        with patch("lambkin.cli.kill_cgroup_tree") as mock_kill:
-            with patch("lambkin.cli.remove_cgroup_tree") as mock_remove:
-                with patch("lambkin.cli.make_cgroup") as mock_make:
-                    mock_make.return_value = MagicMock()
-                    with patch("lambkin.cli.find_delegated_cgroup"):
-                        result = runner.invoke(main, [str(dummy_script)])
+        with patch("lambkin.cli.destroy_cgroup") as mock_destroy:
+            with patch("lambkin.cli.make_cgroup") as mock_make:
+                mock_make.return_value = MagicMock()
+                with patch("lambkin.cli.find_delegated_cgroup"):
+                    result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 130
-    mock_kill.assert_called_once_with(mock_make.return_value)
-    mock_remove.assert_called_once_with(mock_make.return_value)
+    mock_destroy.assert_called_once_with(mock_make.return_value, grace_period=0.0)
 
 
 def test_script_runs_in_script_with_run_cgroup_exported(dummy_script, tmp_path):
@@ -86,10 +84,9 @@ def test_script_runs_in_script_with_run_cgroup_exported(dummy_script, tmp_path):
                 run_cgroup / name if parent == run_cgroup else run_cgroup
             ),
         ) as mk:
-            with patch("lambkin.cli.kill_cgroup_tree"):
-                with patch("lambkin.cli.remove_cgroup_tree"):
-                    with patch("lambkin.cli.cgroup_joiner") as mock_joiner:
-                        result = runner.invoke(main, [str(dummy_script)])
+            with patch("lambkin.cli.destroy_cgroup"):
+                with patch("lambkin.cli.cgroup_joiner") as mock_joiner:
+                    result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 0
     mk.assert_any_call(run_cgroup, "script")
     assert mock_popen.call_args.kwargs["env"]["LAMBKIN_RUN_CGROUP"] == str(run_cgroup)
@@ -109,13 +106,11 @@ def test_script_cgroup_failure_removes_run_cgroup(dummy_script, tmp_path):
     runner = CliRunner()
     with patch("subprocess.Popen") as mock_popen:
         with patch("lambkin.cli.make_cgroup", side_effect=_make):
-            with patch("lambkin.cli.kill_cgroup_tree") as mock_kill:
-                with patch("lambkin.cli.remove_cgroup_tree") as mock_remove:
-                    result = runner.invoke(main, [str(dummy_script)])
+            with patch("lambkin.cli.destroy_cgroup") as mock_destroy:
+                result = runner.invoke(main, [str(dummy_script)])
     assert isinstance(result.exception, PermissionError)
     mock_popen.assert_not_called()
-    mock_kill.assert_called_once_with(run_cgroup)
-    mock_remove.assert_called_once_with(run_cgroup)
+    mock_destroy.assert_called_once_with(run_cgroup, grace_period=0.0)
 
 
 @pytest.mark.parametrize(
@@ -133,12 +128,10 @@ def test_script_start_failure_removes_run_cgroup(dummy_script, tmp_path, error):
                 run_cgroup / name if parent == run_cgroup else run_cgroup
             ),
         ):
-            with patch("lambkin.cli.kill_cgroup_tree") as mock_kill:
-                with patch("lambkin.cli.remove_cgroup_tree") as mock_remove:
-                    result = runner.invoke(main, [str(dummy_script)])
+            with patch("lambkin.cli.destroy_cgroup") as mock_destroy:
+                result = runner.invoke(main, [str(dummy_script)])
     assert result.exception is error
-    mock_kill.assert_called_once_with(run_cgroup)
-    mock_remove.assert_called_once_with(run_cgroup)
+    mock_destroy.assert_called_once_with(run_cgroup, grace_period=0.0)
 
 
 def test_ctrl_c_while_starting_removes_run_cgroup(dummy_script, tmp_path):
@@ -152,12 +145,10 @@ def test_ctrl_c_while_starting_removes_run_cgroup(dummy_script, tmp_path):
                 run_cgroup / name if parent == run_cgroup else run_cgroup
             ),
         ):
-            with patch("lambkin.cli.kill_cgroup_tree") as mock_kill:
-                with patch("lambkin.cli.remove_cgroup_tree") as mock_remove:
-                    result = runner.invoke(main, [str(dummy_script)])
+            with patch("lambkin.cli.destroy_cgroup") as mock_destroy:
+                result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 130
-    mock_kill.assert_called_once_with(run_cgroup)
-    mock_remove.assert_called_once_with(run_cgroup)
+    mock_destroy.assert_called_once_with(run_cgroup, grace_period=0.0)
 
 
 def test_terminal_state_failure_creates_no_cgroup(dummy_script):
@@ -180,7 +171,7 @@ def test_help_output_contains_expected_sections():
     assert "--dry-run" in result.output
 
 
-def test_normal_exit_kills_run_cgroup_before_removing_it(dummy_script, tmp_path):
+def test_normal_exit_destroys_run_cgroup(dummy_script, tmp_path):
     """Whatever the script left running is killed before the cgroup is removed."""
     run_cgroup = tmp_path / "lambkin-bench-1234"
     calls = MagicMock()
@@ -194,11 +185,7 @@ def test_normal_exit_kills_run_cgroup_before_removing_it(dummy_script, tmp_path)
             ),
         ):
             with patch("lambkin.cli.cgroup_joiner"):
-                with patch("lambkin.cli.kill_cgroup_tree", calls.kill):
-                    with patch("lambkin.cli.remove_cgroup_tree", calls.remove):
-                        result = runner.invoke(main, [str(dummy_script)])
+                with patch("lambkin.cli.destroy_cgroup", calls.destroy):
+                    result = runner.invoke(main, [str(dummy_script)])
     assert result.exit_code == 3
-    assert calls.mock_calls == [
-        call.kill(run_cgroup),
-        call.remove(run_cgroup),
-    ]
+    assert calls.mock_calls == [call.destroy(run_cgroup, grace_period=0.0)]

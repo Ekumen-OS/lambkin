@@ -18,6 +18,7 @@ import errno
 import os
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from unittest.mock import patch
@@ -27,7 +28,9 @@ import pytest
 from lambkin.core.process.cgroup import (
     cgroup_joiner,
     find_delegated_cgroup,
+    find_run_cgroup,
     kill_cgroup,
+    kill_cgroup_tree,
     make_cgroup,
     make_iteration_cgroup,
     remove_cgroup,
@@ -208,6 +211,84 @@ def test_kill_cgroup_empty_cgroup_does_nothing():
     assert not cgroup.exists()
 
 
+_LATE_JOINER_PARENT = """
+import signal, subprocess, sys, time
+
+def _on_term(signum, frame):
+    # Blocked until the child installed its handler, so it is not lost.
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+    subprocess.Popen([sys.executable, "-c", sys.argv[1], sys.argv[2]])
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTERM})
+
+signal.signal(signal.SIGTERM, _on_term)
+print("ready", flush=True)
+while True:
+    time.sleep(0.05)
+"""
+
+_LATE_JOINER_CHILD = """
+import signal, sys, time
+
+def _on_term(signum, frame):
+    with open(sys.argv[1], "w") as f:
+        f.write("terminated")
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, _on_term)
+signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTERM})
+while True:
+    time.sleep(0.05)
+"""
+
+
+def test_kill_cgroup_terminates_processes_started_during_grace(tmp_path):
+    """A process forked during the grace period gets SIGTERM, not just SIGKILL.
+
+    The first member survives SIGTERM and starts a new one in response.
+    """
+    delegated = find_delegated_cgroup()
+    cgroup = make_cgroup(delegated, "test-kill-late-joiner")
+    log = tmp_path / "child.log"
+    proc = subprocess.Popen(
+        [sys.executable, "-c", _LATE_JOINER_PARENT, _LATE_JOINER_CHILD, str(log)],
+        stdout=subprocess.PIPE,
+        text=True,
+        preexec_fn=lambda: (cgroup / "cgroup.procs").write_text(str(os.getpid())),
+    )
+    try:
+        assert proc.stdout is not None
+        assert proc.stdout.readline().strip() == "ready"
+
+        kill_cgroup(cgroup, grace_period=2.0)
+        proc.wait()
+        assert log.read_text() == "terminated"
+    finally:
+        proc.kill()
+        proc.wait()
+        remove_cgroup(cgroup)
+
+
+def test_kill_cgroup_tree_waits_for_descendants(tmp_path):
+    """kill_cgroup_tree returns only once the whole tree is unpopulated.
+
+    ``cgroup.events`` reports processes in descendants too, unlike the
+    cgroup's own ``cgroup.threads``.
+    """
+    (tmp_path / "cgroup.kill").write_text("")
+    (tmp_path / "cgroup.threads").write_text("")
+    events = tmp_path / "cgroup.events"
+    events.write_text("populated 1\nfrozen 0\n")
+    timer = threading.Timer(0.3, events.write_text, ["populated 0\nfrozen 0\n"])
+    timer.start()
+    start = time.monotonic()
+    try:
+        assert kill_cgroup_tree(tmp_path, grace_period=5.0)
+    finally:
+        timer.cancel()
+    assert time.monotonic() - start >= 0.3
+    assert (tmp_path / "cgroup.kill").read_text() == "1"
+
+
 def test_cgroup_joiner_moves_child_before_exec():
     """cgroup_joiner's function as preexec_fn places the child in the cgroup."""
     cgroup = make_cgroup(find_delegated_cgroup(), "test-join")
@@ -222,3 +303,35 @@ def test_cgroup_joiner_moves_child_before_exec():
         assert out.strip().endswith("/test-join")
     finally:
         remove_cgroup(cgroup)
+
+
+def test_find_run_cgroup_uses_cli_environment(monkeypatch, tmp_path):
+    """Iteration cgroups go under the run cgroup the CLI exports."""
+    (tmp_path / "cgroup.procs").write_text("")
+    monkeypatch.setenv("LAMBKIN_RUN_CGROUP", str(tmp_path))
+    assert find_run_cgroup() == tmp_path
+
+
+@pytest.mark.parametrize("make_dir", [False, True])
+def test_find_run_cgroup_rejects_stale_cli_environment(monkeypatch, tmp_path, make_dir):
+    """A run cgroup that is gone, or not a cgroup, names the variable."""
+    stale = tmp_path / "lambkin-bench-1234"
+    if make_dir:
+        stale.mkdir()
+    monkeypatch.setenv("LAMBKIN_RUN_CGROUP", str(stale))
+    with pytest.raises(RuntimeError, match="LAMBKIN_RUN_CGROUP=.*unset it"):
+        find_run_cgroup()
+
+
+@pytest.mark.parametrize("value", [None, ""])
+def test_find_run_cgroup_falls_back_to_delegated_cgroup(monkeypatch, tmp_path, value):
+    """Without the CLI, or with the variable empty, use the delegated cgroup."""
+    if value is None:
+        monkeypatch.delenv("LAMBKIN_RUN_CGROUP", raising=False)
+    else:
+        monkeypatch.setenv("LAMBKIN_RUN_CGROUP", value)
+    monkeypatch.setattr(
+        "lambkin.core.process.cgroup.find_delegated_cgroup",
+        lambda: tmp_path,
+    )
+    assert find_run_cgroup() == tmp_path
